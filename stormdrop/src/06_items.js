@@ -193,8 +193,11 @@ function updateItems(dt, cx, cz) {
   for (let i = ITEMS.length - 1; i >= 0; i--) {
     const it = ITEMS[i];
     it.t += dt; it.age += dt;
-    const dx = it.pos.x - cx, dz = it.pos.z - cz, vis = dx * dx + dz * dz < 6400;
+    const dx = it.pos.x - cx, dz = it.pos.z - cz, d2 = dx * dx + dz * dz, vis = d2 < 6400;
     it.mesh.visible = vis;
+    // LOD: past 40 m only the rarity beam is worth drawing; shadows only up close
+    const lod = d2 < 400 ? 0 : d2 < 1600 ? 1 : 2;
+    if (lod !== it.lod) { it.lod = lod; const sp = it.mesh.userData.spin; sp.visible = lod < 2; sp.traverse((o) => { if (o.isMesh) o.castShadow = lod === 0; }); }
     if (!vis && it.settled) continue;
     if (!it.settled) {
       it.vel.y -= GRAV * dt;

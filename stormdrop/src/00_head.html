@@ -189,6 +189,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .mcard b{display:block;font-family:var(--display);font-weight:800;font-size:17px;text-transform:uppercase}.mcard small{display:block;font-size:10.5px;color:var(--ink-dim);margin-top:2px;line-height:1.25}
 .mcard .ic{font-size:22px;line-height:1;margin-bottom:4px}
 .mini-ch{margin-top:14px;display:flex;flex-direction:column;gap:6px}
+.firstdrop{background:linear-gradient(90deg,rgba(65,184,255,.22),rgba(65,184,255,.05));border:1px solid rgba(65,184,255,.45);border-radius:8px;padding:9px 11px;font-size:13px;line-height:1.45;color:var(--ink-dim)}.firstdrop b{display:block;color:#fff;font-size:18px;text-transform:uppercase;margin-bottom:2px}
 .chrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;background:rgba(0,0,0,.28);border-radius:6px;padding:8px 10px}
 .chrow .t{font-size:13px;font-weight:600}.chrow .x{font-family:var(--display);font-weight:800;color:var(--gold);font-size:15px}
 .chrow .bar{grid-column:1/-1;height:5px;border-radius:3px;background:rgba(255,255,255,.1);overflow:hidden}.chrow .bar i{display:block;height:100%;background:linear-gradient(90deg,#5ee05a,#2fd06f)}
@@ -232,6 +233,9 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .unlocks{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;justify-content:center}
 .unl{background:linear-gradient(180deg,rgba(155,92,255,.5),rgba(65,184,255,.2));border:1px solid rgba(190,150,255,.7);border-radius:8px;padding:6px 10px;font-size:12px;animation:pop .4s cubic-bezier(.2,1.6,.4,1)}@keyframes pop{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}
 .unl small{display:block;font-size:10px;color:var(--ink-dim);text-transform:uppercase}
+@media (max-height:520px){#menu .topbar{padding-top:calc(6px + var(--st));padding-bottom:6px}.logo-sm{font-size:22px}.tabs button{font-size:15px;padding:5px 8px}.lvl{width:32px;height:32px;font-size:16px}
+  .tabbody{top:calc(50px + var(--st))}.mcard small,.mcard .ic{display:none}.mcard{padding:7px 4px}.modes{margin-bottom:8px}.opt{margin-bottom:6px}.seg button{padding:5px 4px;font-size:13px}
+  .play{font-size:28px;padding:9px 0 7px;margin-top:4px}.mini-ch{display:none}.panel{padding:12px}.lobby-tag .nm{font-size:24px}.lobby-tag .ttl{margin:2px 0 4px}}
 @media (max-width:760px){.tabs button{font-size:15px;padding:6px 8px}.logo-sm{font-size:22px}.lvlinfo{display:none}.modes{grid-template-columns:repeat(3,minmax(0,1fr))}.career-cols{grid-template-columns:1fr}.lobby-tag .nm{font-size:26px}.tabbody{width:100%}}
 .menu-inner{width:min(1120px,100%);display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:28px 40px;align-items:center}
 .brand .eyebrow{font-family:var(--display);font-weight:800;font-size:18px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
@@ -307,8 +311,10 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 #tb-build{width:60px;height:60px;right:calc(114px + var(--sr));bottom:calc(24px + var(--sb))}
 #tb-use{width:auto;min-width:96px;height:42px;border-radius:21px;padding:0 14px;left:50%;transform:translateX(-50%);top:calc(50% + 34px);background:rgba(255,198,46,.85);color:#1b1300;border-color:transparent}
 #tb-map{width:42px;height:42px;left:calc(64px + var(--sl));top:calc(10px + var(--st));font-size:12px}
-#tb-ping{width:42px;height:42px;left:calc(114px + var(--sl));top:calc(10px + var(--st));font-size:11px}
-#tb-inv{width:42px;height:42px;left:calc(164px + var(--sl));top:calc(10px + var(--st));font-size:11px}
+#tb-ping{width:40px;height:40px;right:calc(14px + var(--sr));top:calc(128px + var(--st));font-size:10px}
+#tb-inv{width:40px;height:40px;right:calc(62px + var(--sr));top:calc(128px + var(--st));font-size:10px}
+body.is-touch #teampanel{left:50%;transform:translateX(-50%);top:auto;bottom:calc(64px + var(--sb));flex-direction:row;gap:4px}
+body.is-touch .tm{min-width:0;padding:3px 6px}body.is-touch .tm .n{max-width:58px;font-size:10px}body.is-touch .tm .bars{width:34px}
 #tb-pause{width:42px;height:42px;left:calc(14px + var(--sl));top:calc(10px + var(--st));font-size:14px}
 #tb-pieces{position:absolute;left:50%;transform:translateX(-50%);top:calc(92px + var(--st));display:flex;gap:8px;pointer-events:none}
 #tb-pieces .tb{position:static;width:52px;height:52px;border-radius:10px}

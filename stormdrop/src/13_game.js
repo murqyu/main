@@ -368,6 +368,8 @@ function startMatch() {
   }
   for (const id of ['menu', 'endscreen', 'spec', 'pause']) $id(id).hidden = true;
   $id('loading').hidden = false;
+  const tips = ['Press C while sprinting to slide. Downhill slides keep their speed.', 'Jump at a ledge to mantle up onto it.', 'G edits your own walls: cut a door or a window.', 'The Vault Warden guards a mythic rifle.', 'Middle-click pings places, loot and enemies for your team.', 'Hold E next to a knocked teammate to revive them.', 'Launch pads throw you high enough to glide across the island.', 'Mushrooms by the shore give shield, apples under trees give health.', 'Quads are fast. Ramming builds at speed breaks them.', 'Gunfire carries: bots hear shots and come looking.', 'Daily challenges reset every day. Weekly ones are worth more XP.', 'Ziplines run from mountain tops down to nearby towns.'];
+  $id('loading').querySelector('p').textContent = pick(tips);
   requestLock();
   setTimeout(() => {
     try { setupMatch(); } catch (e) { console.error(e); }

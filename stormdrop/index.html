@@ -194,6 +194,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .mcard b{display:block;font-family:var(--display);font-weight:800;font-size:17px;text-transform:uppercase}.mcard small{display:block;font-size:10.5px;color:var(--ink-dim);margin-top:2px;line-height:1.25}
 .mcard .ic{font-size:22px;line-height:1;margin-bottom:4px}
 .mini-ch{margin-top:14px;display:flex;flex-direction:column;gap:6px}
+.firstdrop{background:linear-gradient(90deg,rgba(65,184,255,.22),rgba(65,184,255,.05));border:1px solid rgba(65,184,255,.45);border-radius:8px;padding:9px 11px;font-size:13px;line-height:1.45;color:var(--ink-dim)}.firstdrop b{display:block;color:#fff;font-size:18px;text-transform:uppercase;margin-bottom:2px}
 .chrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;background:rgba(0,0,0,.28);border-radius:6px;padding:8px 10px}
 .chrow .t{font-size:13px;font-weight:600}.chrow .x{font-family:var(--display);font-weight:800;color:var(--gold);font-size:15px}
 .chrow .bar{grid-column:1/-1;height:5px;border-radius:3px;background:rgba(255,255,255,.1);overflow:hidden}.chrow .bar i{display:block;height:100%;background:linear-gradient(90deg,#5ee05a,#2fd06f)}
@@ -237,6 +238,9 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .unlocks{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;justify-content:center}
 .unl{background:linear-gradient(180deg,rgba(155,92,255,.5),rgba(65,184,255,.2));border:1px solid rgba(190,150,255,.7);border-radius:8px;padding:6px 10px;font-size:12px;animation:pop .4s cubic-bezier(.2,1.6,.4,1)}@keyframes pop{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}
 .unl small{display:block;font-size:10px;color:var(--ink-dim);text-transform:uppercase}
+@media (max-height:520px){#menu .topbar{padding-top:calc(6px + var(--st));padding-bottom:6px}.logo-sm{font-size:22px}.tabs button{font-size:15px;padding:5px 8px}.lvl{width:32px;height:32px;font-size:16px}
+  .tabbody{top:calc(50px + var(--st))}.mcard small,.mcard .ic{display:none}.mcard{padding:7px 4px}.modes{margin-bottom:8px}.opt{margin-bottom:6px}.seg button{padding:5px 4px;font-size:13px}
+  .play{font-size:28px;padding:9px 0 7px;margin-top:4px}.mini-ch{display:none}.panel{padding:12px}.lobby-tag .nm{font-size:24px}.lobby-tag .ttl{margin:2px 0 4px}}
 @media (max-width:760px){.tabs button{font-size:15px;padding:6px 8px}.logo-sm{font-size:22px}.lvlinfo{display:none}.modes{grid-template-columns:repeat(3,minmax(0,1fr))}.career-cols{grid-template-columns:1fr}.lobby-tag .nm{font-size:26px}.tabbody{width:100%}}
 .menu-inner{width:min(1120px,100%);display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:28px 40px;align-items:center}
 .brand .eyebrow{font-family:var(--display);font-weight:800;font-size:18px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
@@ -312,8 +316,10 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 #tb-build{width:60px;height:60px;right:calc(114px + var(--sr));bottom:calc(24px + var(--sb))}
 #tb-use{width:auto;min-width:96px;height:42px;border-radius:21px;padding:0 14px;left:50%;transform:translateX(-50%);top:calc(50% + 34px);background:rgba(255,198,46,.85);color:#1b1300;border-color:transparent}
 #tb-map{width:42px;height:42px;left:calc(64px + var(--sl));top:calc(10px + var(--st));font-size:12px}
-#tb-ping{width:42px;height:42px;left:calc(114px + var(--sl));top:calc(10px + var(--st));font-size:11px}
-#tb-inv{width:42px;height:42px;left:calc(164px + var(--sl));top:calc(10px + var(--st));font-size:11px}
+#tb-ping{width:40px;height:40px;right:calc(14px + var(--sr));top:calc(128px + var(--st));font-size:10px}
+#tb-inv{width:40px;height:40px;right:calc(62px + var(--sr));top:calc(128px + var(--st));font-size:10px}
+body.is-touch #teampanel{left:50%;transform:translateX(-50%);top:auto;bottom:calc(64px + var(--sb));flex-direction:row;gap:4px}
+body.is-touch .tm{min-width:0;padding:3px 6px}body.is-touch .tm .n{max-width:58px;font-size:10px}body.is-touch .tm .bars{width:34px}
 #tb-pause{width:42px;height:42px;left:calc(14px + var(--sl));top:calc(10px + var(--st));font-size:14px}
 #tb-pieces{position:absolute;left:50%;transform:translateX(-50%);top:calc(92px + var(--st));display:flex;gap:8px;pointer-events:none}
 #tb-pieces .tb{position:static;width:52px;height:52px;border-radius:10px}
@@ -1196,10 +1202,10 @@ function woodMat(hex) { return lam(hex, { map: TEX.wood, roughness: 0.8 }); }
 // ---------- rendering: color, quality presets, HDR post, sky, time of day, water, terrain, grass, weather ----------
 const LIN = (hex) => new THREE.Color(hex).convertSRGBToLinear();
 const QUALITY = {
-  low:    { dprCap: 1,    minScale: 0.6, shadows: 0,    bloom: false, msaa: 0, fxaa: false, grass: 0,     grassR: 0,  cloudOct: 3, decals: 60,  particles: 0.6 , lights: 0 },
-  medium: { dprCap: 1.25, minScale: 0.7, shadows: 1024, bloom: true,  msaa: 0, fxaa: true,  grass: 7000,  grassR: 44, cloudOct: 4, decals: 120, particles: 1 , lights: 1 },
-  high:   { dprCap: 1.5,  minScale: 0.75, shadows: 2048, bloom: true, msaa: 4, fxaa: false, grass: 15000, grassR: 62, cloudOct: 5, decals: 200, particles: 1 , lights: 2 },
-  ultra:  { dprCap: 2,    minScale: 0.8, shadows: 4096, bloom: true,  msaa: 4, fxaa: false, grass: 26000, grassR: 84, cloudOct: 5, decals: 300, particles: 1.3 , lights: 3 },
+  low:    { dprCap: 1,    minScale: 0.6, shadows: 0,    bloom: false, msaa: 0, fxaa: false, grass: 0,     grassR: 0,  cloudOct: 3, decals: 60,  particles: 0.6 , lights: 0, charDist: 140 },
+  medium: { dprCap: 1.25, minScale: 0.7, shadows: 1024, bloom: true,  msaa: 0, fxaa: true,  grass: 7000,  grassR: 44, cloudOct: 4, decals: 120, particles: 1 , lights: 1, charDist: 170 },
+  high:   { dprCap: 1.5,  minScale: 0.75, shadows: 2048, bloom: true, msaa: 4, fxaa: false, grass: 15000, grassR: 62, cloudOct: 5, decals: 200, particles: 1 , lights: 2, charDist: 210 },
+  ultra:  { dprCap: 2,    minScale: 0.8, shadows: 4096, bloom: true,  msaa: 4, fxaa: false, grass: 26000, grassR: 84, cloudOct: 5, decals: 300, particles: 1.3 , lights: 3, charDist: 240 },
 };
 function Q() { return QUALITY[SETTINGS.quality] || QUALITY.high; }
 const UTIME = { value: 0 };           // shared time uniform for every animated shader
@@ -2036,6 +2042,15 @@ function buildTerrainMesh() {
 }
 
 // ---------- sky, water, clouds (built once) ----------
+function mergeGeos(list) {
+  const flat = list.map((g) => { const f = g.index ? g.toNonIndexed() : g; if (f !== g) g.dispose(); return f; });
+  let n = 0; for (const g of flat) n += g.attributes.position.count;
+  const P = new Float32Array(n * 3), N = new Float32Array(n * 3); let o = 0;
+  for (const g of flat) { P.set(g.attributes.position.array, o * 3); N.set(g.attributes.normal.array, o * 3); o += g.attributes.position.count; g.dispose(); }
+  const G = new THREE.BufferGeometry();
+  G.setAttribute('position', new THREE.BufferAttribute(P, 3)); G.setAttribute('normal', new THREE.BufferAttribute(N, 3));
+  G.computeBoundingSphere(); return G;
+}
 function makeEnvironment() {
   WORLD.sunDir = new V3(0.45, 0.8, 0.3).normalize();
   makeSkyAndEnv(); makeWater(); RAIN.init(); SNOWFALL.init();
@@ -2043,7 +2058,10 @@ function makeEnvironment() {
   const cg = new THREE.IcosahedronGeometry(1, 1), cm = ENVSTATE.cloudMat;
   for (let i = 0; i < 26; i++) {
     const cl = new THREE.Group(); const n = 4 + (Math.random() * 4 | 0);
-    for (let k = 0; k < n; k++) { const m = new THREE.Mesh(cg, cm); const s = 8 + Math.random() * 13; m.scale.set(s * 1.4, s * 0.65, s); m.position.set((k - n / 2) * 12 + Math.random() * 6, Math.random() * 5, Math.random() * 14 - 7); cl.add(m); }
+    // puffs are merged into one mesh per cloud: one draw call instead of 4-7
+    const geos = [];
+    for (let k = 0; k < n; k++) { const s = 8 + Math.random() * 13; const g = cg.clone(); g.scale(s * 1.4, s * 0.65, s); g.translate((k - n / 2) * 12 + Math.random() * 6, Math.random() * 5, Math.random() * 14 - 7); geos.push(g); }
+    cl.add(new THREE.Mesh(mergeGeos(geos), cm));
     cl.position.set(Math.random() * 1400 - 700, 150 + Math.random() * 90, Math.random() * 1400 - 700);
     cl.userData.v = 1.5 + Math.random() * 2.5; cloudGroup.add(cl);
   }
@@ -3398,8 +3416,11 @@ function updateItems(dt, cx, cz) {
   for (let i = ITEMS.length - 1; i >= 0; i--) {
     const it = ITEMS[i];
     it.t += dt; it.age += dt;
-    const dx = it.pos.x - cx, dz = it.pos.z - cz, vis = dx * dx + dz * dz < 6400;
+    const dx = it.pos.x - cx, dz = it.pos.z - cz, d2 = dx * dx + dz * dz, vis = d2 < 6400;
     it.mesh.visible = vis;
+    // LOD: past 40 m only the rarity beam is worth drawing; shadows only up close
+    const lod = d2 < 400 ? 0 : d2 < 1600 ? 1 : 2;
+    if (lod !== it.lod) { it.lod = lod; const sp = it.mesh.userData.spin; sp.visible = lod < 2; sp.traverse((o) => { if (o.isMesh) o.castShadow = lod === 0; }); }
     if (!vis && it.settled) continue;
     if (!it.settled) {
       it.vel.y -= GRAV * dt;
@@ -4356,6 +4377,13 @@ function buildRig(spec) {
   B.gunHand = new THREE.Group(); B.gunHand.position.set(0, -0.08, -0.02); B.gunHand.rotation.x = -Math.PI / 2; B.handR.add(B.gunHand);
   B.glider = buildGlider(o); B.glider.visible = false; root.add(B.glider);
   return Object.assign(B, { meshes, spec: o, heldKey: '', gun: B.gunHand, flash: 0, dissolve: null });
+}
+// far characters skip the shadow pass: ~18 meshes each, and their shadows are a few pixels anyway
+function rigShadowLOD(R, d) {
+  const on = R.shadowOn !== false ? d < 48 : d < 42;
+  if (on === R.shadowOn && R.heldKey === R.shadowKey) return;
+  R.shadowOn = on; R.shadowKey = R.heldKey;
+  R.root.traverse((o) => { if (o.isMesh) o.castShadow = on; });
 }
 function buildGlider(o) {
   const g = new THREE.Group(); g.position.y = 2.75;
@@ -5774,7 +5802,7 @@ function botThink(b) {
     // pick fights we can win: fresh landers loot unless someone is close, nobody starts fights out of their gun's range
     const provoked = b.lastAttacker === b.target && now - b.lastHurt < 6;
     const w = curWeapon(b), reach = w ? (WEAPONS[w.id].fit ? WEAPONS[w.id].fit[1] : 60) : 4;
-    const fresh = now - (b.landedAt || 0) < 60 && !provoked && d > 12;
+    const fresh = b.landedAt > 0 && now - b.landedAt < 45 && !provoked && d > 15;
     const tooFar = !provoked && d > Math.min(reach, 70) * (b.persona === 'rusher' ? 1.1 : 0.85) && b.state !== 'fight';
     const weak = !provoked && b.shield <= 0 && b.hp < 60 && d > 15;
     if ((fresh || tooFar || weak) && !b.npc) { b.target = null; b.visible = false; }
@@ -5917,6 +5945,7 @@ function botCombat(b, dt) {
   _e2.set(tgt.pos.x + tgt.vel.x * lead - _e1.x, tgt.pos.y + (head ? H * 0.87 : H * 0.52) - _e1.y, tgt.pos.z + tgt.vel.z * lead - _e1.z).normalize();
   let err = lerp(0.105, 0.032, b.skill) * D.aim * b.aimSettle * (1 + Math.max(0, d - 30) / 120);
   err *= 1 + Math.hypot(tgt.vel.x, tgt.vel.z) * 0.035; if (!tgt.grounded) err *= 1.25; if (tgt.crouch) err *= 1.1; if (b.crouch) err *= 0.85;
+  if (tgt.isPlayer) err *= 0.68;   // fights against you should feel dangerous
   applySpread(_e2, err, _e3);
   b.aiming = d > 15 && def.id !== 'shotgun' && def.id !== 'tac';
   fireWeapon(b, w, _e1, _e3); w.mag--;
@@ -5924,7 +5953,7 @@ function botCombat(b, dt) {
   if (def.burst && !(b.burstQ > 0) && b.fireCD <= 0) { b.burstQ = def.burst - 1; b.burstT = def.burstGap; }
   b.fireCD = (1 / def.rate) * (auto ? 1.15 : 1.3) * mr(1, 1.25);
   if (auto) { b.burst++; if (b.burst >= b.burstLen) { b.burst = 0; b.burstLen = 4 + Math.floor(Math.random() * 7); b.fireCD += mr(0.3, 0.8); } }
-  b.aimSettle = Math.max(1, b.aimSettle - 0.12);
+  b.aimSettle = Math.max(1, b.aimSettle - (tgt.isPlayer ? 0.18 : 0.12));
   if (w.mag <= 0) b.autoReload = 0.3;
 }
 function deathAnim(c, dt) {
@@ -5943,7 +5972,8 @@ function botSky(b, dt) {
 function updateBot(b, dt, camX, camZ) {
   if (!b.alive) { deathAnim(b, dt); return; }
   if (b.mode === 'bus') { if (BUS.t >= b.jumpAt) jumpOut(b); return; }
-  const dCam = Math.hypot(b.pos.x - camX, b.pos.z - camZ), near = dCam < 210;
+  const dCam = Math.hypot(b.pos.x - camX, b.pos.z - camZ), near = dCam < Q().charDist;
+  rigShadowLOD(b.rig, dCam);
   // AI level of detail: distant, calm bots tick less often
   if (dCam > 290 && b.state !== 'fight' && b.mode === 'ground') { b.lodAcc += dt; if (b.lodAcc < 0.16) return; dt = b.lodAcc; }
   b.lodAcc = 0;
@@ -6908,7 +6938,8 @@ const MENU = (() => {
     $('lobby-name').textContent = PROFILE.loadout.custom ? 'Custom' : o.name || 'Custom';
     $('lobby-title').textContent = 'Level ' + PROFILE.level + ' · ' + PROFILE.title;
     refreshChallenges();
-    $('mini-ch').innerHTML = PROFILE.challenges.daily.map(chRow).join('');
+    const first = PROFILE.stats.matches === 0 ? '<div class="firstdrop"><b class="disp">First drop?</b>' + (IS_TOUCH ? 'Left thumb moves, drag right side to look. Hold FIRE and drag to shoot while turning. BUILD for walls and ramps, ▼ to crouch or slide.' : 'WASD to move, mouse to aim, Space to jump or glide. Q builds (Z X V B for pieces), G edits walls, C crouches and slides. E opens chests, Tab opens your bag, middle-click pings.') + '</div>' : '';
+    $('mini-ch').innerHTML = first + PROFILE.challenges.daily.map(chRow).join('');
     syncSegs();
   }
   function chRow(c) { return '<div class="chrow' + (c.done ? ' done' : '') + '"><span class="t">' + esc(chText(c)) + '</span><span class="x">' + c.xp.toLocaleString() + ' XP</span><div class="bar"><i style="width:' + (c.progress / c.target * 100).toFixed(0) + '%"></i></div></div>'; }
@@ -7562,6 +7593,8 @@ function startMatch() {
   }
   for (const id of ['menu', 'endscreen', 'spec', 'pause']) $id(id).hidden = true;
   $id('loading').hidden = false;
+  const tips = ['Press C while sprinting to slide. Downhill slides keep their speed.', 'Jump at a ledge to mantle up onto it.', 'G edits your own walls: cut a door or a window.', 'The Vault Warden guards a mythic rifle.', 'Middle-click pings places, loot and enemies for your team.', 'Hold E next to a knocked teammate to revive them.', 'Launch pads throw you high enough to glide across the island.', 'Mushrooms by the shore give shield, apples under trees give health.', 'Quads are fast. Ramming builds at speed breaks them.', 'Gunfire carries: bots hear shots and come looking.', 'Daily challenges reset every day. Weekly ones are worth more XP.', 'Ziplines run from mountain tops down to nearby towns.'];
+  $id('loading').querySelector('p').textContent = pick(tips);
   requestLock();
   setTimeout(() => {
     try { setupMatch(); } catch (e) { console.error(e); }

@@ -205,6 +205,13 @@ function buildRig(spec) {
   B.glider = buildGlider(o); B.glider.visible = false; root.add(B.glider);
   return Object.assign(B, { meshes, spec: o, heldKey: '', gun: B.gunHand, flash: 0, dissolve: null });
 }
+// far characters skip the shadow pass: ~18 meshes each, and their shadows are a few pixels anyway
+function rigShadowLOD(R, d) {
+  const on = R.shadowOn !== false ? d < 48 : d < 42;
+  if (on === R.shadowOn && R.heldKey === R.shadowKey) return;
+  R.shadowOn = on; R.shadowKey = R.heldKey;
+  R.root.traverse((o) => { if (o.isMesh) o.castShadow = on; });
+}
 function buildGlider(o) {
   const g = new THREE.Group(); g.position.y = 2.75;
   const L = [], c1 = o.gliderC1, c2 = o.gliderC2, dk = 0x1d2026;

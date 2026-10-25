@@ -336,6 +336,15 @@ function buildTerrainMesh() {
 }
 
 // ---------- sky, water, clouds (built once) ----------
+function mergeGeos(list) {
+  const flat = list.map((g) => { const f = g.index ? g.toNonIndexed() : g; if (f !== g) g.dispose(); return f; });
+  let n = 0; for (const g of flat) n += g.attributes.position.count;
+  const P = new Float32Array(n * 3), N = new Float32Array(n * 3); let o = 0;
+  for (const g of flat) { P.set(g.attributes.position.array, o * 3); N.set(g.attributes.normal.array, o * 3); o += g.attributes.position.count; g.dispose(); }
+  const G = new THREE.BufferGeometry();
+  G.setAttribute('position', new THREE.BufferAttribute(P, 3)); G.setAttribute('normal', new THREE.BufferAttribute(N, 3));
+  G.computeBoundingSphere(); return G;
+}
 function makeEnvironment() {
   WORLD.sunDir = new V3(0.45, 0.8, 0.3).normalize();
   makeSkyAndEnv(); makeWater(); RAIN.init(); SNOWFALL.init();
@@ -343,7 +352,10 @@ function makeEnvironment() {
   const cg = new THREE.IcosahedronGeometry(1, 1), cm = ENVSTATE.cloudMat;
   for (let i = 0; i < 26; i++) {
     const cl = new THREE.Group(); const n = 4 + (Math.random() * 4 | 0);
-    for (let k = 0; k < n; k++) { const m = new THREE.Mesh(cg, cm); const s = 8 + Math.random() * 13; m.scale.set(s * 1.4, s * 0.65, s); m.position.set((k - n / 2) * 12 + Math.random() * 6, Math.random() * 5, Math.random() * 14 - 7); cl.add(m); }
+    // puffs are merged into one mesh per cloud: one draw call instead of 4-7
+    const geos = [];
+    for (let k = 0; k < n; k++) { const s = 8 + Math.random() * 13; const g = cg.clone(); g.scale(s * 1.4, s * 0.65, s); g.translate((k - n / 2) * 12 + Math.random() * 6, Math.random() * 5, Math.random() * 14 - 7); geos.push(g); }
+    cl.add(new THREE.Mesh(mergeGeos(geos), cm));
     cl.position.set(Math.random() * 1400 - 700, 150 + Math.random() * 90, Math.random() * 1400 - 700);
     cl.userData.v = 1.5 + Math.random() * 2.5; cloudGroup.add(cl);
   }

@@ -51,7 +51,8 @@ const MENU = (() => {
     $('lobby-name').textContent = PROFILE.loadout.custom ? 'Custom' : o.name || 'Custom';
     $('lobby-title').textContent = 'Level ' + PROFILE.level + ' · ' + PROFILE.title;
     refreshChallenges();
-    $('mini-ch').innerHTML = PROFILE.challenges.daily.map(chRow).join('');
+    const first = PROFILE.stats.matches === 0 ? '<div class="firstdrop"><b class="disp">First drop?</b>' + (IS_TOUCH ? 'Left thumb moves, drag right side to look. Hold FIRE and drag to shoot while turning. BUILD for walls and ramps, ▼ to crouch or slide.' : 'WASD to move, mouse to aim, Space to jump or glide. Q builds (Z X V B for pieces), G edits walls, C crouches and slides. E opens chests, Tab opens your bag, middle-click pings.') + '</div>' : '';
+    $('mini-ch').innerHTML = first + PROFILE.challenges.daily.map(chRow).join('');
     syncSegs();
   }
   function chRow(c) { return '<div class="chrow' + (c.done ? ' done' : '') + '"><span class="t">' + esc(chText(c)) + '</span><span class="x">' + c.xp.toLocaleString() + ' XP</span><div class="bar"><i style="width:' + (c.progress / c.target * 100).toFixed(0) + '%"></i></div></div>'; }

@@ -300,7 +300,7 @@ function botThink(b) {
     // pick fights we can win: fresh landers loot unless someone is close, nobody starts fights out of their gun's range
     const provoked = b.lastAttacker === b.target && now - b.lastHurt < 6;
     const w = curWeapon(b), reach = w ? (WEAPONS[w.id].fit ? WEAPONS[w.id].fit[1] : 60) : 4;
-    const fresh = now - (b.landedAt || 0) < 60 && !provoked && d > 12;
+    const fresh = b.landedAt > 0 && now - b.landedAt < 45 && !provoked && d > 15;
     const tooFar = !provoked && d > Math.min(reach, 70) * (b.persona === 'rusher' ? 1.1 : 0.85) && b.state !== 'fight';
     const weak = !provoked && b.shield <= 0 && b.hp < 60 && d > 15;
     if ((fresh || tooFar || weak) && !b.npc) { b.target = null; b.visible = false; }
@@ -443,6 +443,7 @@ function botCombat(b, dt) {
   _e2.set(tgt.pos.x + tgt.vel.x * lead - _e1.x, tgt.pos.y + (head ? H * 0.87 : H * 0.52) - _e1.y, tgt.pos.z + tgt.vel.z * lead - _e1.z).normalize();
   let err = lerp(0.105, 0.032, b.skill) * D.aim * b.aimSettle * (1 + Math.max(0, d - 30) / 120);
   err *= 1 + Math.hypot(tgt.vel.x, tgt.vel.z) * 0.035; if (!tgt.grounded) err *= 1.25; if (tgt.crouch) err *= 1.1; if (b.crouch) err *= 0.85;
+  if (tgt.isPlayer) err *= 0.68;   // fights against you should feel dangerous
   applySpread(_e2, err, _e3);
   b.aiming = d > 15 && def.id !== 'shotgun' && def.id !== 'tac';
   fireWeapon(b, w, _e1, _e3); w.mag--;
@@ -450,7 +451,7 @@ function botCombat(b, dt) {
   if (def.burst && !(b.burstQ > 0) && b.fireCD <= 0) { b.burstQ = def.burst - 1; b.burstT = def.burstGap; }
   b.fireCD = (1 / def.rate) * (auto ? 1.15 : 1.3) * mr(1, 1.25);
   if (auto) { b.burst++; if (b.burst >= b.burstLen) { b.burst = 0; b.burstLen = 4 + Math.floor(Math.random() * 7); b.fireCD += mr(0.3, 0.8); } }
-  b.aimSettle = Math.max(1, b.aimSettle - 0.12);
+  b.aimSettle = Math.max(1, b.aimSettle - (tgt.isPlayer ? 0.18 : 0.12));
   if (w.mag <= 0) b.autoReload = 0.3;
 }
 function deathAnim(c, dt) {
@@ -469,7 +470,8 @@ function botSky(b, dt) {
 function updateBot(b, dt, camX, camZ) {
   if (!b.alive) { deathAnim(b, dt); return; }
   if (b.mode === 'bus') { if (BUS.t >= b.jumpAt) jumpOut(b); return; }
-  const dCam = Math.hypot(b.pos.x - camX, b.pos.z - camZ), near = dCam < 210;
+  const dCam = Math.hypot(b.pos.x - camX, b.pos.z - camZ), near = dCam < Q().charDist;
+  rigShadowLOD(b.rig, dCam);
   // AI level of detail: distant, calm bots tick less often
   if (dCam > 290 && b.state !== 'fight' && b.mode === 'ground') { b.lodAcc += dt; if (b.lodAcc < 0.16) return; dt = b.lodAcc; }
   b.lodAcc = 0;

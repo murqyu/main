@@ -1,10 +1,10 @@
 // ---------- rendering: color, quality presets, HDR post, sky, time of day, water, terrain, grass, weather ----------
 const LIN = (hex) => new THREE.Color(hex).convertSRGBToLinear();
 const QUALITY = {
-  low:    { dprCap: 1,    minScale: 0.6, shadows: 0,    bloom: false, msaa: 0, fxaa: false, grass: 0,     grassR: 0,  cloudOct: 3, decals: 60,  particles: 0.6 , lights: 0 },
-  medium: { dprCap: 1.25, minScale: 0.7, shadows: 1024, bloom: true,  msaa: 0, fxaa: true,  grass: 7000,  grassR: 44, cloudOct: 4, decals: 120, particles: 1 , lights: 1 },
-  high:   { dprCap: 1.5,  minScale: 0.75, shadows: 2048, bloom: true, msaa: 4, fxaa: false, grass: 15000, grassR: 62, cloudOct: 5, decals: 200, particles: 1 , lights: 2 },
-  ultra:  { dprCap: 2,    minScale: 0.8, shadows: 4096, bloom: true,  msaa: 4, fxaa: false, grass: 26000, grassR: 84, cloudOct: 5, decals: 300, particles: 1.3 , lights: 3 },
+  low:    { dprCap: 1,    minScale: 0.6, shadows: 0,    bloom: false, msaa: 0, fxaa: false, grass: 0,     grassR: 0,  cloudOct: 3, decals: 60,  particles: 0.6 , lights: 0, charDist: 140 },
+  medium: { dprCap: 1.25, minScale: 0.7, shadows: 1024, bloom: true,  msaa: 0, fxaa: true,  grass: 7000,  grassR: 44, cloudOct: 4, decals: 120, particles: 1 , lights: 1, charDist: 170 },
+  high:   { dprCap: 1.5,  minScale: 0.75, shadows: 2048, bloom: true, msaa: 4, fxaa: false, grass: 15000, grassR: 62, cloudOct: 5, decals: 200, particles: 1 , lights: 2, charDist: 210 },
+  ultra:  { dprCap: 2,    minScale: 0.8, shadows: 4096, bloom: true,  msaa: 4, fxaa: false, grass: 26000, grassR: 84, cloudOct: 5, decals: 300, particles: 1.3 , lights: 3, charDist: 240 },
 };
 function Q() { return QUALITY[SETTINGS.quality] || QUALITY.high; }
 const UTIME = { value: 0 };           // shared time uniform for every animated shader
