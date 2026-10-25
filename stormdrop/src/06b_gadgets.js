@@ -111,7 +111,7 @@ function updatePads(dt) {
       if (Math.abs(c.pos.x - P.x) < 1.15 && Math.abs(c.pos.z - P.z) < 1.15 && c.pos.y - P.y < 0.7 && c.pos.y - P.y > -0.4) {
         c.mode = 'sky'; c.grounded = false; c.vel.y = 46; c.vel.x *= 0.6; c.vel.z *= 0.6; c.sliding = false; setCrouch(c, false); c.launched = true;
         FX.burst(P.x, P.y + 0.6, P.z, 26, 0xffd23f, 6, 0.5, 0.3, true, -4);
-        SFX.jump(); if (c.isPlayer) { HUD.banner('Launched!', IS_TOUCH ? 'Tap JUMP to open the glider' : 'Space opens the glider', 1.6); CAM.shake = Math.min(1, CAM.shake + 0.3); }
+        SFX.jump(); if (c.isPlayer) ev('pad'); if (c.isPlayer) { HUD.banner('Launched!', IS_TOUCH ? 'Tap JUMP to open the glider' : 'Space opens the glider', 1.6); CAM.shake = Math.min(1, CAM.shake + 0.3); }
       }
     }
   }
@@ -156,6 +156,6 @@ function nearestForage(c, maxD) {
 function eatForage(c, f) {
   f.alive = false; _m4.makeScale(0, 0, 0); f.mesh.setMatrixAt(f.idx, _m4); f.mesh.instanceMatrix.needsUpdate = true;
   if (f.type === 'apple') c.hp = Math.min(100, c.hp + 5); else c.shield = Math.min(100, c.shield + 5);
-  if (c.isPlayer) { SFX.pickup(1); FX.burst(f.x, f.y + 0.3, f.z, 8, f.type === 'apple' ? 0x6fe06a : 0x5ab4ff, 2, 0.5, 0.2, true, 0); }
+  if (c.isPlayer) { ev('forage'); SFX.pickup(1); FX.burst(f.x, f.y + 0.3, f.z, 8, f.type === 'apple' ? 0x6fe06a : 0x5ab4ff, 2, 0.5, 0.2, true, 0); }
 }
 function updateGadgets(dt) { updateNades(dt); updatePads(dt); updateFires(dt); }

@@ -125,6 +125,22 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 #flash{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 45%,rgba(255,25,40,.5));opacity:0;transition:opacity .25s}
 #hud.spec #hotbar,#hud.spec #mats,#hud.spec #ammo,#hud.spec #buildhint,#hud.spec #buildbar,#hud.spec #crosshair,#hud.spec #prompt{display:none}
 #fps{position:absolute;left:calc(14px + var(--sl));bottom:calc(84px + var(--sb));font-size:11px;opacity:.5}
+#inv{position:fixed;inset:0;z-index:15;background:rgba(5,8,22,.55);display:flex;align-items:center;justify-content:center;padding:16px}
+.inv-panel{width:min(820px,100%);background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;backdrop-filter:blur(8px)}
+.inv-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:10px}.inv-head h2{margin:0;font-size:30px}.inv-head span{font-size:12px;color:var(--ink-dim)}
+.inv-slots{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:12px}
+.inv-slot{position:relative;border:1px solid var(--line);border-radius:10px;padding:10px 8px 8px;min-height:120px;display:flex;flex-direction:column;gap:4px;cursor:pointer;background:rgba(0,0,0,.3)}
+.inv-slot svg{width:100%;height:30px;fill:#fff}.inv-slot b{font-size:12.5px}.inv-slot small{font-size:11px;color:var(--ink-dim)}.inv-slot .empty{margin:auto;color:var(--ink-dim);font-size:12px}
+.inv-slot .k{position:absolute;top:5px;left:7px;font-size:10px;opacity:.6}.inv-slot .btn{margin-top:auto}
+.inv-slot.sel{box-shadow:0 0 0 2px #fff inset}.inv-slot.eq{border-color:var(--gold)}
+.inv-slot.r0{background:linear-gradient(180deg,rgba(154,163,173,.35),rgba(0,0,0,.3))}.inv-slot.r1{background:linear-gradient(180deg,rgba(79,207,74,.35),rgba(0,0,0,.3))}.inv-slot.r2{background:linear-gradient(180deg,rgba(58,160,255,.4),rgba(0,0,0,.3))}.inv-slot.r3{background:linear-gradient(180deg,rgba(180,92,255,.45),rgba(0,0,0,.3))}.inv-slot.r4{background:linear-gradient(180deg,rgba(255,158,44,.45),rgba(0,0,0,.3))}.inv-slot.r5{background:linear-gradient(180deg,rgba(255,210,63,.55),rgba(0,0,0,.3))}
+.inv-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.inv-box{background:rgba(0,0,0,.25);border-radius:8px;padding:8px 10px}.inv-box h3{margin:0 0 6px;font-size:18px;text-transform:uppercase}
+.inv-line{display:flex;align-items:center;gap:8px;font-size:13px;padding:3px 0}.inv-line i{width:10px;height:10px;border-radius:2px}.inv-line svg{width:18px;height:18px}.inv-line span{flex:1}.inv-line b{font-family:var(--display);font-size:17px}
+#pings{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.ping{position:absolute;left:0;top:0;display:flex;flex-direction:column;align-items:center;gap:3px;will-change:transform}
+.ping .ic{width:16px;height:16px;transform:rotate(45deg);background:#ffd23f;border:2px solid #1b1300;box-shadow:0 0 10px rgba(255,210,63,.7)}
+.ping.enemy .ic{background:#ff4a4a;box-shadow:0 0 12px rgba(255,60,60,.9)}.ping.item .ic{background:#b45cff}
+.ping .lb{font-size:11px;font-weight:700;text-shadow:0 1px 2px #000;white-space:nowrap;background:rgba(0,0,0,.35);padding:1px 6px;border-radius:4px}
 #teampanel{position:absolute;left:calc(14px + var(--sl));top:calc(120px + var(--st));display:flex;flex-direction:column;gap:5px;pointer-events:none}
 .tm{display:flex;align-items:center;gap:7px;background:rgba(8,12,30,.55);padding:4px 8px;border-radius:6px;min-width:170px}
 .tm i{width:10px;height:10px;border-radius:2px;transform:rotate(45deg);flex:none}
@@ -151,7 +167,72 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 /* ---------- screens ---------- */
 .screen{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;
   padding:calc(20px + var(--st)) max(16px,var(--sr)) calc(20px + var(--sb)) max(16px,var(--sl));overflow-y:auto;touch-action:pan-y}
-#menu{background:linear-gradient(100deg,rgba(9,12,32,.92) 0%,rgba(9,12,32,.7) 42%,rgba(9,12,32,.15) 75%,rgba(9,12,32,0) 100%)}
+#menu{background:linear-gradient(100deg,rgba(9,12,32,.9) 0%,rgba(9,12,32,.62) 38%,rgba(9,12,32,.08) 66%,rgba(9,12,32,0) 100%);display:block;padding:0;overflow:hidden}
+#menu .topbar{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:18px;padding:calc(12px + var(--st)) max(18px,var(--sr)) 12px max(18px,var(--sl));background:linear-gradient(180deg,rgba(6,9,26,.85),rgba(6,9,26,0));z-index:2}
+.logo-sm{font-weight:900;font-style:italic;font-size:30px;line-height:1;white-space:nowrap}.logo-sm span{color:#b46bff}
+.tabs{display:flex;gap:4px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none}
+.tabs button{border:0;background:transparent;color:var(--ink-dim);font-family:var(--display);font-weight:800;font-size:19px;text-transform:uppercase;letter-spacing:.04em;padding:8px 12px;border-radius:6px;cursor:pointer;white-space:nowrap}
+.tabs button.on{color:#fff;background:rgba(255,255,255,.12);box-shadow:inset 0 -3px 0 var(--gold)}
+.tabs button:hover{color:#fff}
+.lvlbox{display:flex;align-items:center;gap:8px;flex:none}
+.lvl{width:42px;height:42px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;background:linear-gradient(160deg,#7b3dff,#3a1a9a);border-radius:8px;transform:rotate(45deg) scale(.82);box-shadow:0 0 0 2px rgba(255,255,255,.25)}
+.lvl::before{content:attr(data-n)}
+.lvlinfo{display:flex;flex-direction:column;gap:3px;min-width:120px}.lvlinfo span{font-size:11px;color:var(--ink-dim)}
+.lvlbar{height:7px;border-radius:4px;background:rgba(255,255,255,.12);overflow:hidden}.lvlbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#9b5cff,#41b8ff);transition:width .4s}
+.lvlbar.big{height:12px;flex:1}
+.tabbody{position:absolute;left:0;top:calc(78px + var(--st));bottom:0;width:min(560px,100%);padding:6px max(18px,var(--sl)) calc(18px + var(--sb));overflow-y:auto;z-index:1}
+.tabbody.wide{width:min(900px,100%)}
+.tabbody section{animation:tabin .25s ease}@keyframes tabin{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}
+.modes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-bottom:14px}
+.mcard{border:1px solid var(--line);background:rgba(0,0,0,.3);border-radius:8px;padding:10px 6px 8px;cursor:pointer;text-align:center;transition:transform .12s,background .12s}
+.mcard:hover{transform:translateY(-2px)}.mcard.on{background:linear-gradient(180deg,rgba(255,210,63,.3),rgba(255,160,0,.12));border-color:var(--gold)}
+.mcard b{display:block;font-family:var(--display);font-weight:800;font-size:17px;text-transform:uppercase}.mcard small{display:block;font-size:10.5px;color:var(--ink-dim);margin-top:2px;line-height:1.25}
+.mcard .ic{font-size:22px;line-height:1;margin-bottom:4px}
+.mini-ch{margin-top:14px;display:flex;flex-direction:column;gap:6px}
+.chrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;background:rgba(0,0,0,.28);border-radius:6px;padding:8px 10px}
+.chrow .t{font-size:13px;font-weight:600}.chrow .x{font-family:var(--display);font-weight:800;color:var(--gold);font-size:15px}
+.chrow .bar{grid-column:1/-1;height:5px;border-radius:3px;background:rgba(255,255,255,.1);overflow:hidden}.chrow .bar i{display:block;height:100%;background:linear-gradient(90deg,#5ee05a,#2fd06f)}
+.chrow.done{opacity:.6}.chrow.done .t::after{content:'  ✓';color:#5ee05a}
+.ch-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0 8px}.ch-head span{font-size:12px;color:var(--ink-dim)}
+.ch-head h3,.career-cols h3{margin:6px 0;font-size:22px;text-transform:uppercase}
+#ch-daily,#ch-weekly{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.lk-cats{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px}
+.lk-cats button{border:1px solid var(--line);background:rgba(0,0,0,.3);border-radius:6px;padding:6px 10px;font-weight:700;font-size:13px;cursor:pointer}
+.lk-cats button.on{background:#fff;color:#10142c}
+.lk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:6px;max-height:46vh;overflow-y:auto;padding:2px}
+.lk-item{position:relative;border:1px solid var(--line);border-radius:8px;padding:8px 6px;min-height:74px;cursor:pointer;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(0,0,0,.25));display:flex;flex-direction:column;justify-content:flex-end;gap:4px}
+.lk-item b{font-size:12.5px;line-height:1.15}.lk-item small{font-size:10px;color:var(--ink-dim)}
+.lk-item .sw{display:flex;gap:2px;position:absolute;top:7px;left:7px}.lk-item .sw i{width:9px;height:18px;border-radius:2px}
+.lk-item.on{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold) inset}
+.lk-item.locked{opacity:.45;cursor:not-allowed}.lk-item.locked::after{content:'🔒';position:absolute;top:6px;right:7px;font-size:12px}
+.lk-colors{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;align-items:center}
+.lk-colors label{font-size:12px;color:var(--ink-dim);display:flex;align-items:center;gap:6px}
+.lk-colors .pal{display:flex;gap:3px;flex-wrap:wrap}.lk-colors .pal i{width:18px;height:18px;border-radius:4px;cursor:pointer;border:2px solid transparent}.lk-colors .pal i.on{border-color:#fff}
+.pass-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:10px}.pass-head h2{margin:0;font-size:34px}.pass-head p{margin:0;color:var(--ink-dim);font-size:13px;text-align:right}
+.eyebrow{font-family:var(--display);font-weight:800;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.pass-track{display:grid;grid-auto-flow:column;grid-auto-columns:96px;gap:6px;overflow-x:auto;padding:4px 2px 10px}
+.tier{border-radius:8px;border:1px solid var(--line);background:rgba(0,0,0,.3);padding:6px;display:flex;flex-direction:column;gap:4px;min-height:132px;position:relative}
+.tier .n{font-family:var(--display);font-weight:800;font-size:16px;color:var(--ink-dim)}.tier .ic{flex:1;display:flex;align-items:center;justify-content:center;font-size:30px}
+.tier b{font-size:11.5px;line-height:1.15}.tier small{font-size:10px;color:var(--ink-dim);text-transform:uppercase}
+.tier.got{background:linear-gradient(180deg,rgba(155,92,255,.38),rgba(65,184,255,.14));border-color:rgba(180,140,255,.6)}.tier.got .n{color:#fff}
+.tier.cur{box-shadow:0 0 0 2px var(--gold)}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px;margin-bottom:12px}
+.sg{background:rgba(0,0,0,.28);border-radius:8px;padding:10px}.sg b{display:block;font-family:var(--display);font-weight:800;font-size:26px;line-height:1}.sg span{font-size:11px;color:var(--ink-dim);text-transform:uppercase;letter-spacing:.05em}
+.career-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.hist,.lbrow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px 8px;border-radius:6px;background:rgba(0,0,0,.25);margin-bottom:4px;font-size:13px}
+.hist .p,.lbrow .p{font-family:var(--display);font-weight:800;font-size:18px;min-width:34px}.hist.win .p{color:var(--gold)}.lbrow.me{background:rgba(255,210,63,.18)}
+.seg.mini button{padding:4px 8px;font-size:12px}.seg.sub{margin-bottom:14px}
+.lobby-tag{position:absolute;right:max(24px,var(--sr));bottom:calc(26px + var(--sb));text-align:right;z-index:1}
+.lobby-tag .nm{font-size:40px;font-weight:900;font-style:italic;text-transform:uppercase;line-height:1;text-shadow:0 3px 12px rgba(0,0,0,.5)}
+.lobby-tag .ttl{font-size:13px;color:var(--gold);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin:4px 0 8px}
+.btn.mini{padding:6px 12px;font-size:13px}
+.xpbox{margin:16px auto 0;max-width:520px;background:rgba(0,0,0,.3);border-radius:10px;padding:12px 14px}
+.xprows{display:flex;flex-direction:column;gap:3px;margin-bottom:10px}.xprow{display:flex;justify-content:space-between;font-size:13px;opacity:0;transform:translateY(4px);transition:all .25s}.xprow.in{opacity:1;transform:none}.xprow b{color:var(--gold)}
+.xpline{display:flex;align-items:center;gap:12px}.xpgain{font-size:22px;color:var(--gold);min-width:70px;text-align:right}
+.unlocks{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;justify-content:center}
+.unl{background:linear-gradient(180deg,rgba(155,92,255,.5),rgba(65,184,255,.2));border:1px solid rgba(190,150,255,.7);border-radius:8px;padding:6px 10px;font-size:12px;animation:pop .4s cubic-bezier(.2,1.6,.4,1)}@keyframes pop{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}
+.unl small{display:block;font-size:10px;color:var(--ink-dim);text-transform:uppercase}
+@media (max-width:760px){.tabs button{font-size:15px;padding:6px 8px}.logo-sm{font-size:22px}.lvlinfo{display:none}.modes{grid-template-columns:repeat(3,minmax(0,1fr))}.career-cols{grid-template-columns:1fr}.lobby-tag .nm{font-size:26px}.tabbody{width:100%}}
 .menu-inner{width:min(1120px,100%);display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:28px 40px;align-items:center}
 .brand .eyebrow{font-family:var(--display);font-weight:800;font-size:18px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
 .logo{margin:4px 0 10px;font-family:var(--display);font-weight:900;font-style:italic;font-size:clamp(64px,10vw,132px);line-height:.82;letter-spacing:-.01em;
@@ -226,6 +307,8 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 #tb-build{width:60px;height:60px;right:calc(114px + var(--sr));bottom:calc(24px + var(--sb))}
 #tb-use{width:auto;min-width:96px;height:42px;border-radius:21px;padding:0 14px;left:50%;transform:translateX(-50%);top:calc(50% + 34px);background:rgba(255,198,46,.85);color:#1b1300;border-color:transparent}
 #tb-map{width:42px;height:42px;left:calc(64px + var(--sl));top:calc(10px + var(--st));font-size:12px}
+#tb-ping{width:42px;height:42px;left:calc(114px + var(--sl));top:calc(10px + var(--st));font-size:11px}
+#tb-inv{width:42px;height:42px;left:calc(164px + var(--sl));top:calc(10px + var(--st));font-size:11px}
 #tb-pause{width:42px;height:42px;left:calc(14px + var(--sl));top:calc(10px + var(--st));font-size:14px}
 #tb-pieces{position:absolute;left:50%;transform:translateX(-50%);top:calc(92px + var(--st));display:flex;gap:8px;pointer-events:none}
 #tb-pieces .tb{position:static;width:52px;height:52px;border-radius:10px}
@@ -322,39 +405,100 @@ body.is-touch #progress{top:calc(50% + 60px)}
   <div id="tb-pieces" hidden></div>
   <button class="tb" id="tb-use" hidden>OPEN</button>
   <button class="tb" id="tb-map" aria-label="Map">MAP</button>
+  <button class="tb" id="tb-ping" aria-label="Ping">PING</button>
+  <button class="tb" id="tb-inv" aria-label="Inventory">BAG</button>
   <button class="tb" id="tb-pause" aria-label="Pause">II</button>
 </div>
 
-<div id="menu" class="screen">
-  <div class="menu-inner">
-    <div class="brand">
-      <div class="eyebrow">Solo battle royale</div>
-      <h1 class="logo">Storm<span>drop</span></h1>
-      <p class="tag">Jump from the dropship, loot chests, gather materials and build your way out of trouble while the storm closes in. Last one standing wins.</p>
-      <ul class="feats">
-        <li>Up to 49 bots</li><li>Walls, floors, ramps, cones</li><li>Shrinking storm</li><li>6 weapons, 5 rarities</li><li>Works on touch</li>
-      </ul>
-    </div>
-    <div class="panel">
-      <div class="opt"><label>Mode</label><div class="seg" data-opt="mode"><button data-v="solo">Solo</button><button data-v="duos">Duos</button><button data-v="squads">Squads</button><button data-v="rumble">Rumble</button><button data-v="creative">Creative</button></div></div>
-      <div class="opt"><label>Mutator</label><div class="seg" data-opt="mutator"><button data-v="none">None</button><button data-v="lowgrav">Low grav</button><button data-v="snipers">Snipers</button><button data-v="boom">Boom</button><button data-v="rich">Loaded</button></div></div>
-      <div class="opt"><label>Opponents</label><div class="seg" data-opt="bots"><button data-v="14">14</button><button data-v="29">29</button><button data-v="49">49</button><button data-v="74">74</button><button data-v="99">99</button></div></div>
-      <div class="opt"><label>Bot skill</label><div class="seg" data-opt="diff"><button data-v="casual">Casual</button><button data-v="normal">Normal</button><button data-v="sweaty">Sweaty</button></div></div>
-      <div class="opt"><label>Graphics</label><div class="seg" data-opt="quality"><button data-v="low">Low</button><button data-v="medium">Med</button><button data-v="high">High</button><button data-v="ultra">Ultra</button></div></div>
-      <div class="opt"><label>Outfit</label><div class="outfit"><button id="of-prev" aria-label="Previous outfit">‹</button><div class="sw"><div class="chips" id="of-chips"></div><div class="nm" id="of-name"></div></div><button id="of-next" aria-label="Next outfit">›</button></div></div>
-      <div class="opt"><label>Look speed</label><div class="range"><input type="range" id="sens" min="0.3" max="2.5" step="0.05" value="1"><output id="sens-out">1.0</output></div></div>
-      <button id="play" class="play disp">Play</button>
-      <div class="controls" id="controls-help">
-        <div><span class="key">WASD</span>Move</div><div><span class="key">Shift</span>Walk <span class="key" style="margin-left:6px">C</span>Crouch / slide</div>
-        <div><span class="key">Space</span>Jump / glide</div><div><span class="key">E</span>Open / pick up</div>
-        <div><span class="key">L-Click</span>Fire / place</div><div><span class="key">R-Click</span>Aim / swap material</div>
-        <div><span class="key">1-5</span>Items <span class="key" style="margin-left:6px">F</span>Pickaxe</div><div><span class="key">R</span>Reload / rotate</div>
-        <div><span class="key">Q</span>Build mode</div><div><span class="key">Z</span>Wall <span class="key" style="margin-left:6px">X</span>Floor</div>
-        <div><span class="key">V</span>Ramp <span class="key" style="margin-left:6px">B</span>Cone <span class="key" style="margin-left:6px">T</span>Emote</div><div><span class="key">M</span>Map <span class="key" style="margin-left:6px">Esc</span>Pause</div>
-      </div>
-      <div class="touch-note" id="touch-help" hidden>Left thumb moves. Drag on the right to look. Hold FIRE and drag to shoot while turning. Tap BUILD for walls, floors, ramps and cones.</div>
-    </div>
+<div id="menu" class="screen lobby">
+  <div class="topbar">
+    <div class="logo-sm disp">Storm<span>drop</span></div>
+    <nav class="tabs" id="tabs">
+      <button data-tab="play" class="on">Play</button><button data-tab="locker">Locker</button><button data-tab="pass">Pass</button><button data-tab="challenges">Challenges</button><button data-tab="career">Career</button><button data-tab="settings">Settings</button>
+    </nav>
+    <div class="lvlbox" title="Pass level"><div class="lvl disp" id="lvl-n">1</div><div class="lvlinfo"><div class="lvlbar"><i id="lvl-fill"></i></div><span id="lvl-xp"></span></div></div>
   </div>
+  <div class="tabbody">
+    <section class="tab" data-tab="play">
+      <div class="panel">
+        <div class="modes" id="modecards"></div>
+        <div class="opt"><label>Mutator</label><div class="seg" data-opt="mutator"><button data-v="none">None</button><button data-v="lowgrav">Low grav</button><button data-v="snipers">Snipers</button><button data-v="boom">Boom</button><button data-v="rich">Loaded</button></div></div>
+        <div class="opt"><label>Players</label><div class="seg" data-opt="bots"><button data-v="14">15</button><button data-v="29">30</button><button data-v="49">50</button><button data-v="74">75</button><button data-v="99">100</button></div></div>
+        <div class="opt"><label>Bot skill</label><div class="seg" data-opt="diff"><button data-v="casual">Casual</button><button data-v="normal">Normal</button><button data-v="sweaty">Sweaty</button></div></div>
+        <button id="play" class="play disp">Play</button>
+        <div class="mini-ch" id="mini-ch"></div>
+      </div>
+    </section>
+    <section class="tab" data-tab="locker" hidden>
+      <div class="panel">
+        <div class="lk-cats" id="lk-cats"></div>
+        <div class="lk-grid" id="lk-grid"></div>
+        <div class="lk-colors" id="lk-colors"></div>
+      </div>
+    </section>
+    <section class="tab" data-tab="pass" hidden>
+      <div class="panel wide">
+        <div class="pass-head"><div><div class="eyebrow">Season 1</div><h2 class="disp">Stormbreaker Pass</h2></div><p id="pass-sub"></p></div>
+        <div class="pass-track" id="pass-track"></div>
+      </div>
+    </section>
+    <section class="tab" data-tab="challenges" hidden>
+      <div class="panel">
+        <div class="ch-head"><h3 class="disp">Daily</h3><span id="ch-dtime"></span></div><div id="ch-daily"></div>
+        <div class="ch-head"><h3 class="disp">Weekly</h3><span id="ch-wtime"></span></div><div id="ch-weekly"></div>
+      </div>
+    </section>
+    <section class="tab" data-tab="career" hidden>
+      <div class="panel wide">
+        <div class="stat-grid" id="career-stats"></div>
+        <div class="career-cols">
+          <div><h3 class="disp">Recent matches</h3><div id="career-hist"></div></div>
+          <div><div class="ch-head"><h3 class="disp">Leaderboard</h3><div class="seg mini" id="lb-tabs"><button data-v="wins" class="on">Wins</button><button data-v="kills">Elims</button><button data-v="level">Level</button></div></div><div id="lb"></div></div>
+        </div>
+      </div>
+    </section>
+    <section class="tab" data-tab="settings" hidden>
+      <div class="panel">
+        <div class="seg sub" id="set-tabs"><button data-v="video" class="on">Video</button><button data-v="audio">Audio</button><button data-v="controls">Controls</button><button data-v="game">Game</button></div>
+        <div class="set-page" data-page="video">
+          <div class="opt"><label>Quality</label><div class="seg" data-opt="quality"><button data-v="low">Low</button><button data-v="medium">Med</button><button data-v="high">High</button><button data-v="ultra">Ultra</button></div></div>
+          <div class="opt"><label>Auto res</label><div class="seg" data-opt="autoRes" data-bool="1"><button data-v="true">On</button><button data-v="false">Off</button></div></div>
+          <div class="opt"><label>Field of view</label><div class="range"><input type="range" id="fov" min="65" max="100" step="1"><output id="fov-out"></output></div></div>
+          <div class="opt"><label>Speed blur</label><div class="seg" data-opt="blur" data-bool="1"><button data-v="true">On</button><button data-v="false">Off</button></div></div>
+          <div class="opt"><label>Film grain</label><div class="seg" data-opt="grain" data-bool="1"><button data-v="true">On</button><button data-v="false">Off</button></div></div>
+          <div class="opt"><label>Show FPS</label><div class="seg" data-opt="fps" data-bool="1"><button data-v="true">On</button><button data-v="false">Off</button></div></div>
+        </div>
+        <div class="set-page" data-page="audio" hidden>
+          <div class="opt"><label>Master</label><div class="range"><input type="range" id="vol0" min="0" max="1" step="0.05"><output id="vol0-out"></output></div></div>
+          <div class="opt"><label>Music</label><div class="range"><input type="range" id="music" min="0" max="1" step="0.05"><output id="music-out"></output></div></div>
+          <div class="opt"><label>Announcer</label><div class="seg" data-opt="announcer" data-bool="1"><button data-v="true">On</button><button data-v="false">Off</button></div></div>
+        </div>
+        <div class="set-page" data-page="controls" hidden>
+          <div class="opt"><label>Look speed</label><div class="range"><input type="range" id="sens" min="0.3" max="2.5" step="0.05"><output id="sens-out"></output></div></div>
+          <div class="opt"><label>Aim speed</label><div class="range"><input type="range" id="adsSens" min="0.3" max="1.5" step="0.05"><output id="adsSens-out"></output></div></div>
+          <div class="opt"><label>Invert Y</label><div class="seg" data-opt="invertY" data-bool="1"><button data-v="true">On</button><button data-v="false">Off</button></div></div>
+          <div class="opt"><label>Auto sprint</label><div class="seg" data-opt="autoSprint" data-bool="1"><button data-v="true">On</button><button data-v="false">Off</button></div></div>
+          <div class="controls" id="controls-help">
+            <div><span class="key">WASD</span>Move</div><div><span class="key">Shift</span>Walk <span class="key">C</span>Crouch / slide</div>
+            <div><span class="key">Space</span>Jump / glide / mantle</div><div><span class="key">E</span>Interact / hold to revive</div>
+            <div><span class="key">L-Click</span>Fire / place</div><div><span class="key">R-Click</span>Aim / swap material</div>
+            <div><span class="key">1-5</span>Items <span class="key">F</span>Pickaxe</div><div><span class="key">R</span>Reload / rotate</div>
+            <div><span class="key">Q</span>Build <span class="key">G</span>Edit</div><div><span class="key">Z X V B</span>Wall Floor Ramp Cone</div>
+            <div><span class="key">Tab</span>Inventory</div><div><span class="key">Mid-click</span>Ping</div>
+            <div><span class="key">T</span>Emote</div><div><span class="key">M</span>Map <span class="key">Esc</span>Pause</div>
+          </div>
+          <div class="touch-note" id="touch-help" hidden>Left thumb moves. Drag on the right to look. Hold FIRE and drag to shoot while turning. Tap BUILD for walls, floors, ramps and cones.</div>
+        </div>
+        <div class="set-page" data-page="game" hidden>
+          <div class="opt"><label>Time of day</label><div class="seg" data-opt="tod"><button data-v="random">Random</button><button data-v="morning">Morning</button><button data-v="noon">Noon</button><button data-v="golden">Golden</button><button data-v="dusk">Dusk</button></div></div>
+          <div class="opt"><label>Weather</label><div class="seg" data-opt="weather"><button data-v="random">Random</button><button data-v="clear">Clear</button><button data-v="cloudy">Cloudy</button><button data-v="rain">Rain</button></div></div>
+          <div class="opt"><label>Dmg numbers</label><div class="seg" data-opt="dmgNums" data-bool="1"><button data-v="true">On</button><button data-v="false">Off</button></div></div>
+          <div class="row"><button class="btn" id="reset-profile">Reset progress</button></div>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div class="lobby-tag" id="lobby-tag"><div class="nm disp" id="lobby-name"></div><div class="ttl" id="lobby-title"></div><button class="btn mini" id="lobby-emote">Emote</button></div>
 </div>
 
 <div id="pause" class="screen" hidden>
@@ -378,7 +522,12 @@ body.is-touch #progress{top:calc(50% + 60px)}
       <div class="stat"><b id="st-builds">0</b><span>Pieces built</span></div>
       <div class="stat"><b id="st-time">0:00</b><span>Time alive</span></div>
     </div>
-    <div class="row"><button class="btn primary" id="again">Play again</button><button class="btn" id="spectate">Spectate</button><button class="btn" id="tomenu">Main menu</button></div>
+    <div class="xpbox" id="xpbox" hidden>
+      <div class="xprows" id="xprows"></div>
+      <div class="xpline"><div class="lvl disp" id="xp-lvl">1</div><div class="lvlbar big"><i id="xp-fill"></i></div><div class="xpgain disp" id="xp-gain">+0</div></div>
+      <div class="unlocks" id="unlocks"></div>
+    </div>
+    <div class="row"><button class="btn primary" id="again">Play again</button><button class="btn" id="spectate">Spectate</button><button class="btn" id="tomenu">Lobby</button></div>
   </div>
 </div>
 

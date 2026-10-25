@@ -121,6 +121,7 @@ const HUD = (() => {
       g.font = '800 ' + Math.round(W / 40) + 'px "Saira Extra Condensed", Impact, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
       for (const p of WORLD.pois) { const x = toX(p.x), y = toY(p.z); g.lineWidth = 4; g.strokeStyle = 'rgba(0,0,0,.6)'; g.strokeText(p.name.toUpperCase(), x, y); g.fillStyle = '#fff'; g.fillText(p.name.toUpperCase(), x, y); }
     }
+    for (const P of PINGS) { g.fillStyle = P.type === 'enemy' ? '#ff4a4a' : P.type === 'item' ? '#b45cff' : '#ffd23f'; g.save(); g.translate(toX(P.pos.x), toY(P.pos.z)); g.rotate(Math.PI / 4); g.fillRect(-4, -4, 8, 8); g.restore(); }
     const f = focusChar();
     if (f) {
       const inBus = f.mode === 'bus', fx = inBus ? BUS.pos.x : f.pos.x, fz = inBus ? BUS.pos.z : f.pos.z;

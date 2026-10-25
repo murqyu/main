@@ -145,7 +145,7 @@ function nearestZip(c, maxD) {
 function startZip(c, zz) {
   c.zip = { z: zz.zip, t: zz.end ? 1 : 0, dir: zz.end ? -1 : 1, v: 4 };
   c.mode = 'ground'; c.vel.set(0, 0, 0); c.sliding = false; setCrouch(c, false);
-  if (c.isPlayer) SFX.click();
+  if (c.isPlayer) { SFX.click(); ev('zip'); }
 }
 function updateZip(c, dt, jump) {
   const Z = c.zip, z = Z.z;

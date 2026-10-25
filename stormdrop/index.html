@@ -130,6 +130,22 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 #flash{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 45%,rgba(255,25,40,.5));opacity:0;transition:opacity .25s}
 #hud.spec #hotbar,#hud.spec #mats,#hud.spec #ammo,#hud.spec #buildhint,#hud.spec #buildbar,#hud.spec #crosshair,#hud.spec #prompt{display:none}
 #fps{position:absolute;left:calc(14px + var(--sl));bottom:calc(84px + var(--sb));font-size:11px;opacity:.5}
+#inv{position:fixed;inset:0;z-index:15;background:rgba(5,8,22,.55);display:flex;align-items:center;justify-content:center;padding:16px}
+.inv-panel{width:min(820px,100%);background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;backdrop-filter:blur(8px)}
+.inv-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:10px}.inv-head h2{margin:0;font-size:30px}.inv-head span{font-size:12px;color:var(--ink-dim)}
+.inv-slots{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:12px}
+.inv-slot{position:relative;border:1px solid var(--line);border-radius:10px;padding:10px 8px 8px;min-height:120px;display:flex;flex-direction:column;gap:4px;cursor:pointer;background:rgba(0,0,0,.3)}
+.inv-slot svg{width:100%;height:30px;fill:#fff}.inv-slot b{font-size:12.5px}.inv-slot small{font-size:11px;color:var(--ink-dim)}.inv-slot .empty{margin:auto;color:var(--ink-dim);font-size:12px}
+.inv-slot .k{position:absolute;top:5px;left:7px;font-size:10px;opacity:.6}.inv-slot .btn{margin-top:auto}
+.inv-slot.sel{box-shadow:0 0 0 2px #fff inset}.inv-slot.eq{border-color:var(--gold)}
+.inv-slot.r0{background:linear-gradient(180deg,rgba(154,163,173,.35),rgba(0,0,0,.3))}.inv-slot.r1{background:linear-gradient(180deg,rgba(79,207,74,.35),rgba(0,0,0,.3))}.inv-slot.r2{background:linear-gradient(180deg,rgba(58,160,255,.4),rgba(0,0,0,.3))}.inv-slot.r3{background:linear-gradient(180deg,rgba(180,92,255,.45),rgba(0,0,0,.3))}.inv-slot.r4{background:linear-gradient(180deg,rgba(255,158,44,.45),rgba(0,0,0,.3))}.inv-slot.r5{background:linear-gradient(180deg,rgba(255,210,63,.55),rgba(0,0,0,.3))}
+.inv-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.inv-box{background:rgba(0,0,0,.25);border-radius:8px;padding:8px 10px}.inv-box h3{margin:0 0 6px;font-size:18px;text-transform:uppercase}
+.inv-line{display:flex;align-items:center;gap:8px;font-size:13px;padding:3px 0}.inv-line i{width:10px;height:10px;border-radius:2px}.inv-line svg{width:18px;height:18px}.inv-line span{flex:1}.inv-line b{font-family:var(--display);font-size:17px}
+#pings{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.ping{position:absolute;left:0;top:0;display:flex;flex-direction:column;align-items:center;gap:3px;will-change:transform}
+.ping .ic{width:16px;height:16px;transform:rotate(45deg);background:#ffd23f;border:2px solid #1b1300;box-shadow:0 0 10px rgba(255,210,63,.7)}
+.ping.enemy .ic{background:#ff4a4a;box-shadow:0 0 12px rgba(255,60,60,.9)}.ping.item .ic{background:#b45cff}
+.ping .lb{font-size:11px;font-weight:700;text-shadow:0 1px 2px #000;white-space:nowrap;background:rgba(0,0,0,.35);padding:1px 6px;border-radius:4px}
 #teampanel{position:absolute;left:calc(14px + var(--sl));top:calc(120px + var(--st));display:flex;flex-direction:column;gap:5px;pointer-events:none}
 .tm{display:flex;align-items:center;gap:7px;background:rgba(8,12,30,.55);padding:4px 8px;border-radius:6px;min-width:170px}
 .tm i{width:10px;height:10px;border-radius:2px;transform:rotate(45deg);flex:none}
@@ -156,7 +172,72 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 /* ---------- screens ---------- */
 .screen{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;
   padding:calc(20px + var(--st)) max(16px,var(--sr)) calc(20px + var(--sb)) max(16px,var(--sl));overflow-y:auto;touch-action:pan-y}
-#menu{background:linear-gradient(100deg,rgba(9,12,32,.92) 0%,rgba(9,12,32,.7) 42%,rgba(9,12,32,.15) 75%,rgba(9,12,32,0) 100%)}
+#menu{background:linear-gradient(100deg,rgba(9,12,32,.9) 0%,rgba(9,12,32,.62) 38%,rgba(9,12,32,.08) 66%,rgba(9,12,32,0) 100%);display:block;padding:0;overflow:hidden}
+#menu .topbar{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:18px;padding:calc(12px + var(--st)) max(18px,var(--sr)) 12px max(18px,var(--sl));background:linear-gradient(180deg,rgba(6,9,26,.85),rgba(6,9,26,0));z-index:2}
+.logo-sm{font-weight:900;font-style:italic;font-size:30px;line-height:1;white-space:nowrap}.logo-sm span{color:#b46bff}
+.tabs{display:flex;gap:4px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none}
+.tabs button{border:0;background:transparent;color:var(--ink-dim);font-family:var(--display);font-weight:800;font-size:19px;text-transform:uppercase;letter-spacing:.04em;padding:8px 12px;border-radius:6px;cursor:pointer;white-space:nowrap}
+.tabs button.on{color:#fff;background:rgba(255,255,255,.12);box-shadow:inset 0 -3px 0 var(--gold)}
+.tabs button:hover{color:#fff}
+.lvlbox{display:flex;align-items:center;gap:8px;flex:none}
+.lvl{width:42px;height:42px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;background:linear-gradient(160deg,#7b3dff,#3a1a9a);border-radius:8px;transform:rotate(45deg) scale(.82);box-shadow:0 0 0 2px rgba(255,255,255,.25)}
+.lvl::before{content:attr(data-n)}
+.lvlinfo{display:flex;flex-direction:column;gap:3px;min-width:120px}.lvlinfo span{font-size:11px;color:var(--ink-dim)}
+.lvlbar{height:7px;border-radius:4px;background:rgba(255,255,255,.12);overflow:hidden}.lvlbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#9b5cff,#41b8ff);transition:width .4s}
+.lvlbar.big{height:12px;flex:1}
+.tabbody{position:absolute;left:0;top:calc(78px + var(--st));bottom:0;width:min(560px,100%);padding:6px max(18px,var(--sl)) calc(18px + var(--sb));overflow-y:auto;z-index:1}
+.tabbody.wide{width:min(900px,100%)}
+.tabbody section{animation:tabin .25s ease}@keyframes tabin{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}
+.modes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-bottom:14px}
+.mcard{border:1px solid var(--line);background:rgba(0,0,0,.3);border-radius:8px;padding:10px 6px 8px;cursor:pointer;text-align:center;transition:transform .12s,background .12s}
+.mcard:hover{transform:translateY(-2px)}.mcard.on{background:linear-gradient(180deg,rgba(255,210,63,.3),rgba(255,160,0,.12));border-color:var(--gold)}
+.mcard b{display:block;font-family:var(--display);font-weight:800;font-size:17px;text-transform:uppercase}.mcard small{display:block;font-size:10.5px;color:var(--ink-dim);margin-top:2px;line-height:1.25}
+.mcard .ic{font-size:22px;line-height:1;margin-bottom:4px}
+.mini-ch{margin-top:14px;display:flex;flex-direction:column;gap:6px}
+.chrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;background:rgba(0,0,0,.28);border-radius:6px;padding:8px 10px}
+.chrow .t{font-size:13px;font-weight:600}.chrow .x{font-family:var(--display);font-weight:800;color:var(--gold);font-size:15px}
+.chrow .bar{grid-column:1/-1;height:5px;border-radius:3px;background:rgba(255,255,255,.1);overflow:hidden}.chrow .bar i{display:block;height:100%;background:linear-gradient(90deg,#5ee05a,#2fd06f)}
+.chrow.done{opacity:.6}.chrow.done .t::after{content:'  ✓';color:#5ee05a}
+.ch-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0 8px}.ch-head span{font-size:12px;color:var(--ink-dim)}
+.ch-head h3,.career-cols h3{margin:6px 0;font-size:22px;text-transform:uppercase}
+#ch-daily,#ch-weekly{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.lk-cats{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px}
+.lk-cats button{border:1px solid var(--line);background:rgba(0,0,0,.3);border-radius:6px;padding:6px 10px;font-weight:700;font-size:13px;cursor:pointer}
+.lk-cats button.on{background:#fff;color:#10142c}
+.lk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:6px;max-height:46vh;overflow-y:auto;padding:2px}
+.lk-item{position:relative;border:1px solid var(--line);border-radius:8px;padding:8px 6px;min-height:74px;cursor:pointer;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(0,0,0,.25));display:flex;flex-direction:column;justify-content:flex-end;gap:4px}
+.lk-item b{font-size:12.5px;line-height:1.15}.lk-item small{font-size:10px;color:var(--ink-dim)}
+.lk-item .sw{display:flex;gap:2px;position:absolute;top:7px;left:7px}.lk-item .sw i{width:9px;height:18px;border-radius:2px}
+.lk-item.on{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold) inset}
+.lk-item.locked{opacity:.45;cursor:not-allowed}.lk-item.locked::after{content:'🔒';position:absolute;top:6px;right:7px;font-size:12px}
+.lk-colors{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;align-items:center}
+.lk-colors label{font-size:12px;color:var(--ink-dim);display:flex;align-items:center;gap:6px}
+.lk-colors .pal{display:flex;gap:3px;flex-wrap:wrap}.lk-colors .pal i{width:18px;height:18px;border-radius:4px;cursor:pointer;border:2px solid transparent}.lk-colors .pal i.on{border-color:#fff}
+.pass-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:10px}.pass-head h2{margin:0;font-size:34px}.pass-head p{margin:0;color:var(--ink-dim);font-size:13px;text-align:right}
+.eyebrow{font-family:var(--display);font-weight:800;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.pass-track{display:grid;grid-auto-flow:column;grid-auto-columns:96px;gap:6px;overflow-x:auto;padding:4px 2px 10px}
+.tier{border-radius:8px;border:1px solid var(--line);background:rgba(0,0,0,.3);padding:6px;display:flex;flex-direction:column;gap:4px;min-height:132px;position:relative}
+.tier .n{font-family:var(--display);font-weight:800;font-size:16px;color:var(--ink-dim)}.tier .ic{flex:1;display:flex;align-items:center;justify-content:center;font-size:30px}
+.tier b{font-size:11.5px;line-height:1.15}.tier small{font-size:10px;color:var(--ink-dim);text-transform:uppercase}
+.tier.got{background:linear-gradient(180deg,rgba(155,92,255,.38),rgba(65,184,255,.14));border-color:rgba(180,140,255,.6)}.tier.got .n{color:#fff}
+.tier.cur{box-shadow:0 0 0 2px var(--gold)}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px;margin-bottom:12px}
+.sg{background:rgba(0,0,0,.28);border-radius:8px;padding:10px}.sg b{display:block;font-family:var(--display);font-weight:800;font-size:26px;line-height:1}.sg span{font-size:11px;color:var(--ink-dim);text-transform:uppercase;letter-spacing:.05em}
+.career-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.hist,.lbrow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px 8px;border-radius:6px;background:rgba(0,0,0,.25);margin-bottom:4px;font-size:13px}
+.hist .p,.lbrow .p{font-family:var(--display);font-weight:800;font-size:18px;min-width:34px}.hist.win .p{color:var(--gold)}.lbrow.me{background:rgba(255,210,63,.18)}
+.seg.mini button{padding:4px 8px;font-size:12px}.seg.sub{margin-bottom:14px}
+.lobby-tag{position:absolute;right:max(24px,var(--sr));bottom:calc(26px + var(--sb));text-align:right;z-index:1}
+.lobby-tag .nm{font-size:40px;font-weight:900;font-style:italic;text-transform:uppercase;line-height:1;text-shadow:0 3px 12px rgba(0,0,0,.5)}
+.lobby-tag .ttl{font-size:13px;color:var(--gold);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin:4px 0 8px}
+.btn.mini{padding:6px 12px;font-size:13px}
+.xpbox{margin:16px auto 0;max-width:520px;background:rgba(0,0,0,.3);border-radius:10px;padding:12px 14px}
+.xprows{display:flex;flex-direction:column;gap:3px;margin-bottom:10px}.xprow{display:flex;justify-content:space-between;font-size:13px;opacity:0;transform:translateY(4px);transition:all .25s}.xprow.in{opacity:1;transform:none}.xprow b{color:var(--gold)}
+.xpline{display:flex;align-items:center;gap:12px}.xpgain{font-size:22px;color:var(--gold);min-width:70px;text-align:right}
+.unlocks{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;justify-content:center}
+.unl{background:linear-gradient(180deg,rgba(155,92,255,.5),rgba(65,184,255,.2));border:1px solid rgba(190,150,255,.7);border-radius:8px;padding:6px 10px;font-size:12px;animation:pop .4s cubic-bezier(.2,1.6,.4,1)}@keyframes pop{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}
+.unl small{display:block;font-size:10px;color:var(--ink-dim);text-transform:uppercase}
+@media (max-width:760px){.tabs button{font-size:15px;padding:6px 8px}.logo-sm{font-size:22px}.lvlinfo{display:none}.modes{grid-template-columns:repeat(3,minmax(0,1fr))}.career-cols{grid-template-columns:1fr}.lobby-tag .nm{font-size:26px}.tabbody{width:100%}}
 .menu-inner{width:min(1120px,100%);display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:28px 40px;align-items:center}
 .brand .eyebrow{font-family:var(--display);font-weight:800;font-size:18px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
 .logo{margin:4px 0 10px;font-family:var(--display);font-weight:900;font-style:italic;font-size:clamp(64px,10vw,132px);line-height:.82;letter-spacing:-.01em;
@@ -231,6 +312,8 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 #tb-build{width:60px;height:60px;right:calc(114px + var(--sr));bottom:calc(24px + var(--sb))}
 #tb-use{width:auto;min-width:96px;height:42px;border-radius:21px;padding:0 14px;left:50%;transform:translateX(-50%);top:calc(50% + 34px);background:rgba(255,198,46,.85);color:#1b1300;border-color:transparent}
 #tb-map{width:42px;height:42px;left:calc(64px + var(--sl));top:calc(10px + var(--st));font-size:12px}
+#tb-ping{width:42px;height:42px;left:calc(114px + var(--sl));top:calc(10px + var(--st));font-size:11px}
+#tb-inv{width:42px;height:42px;left:calc(164px + var(--sl));top:calc(10px + var(--st));font-size:11px}
 #tb-pause{width:42px;height:42px;left:calc(14px + var(--sl));top:calc(10px + var(--st));font-size:14px}
 #tb-pieces{position:absolute;left:50%;transform:translateX(-50%);top:calc(92px + var(--st));display:flex;gap:8px;pointer-events:none}
 #tb-pieces .tb{position:static;width:52px;height:52px;border-radius:10px}
@@ -330,39 +413,100 @@ body.is-touch #progress{top:calc(50% + 60px)}
   <div id="tb-pieces" hidden></div>
   <button class="tb" id="tb-use" hidden>OPEN</button>
   <button class="tb" id="tb-map" aria-label="Map">MAP</button>
+  <button class="tb" id="tb-ping" aria-label="Ping">PING</button>
+  <button class="tb" id="tb-inv" aria-label="Inventory">BAG</button>
   <button class="tb" id="tb-pause" aria-label="Pause">II</button>
 </div>
 
-<div id="menu" class="screen">
-  <div class="menu-inner">
-    <div class="brand">
-      <div class="eyebrow">Solo battle royale</div>
-      <h1 class="logo">Storm<span>drop</span></h1>
-      <p class="tag">Jump from the dropship, loot chests, gather materials and build your way out of trouble while the storm closes in. Last one standing wins.</p>
-      <ul class="feats">
-        <li>Up to 49 bots</li><li>Walls, floors, ramps, cones</li><li>Shrinking storm</li><li>6 weapons, 5 rarities</li><li>Works on touch</li>
-      </ul>
-    </div>
-    <div class="panel">
-      <div class="opt"><label>Mode</label><div class="seg" data-opt="mode"><button data-v="solo">Solo</button><button data-v="duos">Duos</button><button data-v="squads">Squads</button><button data-v="rumble">Rumble</button><button data-v="creative">Creative</button></div></div>
-      <div class="opt"><label>Mutator</label><div class="seg" data-opt="mutator"><button data-v="none">None</button><button data-v="lowgrav">Low grav</button><button data-v="snipers">Snipers</button><button data-v="boom">Boom</button><button data-v="rich">Loaded</button></div></div>
-      <div class="opt"><label>Opponents</label><div class="seg" data-opt="bots"><button data-v="14">14</button><button data-v="29">29</button><button data-v="49">49</button><button data-v="74">74</button><button data-v="99">99</button></div></div>
-      <div class="opt"><label>Bot skill</label><div class="seg" data-opt="diff"><button data-v="casual">Casual</button><button data-v="normal">Normal</button><button data-v="sweaty">Sweaty</button></div></div>
-      <div class="opt"><label>Graphics</label><div class="seg" data-opt="quality"><button data-v="low">Low</button><button data-v="medium">Med</button><button data-v="high">High</button><button data-v="ultra">Ultra</button></div></div>
-      <div class="opt"><label>Outfit</label><div class="outfit"><button id="of-prev" aria-label="Previous outfit">‹</button><div class="sw"><div class="chips" id="of-chips"></div><div class="nm" id="of-name"></div></div><button id="of-next" aria-label="Next outfit">›</button></div></div>
-      <div class="opt"><label>Look speed</label><div class="range"><input type="range" id="sens" min="0.3" max="2.5" step="0.05" value="1"><output id="sens-out">1.0</output></div></div>
-      <button id="play" class="play disp">Play</button>
-      <div class="controls" id="controls-help">
-        <div><span class="key">WASD</span>Move</div><div><span class="key">Shift</span>Walk <span class="key" style="margin-left:6px">C</span>Crouch / slide</div>
-        <div><span class="key">Space</span>Jump / glide</div><div><span class="key">E</span>Open / pick up</div>
-        <div><span class="key">L-Click</span>Fire / place</div><div><span class="key">R-Click</span>Aim / swap material</div>
-        <div><span class="key">1-5</span>Items <span class="key" style="margin-left:6px">F</span>Pickaxe</div><div><span class="key">R</span>Reload / rotate</div>
-        <div><span class="key">Q</span>Build mode</div><div><span class="key">Z</span>Wall <span class="key" style="margin-left:6px">X</span>Floor</div>
-        <div><span class="key">V</span>Ramp <span class="key" style="margin-left:6px">B</span>Cone <span class="key" style="margin-left:6px">T</span>Emote</div><div><span class="key">M</span>Map <span class="key" style="margin-left:6px">Esc</span>Pause</div>
-      </div>
-      <div class="touch-note" id="touch-help" hidden>Left thumb moves. Drag on the right to look. Hold FIRE and drag to shoot while turning. Tap BUILD for walls, floors, ramps and cones.</div>
-    </div>
+<div id="menu" class="screen lobby">
+  <div class="topbar">
+    <div class="logo-sm disp">Storm<span>drop</span></div>
+    <nav class="tabs" id="tabs">
+      <button data-tab="play" class="on">Play</button><button data-tab="locker">Locker</button><button data-tab="pass">Pass</button><button data-tab="challenges">Challenges</button><button data-tab="career">Career</button><button data-tab="settings">Settings</button>
+    </nav>
+    <div class="lvlbox" title="Pass level"><div class="lvl disp" id="lvl-n">1</div><div class="lvlinfo"><div class="lvlbar"><i id="lvl-fill"></i></div><span id="lvl-xp"></span></div></div>
   </div>
+  <div class="tabbody">
+    <section class="tab" data-tab="play">
+      <div class="panel">
+        <div class="modes" id="modecards"></div>
+        <div class="opt"><label>Mutator</label><div class="seg" data-opt="mutator"><button data-v="none">None</button><button data-v="lowgrav">Low grav</button><button data-v="snipers">Snipers</button><button data-v="boom">Boom</button><button data-v="rich">Loaded</button></div></div>
+        <div class="opt"><label>Players</label><div class="seg" data-opt="bots"><button data-v="14">15</button><button data-v="29">30</button><button data-v="49">50</button><button data-v="74">75</button><button data-v="99">100</button></div></div>
+        <div class="opt"><label>Bot skill</label><div class="seg" data-opt="diff"><button data-v="casual">Casual</button><button data-v="normal">Normal</button><button data-v="sweaty">Sweaty</button></div></div>
+        <button id="play" class="play disp">Play</button>
+        <div class="mini-ch" id="mini-ch"></div>
+      </div>
+    </section>
+    <section class="tab" data-tab="locker" hidden>
+      <div class="panel">
+        <div class="lk-cats" id="lk-cats"></div>
+        <div class="lk-grid" id="lk-grid"></div>
+        <div class="lk-colors" id="lk-colors"></div>
+      </div>
+    </section>
+    <section class="tab" data-tab="pass" hidden>
+      <div class="panel wide">
+        <div class="pass-head"><div><div class="eyebrow">Season 1</div><h2 class="disp">Stormbreaker Pass</h2></div><p id="pass-sub"></p></div>
+        <div class="pass-track" id="pass-track"></div>
+      </div>
+    </section>
+    <section class="tab" data-tab="challenges" hidden>
+      <div class="panel">
+        <div class="ch-head"><h3 class="disp">Daily</h3><span id="ch-dtime"></span></div><div id="ch-daily"></div>
+        <div class="ch-head"><h3 class="disp">Weekly</h3><span id="ch-wtime"></span></div><div id="ch-weekly"></div>
+      </div>
+    </section>
+    <section class="tab" data-tab="career" hidden>
+      <div class="panel wide">
+        <div class="stat-grid" id="career-stats"></div>
+        <div class="career-cols">
+          <div><h3 class="disp">Recent matches</h3><div id="career-hist"></div></div>
+          <div><div class="ch-head"><h3 class="disp">Leaderboard</h3><div class="seg mini" id="lb-tabs"><button data-v="wins" class="on">Wins</button><button data-v="kills">Elims</button><button data-v="level">Level</button></div></div><div id="lb"></div></div>
+        </div>
+      </div>
+    </section>
+    <section class="tab" data-tab="settings" hidden>
+      <div class="panel">
+        <div class="seg sub" id="set-tabs"><button data-v="video" class="on">Video</button><button data-v="audio">Audio</button><button data-v="controls">Controls</button><button data-v="game">Game</button></div>
+        <div class="set-page" data-page="video">
+          <div class="opt"><label>Quality</label><div class="seg" data-opt="quality"><button data-v="low">Low</button><button data-v="medium">Med</button><button data-v="high">High</button><button data-v="ultra">Ultra</button></div></div>
+          <div class="opt"><label>Auto res</label><div class="seg" data-opt="autoRes" data-bool="1"><button data-v="true">On</button><button data-v="false">Off</button></div></div>
+          <div class="opt"><label>Field of view</label><div class="range"><input type="range" id="fov" min="65" max="100" step="1"><output id="fov-out"></output></div></div>
+          <div class="opt"><label>Speed blur</label><div class="seg" data-opt="blur" data-bool="1"><button data-v="true">On</button><button data-v="false">Off</button></div></div>
+          <div class="opt"><label>Film grain</label><div class="seg" data-opt="grain" data-bool="1"><button data-v="true">On</button><button data-v="false">Off</button></div></div>
+          <div class="opt"><label>Show FPS</label><div class="seg" data-opt="fps" data-bool="1"><button data-v="true">On</button><button data-v="false">Off</button></div></div>
+        </div>
+        <div class="set-page" data-page="audio" hidden>
+          <div class="opt"><label>Master</label><div class="range"><input type="range" id="vol0" min="0" max="1" step="0.05"><output id="vol0-out"></output></div></div>
+          <div class="opt"><label>Music</label><div class="range"><input type="range" id="music" min="0" max="1" step="0.05"><output id="music-out"></output></div></div>
+          <div class="opt"><label>Announcer</label><div class="seg" data-opt="announcer" data-bool="1"><button data-v="true">On</button><button data-v="false">Off</button></div></div>
+        </div>
+        <div class="set-page" data-page="controls" hidden>
+          <div class="opt"><label>Look speed</label><div class="range"><input type="range" id="sens" min="0.3" max="2.5" step="0.05"><output id="sens-out"></output></div></div>
+          <div class="opt"><label>Aim speed</label><div class="range"><input type="range" id="adsSens" min="0.3" max="1.5" step="0.05"><output id="adsSens-out"></output></div></div>
+          <div class="opt"><label>Invert Y</label><div class="seg" data-opt="invertY" data-bool="1"><button data-v="true">On</button><button data-v="false">Off</button></div></div>
+          <div class="opt"><label>Auto sprint</label><div class="seg" data-opt="autoSprint" data-bool="1"><button data-v="true">On</button><button data-v="false">Off</button></div></div>
+          <div class="controls" id="controls-help">
+            <div><span class="key">WASD</span>Move</div><div><span class="key">Shift</span>Walk <span class="key">C</span>Crouch / slide</div>
+            <div><span class="key">Space</span>Jump / glide / mantle</div><div><span class="key">E</span>Interact / hold to revive</div>
+            <div><span class="key">L-Click</span>Fire / place</div><div><span class="key">R-Click</span>Aim / swap material</div>
+            <div><span class="key">1-5</span>Items <span class="key">F</span>Pickaxe</div><div><span class="key">R</span>Reload / rotate</div>
+            <div><span class="key">Q</span>Build <span class="key">G</span>Edit</div><div><span class="key">Z X V B</span>Wall Floor Ramp Cone</div>
+            <div><span class="key">Tab</span>Inventory</div><div><span class="key">Mid-click</span>Ping</div>
+            <div><span class="key">T</span>Emote</div><div><span class="key">M</span>Map <span class="key">Esc</span>Pause</div>
+          </div>
+          <div class="touch-note" id="touch-help" hidden>Left thumb moves. Drag on the right to look. Hold FIRE and drag to shoot while turning. Tap BUILD for walls, floors, ramps and cones.</div>
+        </div>
+        <div class="set-page" data-page="game" hidden>
+          <div class="opt"><label>Time of day</label><div class="seg" data-opt="tod"><button data-v="random">Random</button><button data-v="morning">Morning</button><button data-v="noon">Noon</button><button data-v="golden">Golden</button><button data-v="dusk">Dusk</button></div></div>
+          <div class="opt"><label>Weather</label><div class="seg" data-opt="weather"><button data-v="random">Random</button><button data-v="clear">Clear</button><button data-v="cloudy">Cloudy</button><button data-v="rain">Rain</button></div></div>
+          <div class="opt"><label>Dmg numbers</label><div class="seg" data-opt="dmgNums" data-bool="1"><button data-v="true">On</button><button data-v="false">Off</button></div></div>
+          <div class="row"><button class="btn" id="reset-profile">Reset progress</button></div>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div class="lobby-tag" id="lobby-tag"><div class="nm disp" id="lobby-name"></div><div class="ttl" id="lobby-title"></div><button class="btn mini" id="lobby-emote">Emote</button></div>
 </div>
 
 <div id="pause" class="screen" hidden>
@@ -386,7 +530,12 @@ body.is-touch #progress{top:calc(50% + 60px)}
       <div class="stat"><b id="st-builds">0</b><span>Pieces built</span></div>
       <div class="stat"><b id="st-time">0:00</b><span>Time alive</span></div>
     </div>
-    <div class="row"><button class="btn primary" id="again">Play again</button><button class="btn" id="spectate">Spectate</button><button class="btn" id="tomenu">Main menu</button></div>
+    <div class="xpbox" id="xpbox" hidden>
+      <div class="xprows" id="xprows"></div>
+      <div class="xpline"><div class="lvl disp" id="xp-lvl">1</div><div class="lvlbar big"><i id="xp-fill"></i></div><div class="xpgain disp" id="xp-gain">+0</div></div>
+      <div class="unlocks" id="unlocks"></div>
+    </div>
+    <div class="row"><button class="btn primary" id="again">Play again</button><button class="btn" id="spectate">Spectate</button><button class="btn" id="tomenu">Lobby</button></div>
   </div>
 </div>
 
@@ -476,7 +625,7 @@ function hexCss(hex) { return '#' + hex.toString(16).padStart(6, '0'); }
 const _tmpV = new V3(), _tmpV2 = new V3(), _tmpV3 = new V3(), _tmpV4 = new V3();
 const UP = new V3(0, 1, 0);
 
-let SETTINGS = { bots: 29, diff: 'normal', quality: IS_TOUCH ? 'low' : 'high', sens: 1, vol: 0.8, outfit: 0, autoRes: true, tod: 'random', weather: 'random', autoSprint: true, music: 0.55, announcer: true, mode: 'solo', mutator: 'none' };
+let SETTINGS = { bots: 29, diff: 'normal', quality: IS_TOUCH ? 'low' : 'high', sens: 1, vol: 0.8, outfit: 0, autoRes: true, tod: 'random', weather: 'random', autoSprint: true, music: 0.55, announcer: true, mode: 'solo', mutator: 'none', fov: 75, adsSens: 0.75, invertY: false, blur: true, grain: true, fps: false, dmgNums: true };
 try { const s = JSON.parse(localStorage.getItem('stormdrop.settings') || 'null'); if (s) SETTINGS = Object.assign(SETTINGS, s); } catch (e) { /* storage unavailable */ }
 if (!['low', 'medium', 'high', 'ultra'].includes(SETTINGS.quality)) SETTINGS.quality = IS_TOUCH ? 'low' : 'high';
 function saveSettings() { try { localStorage.setItem('stormdrop.settings', JSON.stringify(SETTINGS)); } catch (e) { /* ignore */ } }
@@ -928,6 +1077,7 @@ const SFX = (() => {
       const E = loops.engine, t = now();
       E.g.gain.setTargetAtTime(v, t, 0.08); E.o.frequency.setTargetAtTime(Math.max(20, f), t, 0.06); E.o2.frequency.setTargetAtTime(Math.max(10, f / 2), t, 0.06); E.lp.frequency.setTargetAtTime(400 + f * 9, t, 0.1);
     },
+    ping(type) { const d = voice(null, 0.4, {}); if (!d) return; const t = now(); const f = type === 'enemy' ? 990 : 784; tn(t, 0.09, f, f, 'sine', 0.35, d); tn(t + 0.08, 0.14, f * 1.5, f * 1.5, 'sine', 0.3, d); },
     heartbeat() { const d = voice(null, 0.5, {}); if (!d) return; const t = now(); tn(t, 0.1, 70, 45, 'sine', 0.9, d); tn(t + 0.22, 0.12, 62, 40, 'sine', 0.7, d); },
   };
   return api;
@@ -2544,7 +2694,7 @@ function nearestZip(c, maxD) {
 function startZip(c, zz) {
   c.zip = { z: zz.zip, t: zz.end ? 1 : 0, dir: zz.end ? -1 : 1, v: 4 };
   c.mode = 'ground'; c.vel.set(0, 0, 0); c.sliding = false; setCrouch(c, false);
-  if (c.isPlayer) SFX.click();
+  if (c.isPlayer) { SFX.click(); ev('zip'); }
 }
 function updateZip(c, dt, jump) {
   const Z = c.zip, z = Z.z;
@@ -2850,6 +3000,7 @@ function placePiece(s, mat, owner) {
   piece.edges = pieceEdges(s);
   for (const e of piece.edges) { let set = EDGES.get(e); if (!set) { set = new Set(); EDGES.set(e, set); } set.add(piece); }
   PIECES.set(key, piece); constructing.push(piece);
+  if (owner && owner.isPlayer) ev('builds');
   SFX.build(m.position, mat);
   return piece;
 }
@@ -3047,7 +3198,7 @@ function updateEdit(p, A) {
 }
 function endEdit(p, apply) {
   const E = p.editing; if (!E) return;
-  if (apply && E.sel !== (E.piece.editMask || 0)) { if (applyWallEdit(E.piece, E.sel)) SFX.build(E.piece.mesh.position, E.piece.mat); }
+  if (apply && E.sel !== (E.piece.editMask || 0)) { if (applyWallEdit(E.piece, E.sel)) { SFX.build(E.piece.mesh.position, E.piece.mat); if (p.isPlayer) ev('edits'); } }
   p.editing = null; if (EDIT.overlay) EDIT.overlay.visible = false;
 }
 
@@ -3304,7 +3455,7 @@ function openChest(ch, who) {
   });
   FX.burst(ch.pos.x, ch.pos.y + 0.9, ch.pos.z, 26, 0xffd75a, 5, 0.7, 0.35, true, -4);
   VFX.chestOpen(ch.pos);
-  if (who && who.isPlayer) GAME.stats.chests++;
+  if (who && who.isPlayer) { GAME.stats.chests++; ev('chests'); }
 }
 function nearestChest(c, maxD) {
   let best = null, bd = maxD * maxD;
@@ -3445,7 +3596,7 @@ function updatePads(dt) {
       if (Math.abs(c.pos.x - P.x) < 1.15 && Math.abs(c.pos.z - P.z) < 1.15 && c.pos.y - P.y < 0.7 && c.pos.y - P.y > -0.4) {
         c.mode = 'sky'; c.grounded = false; c.vel.y = 46; c.vel.x *= 0.6; c.vel.z *= 0.6; c.sliding = false; setCrouch(c, false); c.launched = true;
         FX.burst(P.x, P.y + 0.6, P.z, 26, 0xffd23f, 6, 0.5, 0.3, true, -4);
-        SFX.jump(); if (c.isPlayer) { HUD.banner('Launched!', IS_TOUCH ? 'Tap JUMP to open the glider' : 'Space opens the glider', 1.6); CAM.shake = Math.min(1, CAM.shake + 0.3); }
+        SFX.jump(); if (c.isPlayer) ev('pad'); if (c.isPlayer) { HUD.banner('Launched!', IS_TOUCH ? 'Tap JUMP to open the glider' : 'Space opens the glider', 1.6); CAM.shake = Math.min(1, CAM.shake + 0.3); }
       }
     }
   }
@@ -3490,7 +3641,7 @@ function nearestForage(c, maxD) {
 function eatForage(c, f) {
   f.alive = false; _m4.makeScale(0, 0, 0); f.mesh.setMatrixAt(f.idx, _m4); f.mesh.instanceMatrix.needsUpdate = true;
   if (f.type === 'apple') c.hp = Math.min(100, c.hp + 5); else c.shield = Math.min(100, c.shield + 5);
-  if (c.isPlayer) { SFX.pickup(1); FX.burst(f.x, f.y + 0.3, f.z, 8, f.type === 'apple' ? 0x6fe06a : 0x5ab4ff, 2, 0.5, 0.2, true, 0); }
+  if (c.isPlayer) { ev('forage'); SFX.pickup(1); FX.burst(f.x, f.y + 0.3, f.z, 8, f.type === 'apple' ? 0x6fe06a : 0x5ab4ff, 2, 0.5, 0.2, true, 0); }
 }
 function updateGadgets(dt) { updateNades(dt); updatePads(dt); updateFires(dt); }
 
@@ -3650,6 +3801,7 @@ function updateVehicle(v, dt, input) {
   if (v.driver && Math.random() < dt * 8) FX.emitN(v.pos.x + nfx * -1.15 + nrx * 0.4, v.pos.y + 0.1, v.pos.z + nfz * -1.15 + nrz * 0.4, mr(-0.2, 0.2), mr(0.3, 0.7), mr(-0.2, 0.2), 0.8, 0.15, 0.6, 0.6, 0.6, 0.62, 0.3, 0.2, 0.5);
   if (v.driver) {
     const c = v.driver; c.pos.set(v.pos.x - nfx * 0.15, v.pos.y + 0.32, v.pos.z - nfz * 0.15); c.vel.copy(v.vel); c.modelYaw = v.yaw; c.grounded = true;
+    if (c.isPlayer) ev('drive', Math.abs(vf) * dt);
     if (c.isPlayer) SFX.engine(0.14 + Math.min(0.12, Math.abs(vf) * 0.006), 34 + Math.abs(vf) * 5.5 + (thr ? 12 : 0));
   }
 }
@@ -3843,7 +3995,7 @@ function landed(c) {
   const vy = c.vel.y;
   if (c.mode === 'sky' || c.mode === 'glide') {
     c.mode = 'ground'; c.rig.glider.visible = false; c.landedAt = GAME.time;
-    if (c.isPlayer) { SFX.land(c.pos); SFX.loop('wind', 0); }
+    if (c.isPlayer) { SFX.land(c.pos); SFX.loop('wind', 0); const bw = biomeAt(c.pos.x, c.pos.z, c.pos.y); if (bw.snow > 0.5) ev('land_snow'); if (bw.desert > 0.5) ev('land_desert'); }
     if (c.rig.root.visible) VFX.landDust(c, 0.6);
     return;
   }
@@ -4280,6 +4432,7 @@ function updateHeld(c) {
 // ---------- animation ----------
 const EMOTES = {
   victory: { name: 'Victory Pump', len: 0 }, wave: { name: 'Wave', len: 2.4 }, robot: { name: 'Robot', len: 0 }, spin: { name: 'Spin Move', len: 0 }, hype: { name: 'Hype', len: 0 }, shuffle: { name: 'Shuffle', len: 0 },
+  clap: { name: 'Slow Clap', len: 0 }, salute: { name: 'Salute', len: 2.2 }, jacks: { name: 'Jumping Jacks', len: 0 }, disco: { name: 'Disco Point', len: 0 }, flap: { name: 'Bird Flap', len: 0 }, bow: { name: 'Take a Bow', len: 2.6 },
 };
 function rigTargets(c, dt, A) {
   const R = c.rig, t = GAME.time;
@@ -4293,6 +4446,12 @@ function rigTargets(c, dt, A) {
     else if (em === 'wave') { set('upperR', 0.2, 0, 2.6); set('foreR', 0, 0, Math.sin(e * 9) * 0.6); set('head', 0, 0.2, 0.1); set('upperL', 0, 0, -0.15); }
     else if (em === 'robot') { const s = Math.floor(e * 2.5) % 4; set('upperL', s === 0 || s === 2 ? 1.57 : 0, 0, -0.1); set('foreL', s === 1 ? 1.57 : 0); set('upperR', s === 1 || s === 3 ? 1.57 : 0, 0, 0.1); set('foreR', s === 2 ? 1.57 : 0); set('head', 0, (s - 1.5) * 0.4, 0); set('chest', 0, (s % 2 ? 0.3 : -0.3), 0); }
     else if (em === 'spin') { A.bodyY = e * 9; set('upperL', 0, 0, -1.4); set('upperR', 0, 0, 1.4); set('thighL', 0.4); set('shinL', -0.8); A.hipsY = 0.05; }
+    else if (em === 'clap') { const k = Math.max(0, Math.sin(e * 3.2)); set('upperL', 1.2, 0, 0.25 + k * 0.35); set('upperR', 1.2, 0, -0.25 - k * 0.35); set('foreL', 0.9, 0, 0.5); set('foreR', 0.9, 0, -0.5); set('head', 0.1, Math.sin(e * 1.6) * 0.2, 0); }
+    else if (em === 'salute') { const k = Math.min(1, e * 3); set('upperR', 0.3 * k, 0, 2.2 * k); set('foreR', 2.0 * k); set('upperL', 0, 0, -0.1); set('chest', 0.05, 0, 0); set('head', 0.1, 0, 0); }
+    else if (em === 'jacks') { const w = Math.abs(Math.sin(e * 5)); set('upperL', 0, 0, -0.3 - w * 2.4); set('upperR', 0, 0, 0.3 + w * 2.4); set('thighL', 0, 0, -w * 0.4); set('thighR', 0, 0, w * 0.4); A.hipsY = w * 0.25; }
+    else if (em === 'disco') { const w = e * 4, up = Math.sin(w) > 0; set('upperR', 0, 0, up ? 2.6 : 0.6); set('upperL', 0, 0, up ? -0.4 : -1.2); set('foreL', 0.9); set('chest', 0, up ? 0.3 : -0.3, up ? -0.15 : 0.1); set('thighL', 0.15); set('shinL', -0.3); A.hipsY = Math.abs(Math.cos(w)) * 0.06; }
+    else if (em === 'flap') { const w = Math.sin(e * 9); set('upperL', 0.2, 0, -0.6 - w * 0.5); set('upperR', 0.2, 0, 0.6 + w * 0.5); set('foreL', 1.8); set('foreR', 1.8); set('head', Math.sin(e * 4.5) * 0.35, 0, 0); set('thighL', 0.6); set('shinL', -1.0); set('thighR', 0.6); set('shinR', -1.0); A.hipsY = -0.25 + Math.abs(w) * 0.05; }
+    else if (em === 'bow') { const k = Math.sin(Math.min(1, e / 2.2) * Math.PI); set('chest', -1.0 * k, 0, 0); set('head', -0.3 * k, 0, 0); set('upperR', 0.9 * k, 0, 0.3); set('foreR', 1.4 * k); set('upperL', -0.4 * k, 0, -0.3); }
     else if (em === 'shuffle') { const w = e * 8; set('thighL', Math.sin(w) * 0.6); set('shinL', -Math.max(0, Math.sin(w)) * 0.9); set('thighR', -Math.sin(w) * 0.6); set('shinR', -Math.max(0, -Math.sin(w)) * 0.9); set('upperL', -0.3 + Math.sin(w) * 0.5, 0, -0.3); set('upperR', -0.3 - Math.sin(w) * 0.5, 0, 0.3); set('foreL', 1.2); set('foreR', 1.2); set('chest', 0, Math.sin(w) * 0.3, 0); A.hipsY = Math.abs(Math.cos(w)) * 0.08; }
     return;
   }
@@ -4611,14 +4770,14 @@ function applyDamage(t, amt, src, wname, head, kind) {
       const s = Math.min(t.shield, amt); t.shield -= s; amt -= s;
       if (src && src.isPlayer) FX.number(t.pos.x, t.pos.y + 2.1, t.pos.z, s, 'sh', t);
       if (t.shield <= 0) { if (t.isPlayer) SFX.shieldBreak(); if (t.rig.root.visible) VFX.shieldBreak(t); }
-      if (src && src.isPlayer) src.damageDealt += s;
+      if (src && src.isPlayer) { src.damageDealt += s; ev('damage', s); }
     }
   }
   if (t.armor) amt *= 1 - t.armor;
   amt = Math.round(amt * 10) / 10;
   if (amt > 0) {
     t.hp -= amt;
-    if (src && src.isPlayer && src !== t) { FX.number(t.pos.x, t.pos.y + 2.1, t.pos.z, amt, head ? 'head' : '', t); src.damageDealt += amt; }
+    if (src && src.isPlayer && src !== t) { FX.number(t.pos.x, t.pos.y + 2.1, t.pos.z, amt, head ? 'head' : '', t); src.damageDealt += amt; ev('damage', amt); if (head) ev('headshots'); }
   }
   if (src && src.isPlayer && src !== t) { SFX.hit(head, t.shield > 0); HUD.hitmarker(head); }
   if (t.isPlayer) { if (kind !== 'storm') { HUD.hurt(src); SFX.hurt(); GAME.combatT = GAME.time; CAM.shake = Math.min(1, CAM.shake + 0.12 + Math.min(0.3, amt / 140)); } }
@@ -4646,7 +4805,7 @@ function eliminate(t, src, wname, kind) {
   else msg = nm(t) + ' was eliminated';
   HUD.feed(msg);
   if (src && src !== t && src.alive && !src.isPlayer) src.killEmoteT = GAME.time + mr(0.8, 1.6);
-  if (src && src !== t && src.alive) { src.kills++; if (src.isPlayer) { HUD.elimToast(t.name, src.kills); SFX.elim(); HUD.elimMark(); src.streak = (GAME.time - (src.lastElimT || -99) < 5) ? (src.streak || 1) + 1 : 1; src.lastElimT = GAME.time; if (src.streak >= 2) SFX.announce(['', '', 'Double elimination', 'Triple elimination', 'Quad elimination', 'Unstoppable'][Math.min(5, src.streak)], true); } }
+  if (src && src !== t && src.alive) { src.kills++; if (src.isPlayer) { HUD.elimToast(t.name, src.kills); SFX.elim(); HUD.elimMark(); ev('kills'); const wg = weaponGroup(wname || ''); if (wg) ev('kills_' + wg); if (t.boss) ev('boss'); src.streak = (GAME.time - (src.lastElimT || -99) < 5) ? (src.streak || 1) + 1 : 1; src.lastElimT = GAME.time; if (src.streak >= 2) SFX.announce(['', '', 'Double elimination', 'Triple elimination', 'Quad elimination', 'Unstoppable'][Math.min(5, src.streak)], true); } }
   FX.elim(t.pos);
   GAME.alive = characters.reduce((n, c) => n + (c.alive && !c.npc && !c.dummy ? 1 : 0), 0);
   if (MODE().rumble) rumbleElim(t, src);
@@ -4704,7 +4863,7 @@ function meleeSwing(c, ox, oy, oz, d, reach) {
   if (col.harvest && !col.piece) {
     const mat = col.harvest, amt = Math.round((col.kind === 'tree' ? 7 : col.kind === 'rock' ? 8 : 6) * (crit ? 2 : 1) * mr(0.85, 1.25));
     c.mats[mat] = Math.min(999, c.mats[mat] + amt);
-    if (c.isPlayer) { HUD.matPop(mat, amt); GAME.stats.mats += amt; }
+    if (c.isPlayer) { HUD.matPop(mat, amt); GAME.stats.mats += amt; ev('mats', amt); }
   }
   damageCollider(col, dmg, c, ex, ey, ez);
   if (c.isPlayer) placeWeakSpot(col, ex, ey, ez, h.nx, h.ny, h.nz);
@@ -4878,6 +5037,7 @@ const FX = (() => {
       tracers.setColorAt(i, dcol.set(hex).convertSRGBToLinear().multiplyScalar(6)); tracers.instanceColor.needsUpdate = true;
     },
     number(x, y, z, amt, kind, target) {
+      if (!SETTINGS.dmgNums) return;
       // hits on the same target within a short window stack into one growing number
       const sk = kind === 'sh' ? 'sh' : 'hp';
       let d = target ? dnLive.find((q) => q.target === target && q.sk === sk && q.life > 0.45) : null;
@@ -5291,6 +5451,7 @@ function updateStorm(dt) {
     S.cur.x = lerp(S.from.x, S.to.x, t); S.cur.z = lerp(S.from.z, S.to.z, t); S.cur.r = lerp(S.from.r, S.to.r, t);
     if (S.timer <= 0) {
       S.idx++;
+      if (player && player.alive) ev('survive');
       if (S.idx >= STORM_PHASES.length) { S.state = 'done'; S.timer = 0; S.dmg = 14; }
       else { const ph = phaseAt(S.idx); S.state = 'wait'; S.timer = ph[0]; S.total = ph[0]; S.to = nextCircle(S.cur, ph[2]); S.warned = false; HUD.banner('New safe zone marked', 'The storm moves again in ' + ph[0] + ' seconds', 3, 'storm'); }
     }
@@ -6002,6 +6163,7 @@ const HUD = (() => {
       g.font = '800 ' + Math.round(W / 40) + 'px "Saira Extra Condensed", Impact, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
       for (const p of WORLD.pois) { const x = toX(p.x), y = toY(p.z); g.lineWidth = 4; g.strokeStyle = 'rgba(0,0,0,.6)'; g.strokeText(p.name.toUpperCase(), x, y); g.fillStyle = '#fff'; g.fillText(p.name.toUpperCase(), x, y); }
     }
+    for (const P of PINGS) { g.fillStyle = P.type === 'enemy' ? '#ff4a4a' : P.type === 'item' ? '#b45cff' : '#ffd23f'; g.save(); g.translate(toX(P.pos.x), toY(P.pos.z)); g.rotate(Math.PI / 4); g.fillRect(-4, -4, 8, 8); g.restore(); }
     const f = focusChar();
     if (f) {
       const inBus = f.mode === 'bus', fx = inBus ? BUS.pos.x : f.pos.x, fz = inBus ? BUS.pos.z : f.pos.z;
@@ -6113,6 +6275,7 @@ const INPUT = (() => {
     addEventListener('keydown', (e) => {
       if (GAME.state === 'menu') return;
       const k = e.code;
+      if (k === 'Escape' && INV.open) { INV.toggle(false); return; }
       if (k === 'Escape') { if (locked) document.exitPointerLock(); else if (GAME.paused) resume(); else pause(); return; }
       if (GAME_KEYS.has(k) || k.startsWith('Key') || k.startsWith('Digit') || k.startsWith('Shift')) e.preventDefault();
       if (e.repeat) return;
@@ -6126,6 +6289,7 @@ const INPUT = (() => {
       if (!locked && !IS_TOUCH) requestLock();
       if (e.button === 0) { mouseL = true; pressed.add('Mouse0'); }
       if (e.button === 2) { mouseR = true; pressed.add('Mouse2'); }
+      if (e.button === 1) { e.preventDefault(); pressed.add('Mouse1'); }
     });
     addEventListener('mouseup', (e) => { if (e.button === 0) mouseL = false; if (e.button === 2) mouseR = false; });
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -6171,6 +6335,8 @@ const INPUT = (() => {
     tap('tb-use', () => { pressed.add('KeyE'); T.useHeld = true; });
     $('tb-use').addEventListener('pointerup', () => { T.useHeld = false; }); $('tb-use').addEventListener('pointercancel', () => { T.useHeld = false; });
     tap('tb-map', () => pressed.add('KeyM'));
+    tap('tb-ping', () => pressed.add('TouchPing'));
+    tap('tb-inv', () => pressed.add('KeyI'));
     tap('tb-pause', () => pause());
     tap('tb-aim', () => { if (player && player.buildMode) pressed.add('Mouse2'); else { T.aim = !T.aim; $('tb-aim').classList.toggle('on', T.aim); } });
     $('tb-pieces').addEventListener('pointerdown', (e) => {
@@ -6198,6 +6364,8 @@ const INPUT = (() => {
       A.crouch = !!keys.KeyC || T.crouch;
       A.crouchPressed = pressed.has('KeyC') || pressed.has('TouchCrouch');
       A.emote = pressed.has('KeyT');
+      A.inventory = pressed.has('Tab') || pressed.has('KeyI');
+      A.ping = pressed.has('Mouse1') || pressed.has('TouchPing');
       A.fire = mouseL || T.fire > 0;
       A.firePressed = pressed.has('Mouse0');
       A.aim = mouseR || T.aim;
@@ -6290,6 +6458,7 @@ function reviveDone(t, by) {
   HUD.feed(nm(by) + ' revived ' + nm(t));
   FX.burst(t.pos.x, t.pos.y + 1, t.pos.z, 24, 0x5ee05a, 4, 0.6, 0.25, true, -2);
   if (t.isPlayer || by.isPlayer) SFX.heal(false);
+  if (by.isPlayer && by !== t) ev('revive');
 }
 // called when a standing character goes down for good: knocked teammates with nobody left are wiped
 function checkTeamWipe(team, src) {
@@ -6406,6 +6575,7 @@ function mateThink(b, now) {
     return true;
   }
   if (!b.mate || !player) return false;
+  if (b.pingGo && GAME.time < b.pingGo.until && !b.visible && !b.target) { b.state = 'follow'; b.wantSprint = true; if (Math.hypot(b.pingGo.x - b.pos.x, b.pingGo.z - b.pos.z) > 4) setMove(b, b.pingGo.x + mr(-3, 3), b.pingGo.z + mr(-3, 3), 'ping'); else b.pingGo = null; return true; }
   // share the player's fights
   if (!b.visible && player.alive && player.aimChar && player.aimChar.alive && now - (GAME.combatT || -99) < 2 && !sameTeam(b, player.aimChar) && hasWeapon(b)) {
     const t = player.aimChar; if (b.pos.distanceTo(t.pos) < 90) { b.target = t; b.lastSeen = now; b.lastSeenPos.copy(t.pos); }
@@ -6468,6 +6638,557 @@ const TEAMHUD = (() => {
     }
   }
   return { reset, update };
+})();
+
+// ==== 12c_meta.js ====
+// ---------- progression: profile, cosmetics catalog, 50-tier pass, challenges, XP, career stats, leaderboard ----------
+const CATALOG = {
+  hair: { crop: 'Crop', spiky: 'Spiky', long: 'Long', bun: 'Bun', bald: 'Shaved', mohawk: 'Mohawk', curly: 'Curls', swoop: 'Swoop' },
+  head: { none: 'None', cap: 'Cap', beanie: 'Beanie', helmet: 'Helmet', bandana: 'Bandana', headphones: 'Headphones' },
+  top: { tee: 'Tee', hoodie: 'Hoodie', jacket: 'Jacket', armor: 'Armor', tank: 'Tank top' },
+  pattern: { none: 'Plain', stripe: 'Stripe', split: 'Split', band: 'Sash' },
+  eyes: { normal: 'Neutral', happy: 'Cheerful', focused: 'Focused', shades: 'Shades' },
+  back: { none: 'None', backpack: 'Backpack', jetpack: 'Jetpack', quiver: 'Quiver', cape: 'Cape', wings: 'Wings', shield: 'Shield' },
+  glider: { wing: 'Delta Wing', para: 'Parafoil', umbrella: 'Brolly', kite: 'Kite' },
+  pick: { axe: 'Trusty Axe', pick: 'Rock Pick', hammer: 'Mallet', sickle: 'Sickle', crowbar: 'Pry Bar' },
+  trail: { white: 'Cloud', blue: 'Ice', pink: 'Bubblegum', gold: 'Gilded', green: 'Toxic', purple: 'Void' },
+  emote: { victory: 'Victory Pump', wave: 'Wave', robot: 'Robot', spin: 'Spin Move', hype: 'Hype', shuffle: 'Shuffle', clap: 'Slow Clap', salute: 'Salute', jacks: 'Jumping Jacks', disco: 'Disco Point', flap: 'Bird Flap', bow: 'Take a Bow' },
+};
+const TRAIL_HEX = { white: 0xffffff, blue: 0x41b8ff, pink: 0xff5d8f, gold: 0xffd23f, green: 0x2fd06f, purple: 0xb45cff };
+const STARTER = {
+  outfit: ['Ranger', 'Ember', 'Mint', 'Sunny'], hair: ['crop', 'spiky', 'long', 'bun', 'bald'], head: ['none', 'cap'], top: ['tee', 'hoodie'], pattern: ['none', 'stripe'], eyes: ['normal', 'happy'],
+  back: ['none', 'backpack'], glider: ['wing'], pick: ['axe'], trail: ['white'], emote: ['victory', 'wave'],
+};
+// extra named outfits that only come from the pass
+const PASS_OUTFITS = [
+  { name: 'Solar Flare', skin: 0xf0c8a0, top: 'armor', c1: 0xff8a3d, c2: 0xffd23f, pattern: 'none', legs: 0x3a2a22, hair: 'spiky', hairC: 0xffd23f, head: 'none', back: 'wings', backC: 0xffd23f, glider: 'wing', gliderC1: 0xff8a3d, gliderC2: 0xffd23f, pick: 'hammer', pickC: 0xffd23f, shoes: 0xff8a3d, eyes: 'focused', gloves: 0xffd23f, trail: 0xffd23f },
+  { name: 'Abyss', skin: 0x8d5a3b, top: 'hoodie', c1: 0x1d1630, c2: 0xb45cff, pattern: 'band', legs: 0x120e20, hair: 'swoop', hairC: 0xb45cff, head: 'none', back: 'cape', backC: 0xb45cff, glider: 'kite', gliderC1: 0x1d1630, gliderC2: 0xb45cff, pick: 'sickle', pickC: 0xb45cff, shoes: 0x1d1630, eyes: 'shades', trail: 0xb45cff },
+  { name: 'Arctic Fox', skin: 0xf6d2b5, top: 'jacket', c1: 0xe9f2ff, c2: 0xff8a3d, pattern: 'split', legs: 0x9fb4c8, hair: 'long', hairC: 0xdddddd, head: 'beanie', headC: 0xff8a3d, back: 'backpack', backC: 0xe9f2ff, glider: 'para', gliderC1: 0xe9f2ff, gliderC2: 0xff8a3d, pick: 'pick', pickC: 0xff8a3d, shoes: 0xffffff, eyes: 'happy', gloves: 0xe9f2ff, trail: 0x41b8ff },
+  { name: 'Neon Rider', skin: 0xd9a07a, top: 'jacket', c1: 0x1d2026, c2: 0x2fd06f, pattern: 'stripe', legs: 0x1d2026, hair: 'mohawk', hairC: 0x2fd06f, head: 'headphones', headC: 0x2fd06f, back: 'jetpack', backC: 0x2fd06f, glider: 'wing', gliderC1: 0x1d2026, gliderC2: 0x2fd06f, pick: 'crowbar', pickC: 0x2fd06f, shoes: 0x2fd06f, eyes: 'shades', trail: 0x2fd06f },
+  { name: 'Sandstorm', skin: 0xc68f62, top: 'hoodie', c1: 0xd8b483, c2: 0x8a5a3a, pattern: 'none', legs: 0x8a6a4a, hair: 'curly', hairC: 0x2a1a0e, head: 'bandana', headC: 0x8a5a3a, back: 'quiver', backC: 0x8a5a3a, glider: 'kite', gliderC1: 0xd8b483, gliderC2: 0x8a5a3a, pick: 'axe', pickC: 0xd8b483, shoes: 0x8a5a3a, eyes: 'focused', trail: 0xffd23f },
+  { name: 'Warden', skin: 0xa86c45, top: 'armor', c1: 0x1d2026, c2: 0xffc62e, pattern: 'none', legs: 0x1d2026, hair: 'crop', hairC: 0x141414, head: 'helmet', headC: 0xffc62e, back: 'cape', backC: 0xffc62e, glider: 'umbrella', gliderC1: 0x1d2026, gliderC2: 0xffc62e, pick: 'hammer', pickC: 0xffc62e, shoes: 0x1d2026, eyes: 'focused', gloves: 0xffc62e, trail: 0xffd23f },
+];
+// 50 tiers: one reward each, alternating kinds so every few levels unlocks something you can see
+const PASS = (() => {
+  const T = [];
+  const add = (kind, id, label) => T.push({ kind, id, label });
+  const seq = [
+    ['emote', 'robot'], ['trail', 'blue'], ['outfit', 'Glacier'], ['hair', 'mohawk'], ['back', 'jetpack'],
+    ['pick', 'pick'], ['head', 'beanie'], ['emote', 'clap'], ['glider', 'para'], ['outfit', 'Moss'],
+    ['top', 'jacket'], ['trail', 'pink'], ['pattern', 'split'], ['back', 'quiver'], ['emote', 'salute'],
+    ['eyes', 'focused'], ['outfit', 'Cherry'], ['pick', 'hammer'], ['head', 'helmet'], ['glider', 'umbrella'],
+    ['hair', 'curly'], ['emote', 'spin'], ['outfit', 'Arctic Fox'], ['back', 'cape'], ['trail', 'green'],
+    ['top', 'armor'], ['pattern', 'band'], ['emote', 'jacks'], ['outfit', 'Nightshade'], ['head', 'bandana'],
+    ['pick', 'sickle'], ['hair', 'swoop'], ['glider', 'kite'], ['emote', 'disco'], ['outfit', 'Sandstorm'],
+    ['back', 'shield'], ['eyes', 'shades'], ['trail', 'purple'], ['top', 'tank'], ['emote', 'hype'],
+    ['outfit', 'Neon Rider'], ['head', 'headphones'], ['pick', 'crowbar'], ['emote', 'flap'], ['outfit', 'Abyss'],
+    ['back', 'wings'], ['emote', 'shuffle'], ['outfit', 'Vanguard'], ['emote', 'bow'], ['outfit', 'Solar Flare'],
+  ];
+  for (const [k, id] of seq) add(k, id, k === 'outfit' ? id : (CATALOG[k] && CATALOG[k][id]) || id);
+  return T;
+})();
+// later tiers keep going past 50 with "Warden" at 60 and Aurora at 75 for the dedicated
+const BONUS_TIERS = { 60: { kind: 'outfit', id: 'Warden', label: 'Warden' }, 75: { kind: 'outfit', id: 'Aurora', label: 'Aurora' }, 100: { kind: 'trail', id: 'gold', label: 'Gilded' } };
+const xpForLevel = (lv) => 900 + lv * 45;
+
+// ---------- challenges ----------
+const CH_POOL = [
+  { id: 'kills', text: 'Eliminate {n} opponents', d: 4, w: 15 },
+  { id: 'chests', text: 'Open {n} chests', d: 5, w: 20 },
+  { id: 'damage', text: 'Deal {n} damage to opponents', d: 800, w: 3500 },
+  { id: 'builds', text: 'Place {n} build pieces', d: 50, w: 250 },
+  { id: 'mats', text: 'Harvest {n} materials', d: 350, w: 1500 },
+  { id: 'headshots', text: 'Land {n} headshots', d: 8, w: 40 },
+  { id: 'top10', text: 'Finish in the top 10', d: 1, w: 4 },
+  { id: 'win', text: 'Win a match', d: 1, w: 2, weekOnly: true },
+  { id: 'drive', text: 'Drive {n} m in a quad', d: 400, w: 2500 },
+  { id: 'zip', text: 'Ride {n} ziplines', d: 2, w: 8 },
+  { id: 'pad', text: 'Launch off {n} launch pads', d: 1, w: 5 },
+  { id: 'emote', text: 'Emote {n} times', d: 3, w: 12 },
+  { id: 'survive', text: 'Survive {n} storm phases', d: 3, w: 15 },
+  { id: 'forage', text: 'Eat {n} apples or mushrooms', d: 3, w: 12 },
+  { id: 'kills_shotgun', text: 'Eliminate {n} opponents with shotguns', d: 2, w: 8 },
+  { id: 'kills_rifle', text: 'Eliminate {n} opponents with rifles', d: 2, w: 10 },
+  { id: 'kills_sniper', text: 'Eliminate {n} opponents with snipers', d: 1, w: 4 },
+  { id: 'land_snow', text: 'Land in the snow biome', d: 1, w: 3 },
+  { id: 'land_desert', text: 'Land in the desert', d: 1, w: 3 },
+  { id: 'boss', text: 'Eliminate the Vault Warden', d: 1, w: 1, weekOnly: true },
+  { id: 'revive', text: 'Revive {n} teammates', d: 1, w: 5 },
+  { id: 'edits', text: 'Edit {n} walls', d: 3, w: 15 },
+];
+const DAY = () => Math.floor(Date.now() / 86400000), WEEK = () => Math.floor((Date.now() / 86400000 + 3) / 7);
+function rollChallenges(seed, n, weekly) {
+  const r = mulberry32(seed * 7919 + (weekly ? 13 : 1)), pool = CH_POOL.filter((c) => weekly || !c.weekOnly), out = [];
+  while (out.length < n && pool.length) { const c = pool.splice(Math.floor(r() * pool.length), 1)[0]; out.push({ id: c.id, target: weekly ? c.w : c.d, progress: 0, done: false, xp: weekly ? 4000 : 1400 }); }
+  return out;
+}
+function chText(c) { const def = CH_POOL.find((p) => p.id === c.id); return def ? def.text.replace('{n}', c.target.toLocaleString()) : c.id; }
+
+// ---------- profile ----------
+const PROFILE_KEY = 'stormdrop.profile';
+function freshProfile() {
+  return {
+    v: 1, level: 1, xp: 0, totalXp: 0, unlocked: JSON.parse(JSON.stringify(STARTER)),
+    loadout: { preset: 'Ranger', custom: null, trail: 'white', emotes: ['victory', 'wave', 'robot', 'clap'] },
+    stats: { matches: 0, wins: 0, top10: 0, kills: 0, deaths: 0, damage: 0, time: 0, builds: 0, chests: 0, revives: 0, bossKills: 0, longest: 0, headshots: 0, byMode: {}, weapons: {} },
+    challenges: { day: -1, week: -1, daily: [], weekly: [] }, history: [], lastWinDay: -1, title: 'Rookie', seenTier: 1,
+  };
+}
+let PROFILE = freshProfile();
+function loadProfile() {
+  try { const s = JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null'); if (s && s.v === 1) PROFILE = Object.assign(freshProfile(), s); } catch (e) { /* storage unavailable */ }
+  for (const k in STARTER) { PROFILE.unlocked[k] = PROFILE.unlocked[k] || []; for (const id of STARTER[k]) if (!PROFILE.unlocked[k].includes(id)) PROFILE.unlocked[k].push(id); }
+  refreshChallenges();
+}
+let _saveT = 0;
+function saveProfile() {
+  try { localStorage.setItem(PROFILE_KEY, JSON.stringify(PROFILE)); } catch (e) { /* ignore */ }
+  clearTimeout(_saveT); _saveT = setTimeout(() => CLOUD.push(), 1500);
+}
+function refreshChallenges() {
+  const C = PROFILE.challenges, d = DAY(), w = WEEK();
+  if (C.day !== d) { C.day = d; C.daily = rollChallenges(d, 3, false); }
+  if (C.week !== w) { C.week = w; C.weekly = rollChallenges(w, 5, true); }
+}
+// equipped look as a full outfit spec for the rig
+function equippedOutfit() {
+  const L = PROFILE.loadout;
+  let o = L.custom ? Object.assign({}, L.custom) : Object.assign({}, [...OUTFITS, ...PASS_OUTFITS].find((x) => x.name === L.preset) || OUTFITS[0]);
+  o.trail = TRAIL_HEX[L.trail] || o.trail || 0xffffff;
+  return upgradeOutfit(o);
+}
+function allOutfits() { return [...OUTFITS, ...PASS_OUTFITS]; }
+function isUnlocked(kind, id) { return (PROFILE.unlocked[kind] || []).includes(id); }
+function unlock(reward) { const L = PROFILE.unlocked[reward.kind] = PROFILE.unlocked[reward.kind] || []; if (!L.includes(reward.id)) L.push(reward.id); }
+function tierReward(lv) { return lv <= PASS.length ? PASS[lv - 1] : BONUS_TIERS[lv] || null; }
+// award XP; returns the list of tiers crossed (for the post-match screen)
+function grantXP(amount) {
+  const gained = []; PROFILE.xp += amount; PROFILE.totalXp += amount;
+  while (PROFILE.xp >= xpForLevel(PROFILE.level)) { PROFILE.xp -= xpForLevel(PROFILE.level); PROFILE.level++; const r = tierReward(PROFILE.level); if (r) unlock(r); gained.push({ level: PROFILE.level, reward: r }); }
+  return gained;
+}
+
+// ---------- in-match tracking: every stat and challenge event flows through ev() ----------
+const MATCH = { active: false, xpLog: [], events: {}, startT: 0, landed: false, lastPhase: 0, done: [] };
+function matchStart() { Object.assign(MATCH, { active: true, xpLog: [], events: {}, startT: GAME.time, landed: false, lastPhase: STORM.idx, done: [], headshots: 0, driveAcc: 0 }); refreshChallenges(); }
+function ev(name, amt) {
+  if (!MATCH.active || MODE().creative) return;
+  amt = amt === undefined ? 1 : amt;
+  MATCH.events[name] = (MATCH.events[name] || 0) + amt;
+  for (const c of [...PROFILE.challenges.daily, ...PROFILE.challenges.weekly]) {
+    if (c.done || c.id !== name) continue;
+    c.progress = Math.min(c.target, c.progress + amt);
+    if (c.progress >= c.target) { c.done = true; MATCH.done.push(c); HUD.banner('Challenge complete', chText(c) + '  +' + c.xp.toLocaleString() + ' XP', 2.6); SFX.chestOpen(null); }
+  }
+}
+function weaponGroup(w) { return /Shotgun/.test(w) ? 'shotgun' : /Sniper/.test(w) ? 'sniper' : /Rifle|SMG|Minigun|Pistol|Cannon/.test(w) ? 'rifle' : ''; }
+// end-of-match bookkeeping: stats, XP breakdown, tiers, history, leaderboard
+function matchEnd(win) {
+  if (!MATCH.active) return null;
+  MATCH.active = false;
+  if (MODE().creative) return null;
+  const S = PROFILE.stats, p = player, E = MATCH.events, mode = SETTINGS.mode;
+  const alive = Math.round((p.alive ? GAME.time : GAME.deathTime) - MATCH.startT);
+  const place = GAME.placement || 99, field = MODE().rumble ? 2 : Math.max(2, new Set(characters.filter((c) => !c.npc).map((c) => c.team)).size);
+  if (win) ev('win'); if (place <= 10 && field > 10 || win) ev('top10');
+  const log = [];
+  log.push(['Survival', Math.round(alive * 1.6)]);
+  if (p.kills) log.push(['Eliminations ×' + p.kills, p.kills * 70]);
+  if (p.damageDealt) log.push(['Damage dealt', Math.round(p.damageDealt / 8)]);
+  if (E.chests) log.push(['Chests ×' + E.chests, E.chests * 20]);
+  if (E.builds) log.push(['Building', Math.min(200, E.builds * 2)]);
+  const plBonus = win ? 1200 : place <= 3 ? 500 : place <= 10 ? 280 : place <= 25 ? 120 : 0;
+  if (plBonus) log.push([win ? 'Victory' : 'Placement #' + place, plBonus]);
+  if (win && PROFILE.lastWinDay !== DAY()) { PROFILE.lastWinDay = DAY(); log.push(['First win of the day', 600]); }
+  for (const c of MATCH.done) log.push(['Challenge: ' + chText(c), c.xp]);
+  const total = log.reduce((s, x) => s + x[1], 0);
+  const lv0 = PROFILE.level, xp0 = PROFILE.xp;
+  const tiers = grantXP(total);
+  S.matches++; if (win) S.wins++; if (place <= 10) S.top10++; S.kills += p.kills; if (!p.alive || !win) S.deaths++;
+  S.damage += Math.round(p.damageDealt); S.time += alive; S.builds += E.builds || 0; S.chests += E.chests || 0; S.revives += E.revive || 0; S.bossKills += E.boss || 0; S.headshots += E.headshots || 0;
+  const bm = S.byMode[mode] = S.byMode[mode] || { m: 0, w: 0, k: 0 }; bm.m++; if (win) bm.w++; bm.k += p.kills;
+  PROFILE.history.unshift({ mode, place, kills: p.kills, dmg: Math.round(p.damageDealt), xp: total, t: Date.now(), win: !!win });
+  PROFILE.history.length = Math.min(PROFILE.history.length, 20);
+  if (S.wins >= 1) PROFILE.title = S.wins >= 25 ? 'Legend' : S.wins >= 10 ? 'Champion' : S.wins >= 3 ? 'Contender' : 'Victor';
+  saveProfile();
+  CLOUD.submit();
+  return { log, total, lv0, xp0, tiers, place, win, alive };
+}
+
+// ---------- cloud: private profile backup + shared leaderboard (artifact db), with local fallback ----------
+const CLOUD = (() => {
+  let db = null, uid = null, user = null, ready = false;
+  async function init() {
+    try {
+      if (!window.claude || !window.claude.use) return;
+      user = await window.claude.use('user'); db = await window.claude.use('db');
+      if (!db || !user) { db = null; return; }
+      uid = await user.id(); if (!uid) { db = null; return; }
+      ready = true;
+      // adopt the cloud profile when it is further along than this browser's copy
+      const snap = await db.doc('data/users/' + uid + '/profile').get();
+      if (snap.exists) { const d = snap.data(); if (d && d.v === 1 && (d.totalXp || 0) > (PROFILE.totalXp || 0)) { PROFILE = Object.assign(freshProfile(), JSON.parse(JSON.stringify(d))); loadProfile(); try { localStorage.setItem(PROFILE_KEY, JSON.stringify(PROFILE)); } catch (e) { /* ignore */ } if (typeof MENU !== 'undefined') MENU.refresh(); } }
+    } catch (e) { db = null; ready = false; }
+  }
+  let pushing = false;
+  async function push() {
+    if (!ready || pushing) return; pushing = true;
+    try { await db.doc('data/users/' + uid + '/profile').set(JSON.parse(JSON.stringify(PROFILE))); } catch (e) { /* offline or read-only */ }
+    pushing = false;
+  }
+  async function submit() {
+    if (!ready) return;
+    const S = PROFILE.stats;
+    try { await db.doc('leaderboard/' + uid).set({ level: PROFILE.level, wins: S.wins, kills: S.kills, matches: S.matches, top10: S.top10, best: Math.max(...PROFILE.history.map((h) => h.kills), 0), updated: Date.now() }); } catch (e) { /* view-only viewers cannot write */ }
+  }
+  async function top(field) {
+    if (!ready) return null;
+    try {
+      const q = await db.collection('leaderboard').orderBy(field, 'desc').limit(20).get();
+      const rows = q.docs.map((d) => Object.assign({ id: d.id }, d.data()));
+      let names = {};
+      try { const ps = await user.profiles(rows.map((r) => r.id)); for (const r of rows) names[r.id] = (ps[r.id] && ps[r.id].name) || ''; } catch (e) { /* names unavailable */ }
+      return rows.map((r) => Object.assign(r, { name: r.id === uid ? 'You' : names[r.id] || 'Player', me: r.id === uid }));
+    } catch (e) { return null; }
+  }
+  return { init, push, submit, top, get ready() { return ready; } };
+})();
+
+// ==== 12d_menu.js ====
+// ---------- lobby menu: tabs, mode select, locker with live 3D preview, pass, challenges, career, settings, post-match ----------
+const MODE_CARDS = [
+  { v: 'solo', ic: '👤', name: 'Solo', d: 'Last one standing' },
+  { v: 'duos', ic: '👥', name: 'Duos', d: 'With a bot buddy' },
+  { v: 'squads', ic: '🛡', name: 'Squads', d: 'Team of four' },
+  { v: 'rumble', ic: '⚔', name: 'Rumble', d: 'Respawns, race to elims' },
+  { v: 'creative', ic: '🏗', name: 'Creative', d: 'Free build + practice' },
+];
+const LOCKER_CATS = [
+  ['outfit', 'Outfits'], ['top', 'Top'], ['pattern', 'Pattern'], ['hair', 'Hair'], ['head', 'Headwear'], ['eyes', 'Face'],
+  ['back', 'Back bling'], ['glider', 'Glider'], ['pick', 'Pickaxe'], ['trail', 'Contrail'], ['emote', 'Emotes'],
+];
+const PALETTE = [0xe0482f, 0xff8a3d, 0xffb02e, 0xffd23f, 0x2fd06f, 0x3fcf9a, 0x16a085, 0x41b8ff, 0x2f6fd6, 0x6c3fd1, 0xb45cff, 0xff5d8f, 0xe9f2ff, 0x8a949e, 0x34495e, 0x2b2b2b, 0x1d2026, 0x8a5a3a, 0xd8b483, 0x5b7f2a];
+const SKIN_PAL = SKINS, HAIR_PAL = HAIRC;
+const KIND_ICON = { outfit: '🧍', top: '👕', pattern: '🎽', hair: '💇', head: '🧢', eyes: '🙂', back: '🎒', glider: '🪂', pick: '⛏', trail: '✨', emote: '💃' };
+const LOBBY = { char: null, spot: null, preview: 'idle', emoteT: 0, t: 0 };
+const MENU = (() => {
+  let tab = 'play', lockCat = 'outfit', lbField = 'wins';
+  const $ = (id) => document.getElementById(id);
+  const hx = (h) => '#' + (h >>> 0).toString(16).padStart(6, '0').slice(-6);
+  function setTab(t) {
+    tab = t;
+    document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === t));
+    document.querySelectorAll('.tabbody .tab').forEach((s) => { s.hidden = s.dataset.tab !== t; });
+    document.querySelector('.tabbody').classList.toggle('wide', t === 'pass' || t === 'career');
+    if (t === 'locker') renderLocker(); if (t === 'pass') renderPass(); if (t === 'challenges') renderChallenges(); if (t === 'career') renderCareer();
+    LOBBY.preview = t === 'locker' ? previewFor(lockCat) : 'idle';
+    SFX.click();
+  }
+  function previewFor(cat) { return cat === 'glider' ? 'glide' : cat === 'pick' ? 'pick' : cat === 'emote' ? 'emote' : 'idle'; }
+  // ---- generic controls ----
+  function syncSegs() {
+    document.querySelectorAll('.seg[data-opt]').forEach((seg) => {
+      const k = seg.dataset.opt;
+      seg.querySelectorAll('button').forEach((b) => b.classList.toggle('on', String(SETTINGS[k]) === b.dataset.v));
+    });
+    document.querySelectorAll('.mcard').forEach((c) => c.classList.toggle('on', c.dataset.v === SETTINGS.mode));
+  }
+  function bindRange(id, key, fmt, after) {
+    const el = $(id), out = $(id + '-out'); if (!el) return;
+    el.value = SETTINGS[key]; out.textContent = fmt(SETTINGS[key]);
+    el.addEventListener('input', () => { SETTINGS[key] = +el.value; out.textContent = fmt(SETTINGS[key]); saveSettings(); if (after) after(); });
+  }
+  // ---- top bar + play tab ----
+  function refresh() {
+    const need = xpForLevel(PROFILE.level);
+    $('lvl-n').innerHTML = '<span style="display:block;transform:rotate(-45deg)">' + PROFILE.level + '</span>';
+    $('lvl-fill').style.width = (PROFILE.xp / need * 100).toFixed(1) + '%';
+    $('lvl-xp').textContent = PROFILE.xp.toLocaleString() + ' / ' + need.toLocaleString() + ' XP';
+    const o = equippedOutfit();
+    $('lobby-name').textContent = PROFILE.loadout.custom ? 'Custom' : o.name || 'Custom';
+    $('lobby-title').textContent = 'Level ' + PROFILE.level + ' · ' + PROFILE.title;
+    refreshChallenges();
+    $('mini-ch').innerHTML = PROFILE.challenges.daily.map(chRow).join('');
+    syncSegs();
+  }
+  function chRow(c) { return '<div class="chrow' + (c.done ? ' done' : '') + '"><span class="t">' + esc(chText(c)) + '</span><span class="x">' + c.xp.toLocaleString() + ' XP</span><div class="bar"><i style="width:' + (c.progress / c.target * 100).toFixed(0) + '%"></i></div></div>'; }
+  const esc = (t) => String(t).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+  // ---- locker ----
+  function renderLocker() {
+    $('lk-cats').innerHTML = LOCKER_CATS.map(([k, n]) => '<button data-k="' + k + '" class="' + (k === lockCat ? 'on' : '') + '">' + n + '</button>').join('');
+    const grid = $('lk-grid'), o = equippedOutfit(), L = PROFILE.loadout;
+    let items = [];
+    if (lockCat === 'outfit') items = allOutfits().map((x) => ({ id: x.name, name: x.name, on: !L.custom && L.preset === x.name, locked: !isUnlocked('outfit', x.name), sw: [x.c1, x.c2, x.legs, x.hairC] }));
+    else if (lockCat === 'trail') items = Object.keys(CATALOG.trail).map((id) => ({ id, name: CATALOG.trail[id], on: L.trail === id, locked: !isUnlocked('trail', id), sw: [TRAIL_HEX[id]] }));
+    else if (lockCat === 'emote') items = Object.keys(CATALOG.emote).map((id) => ({ id, name: CATALOG.emote[id], on: L.emotes.includes(id), locked: !isUnlocked('emote', id), sub: L.emotes.includes(id) ? 'Slot ' + (L.emotes.indexOf(id) + 1) : '' }));
+    else items = Object.keys(CATALOG[lockCat]).map((id) => ({ id, name: CATALOG[lockCat][id], on: o[lockCat] === id, locked: !isUnlocked(lockCat, id) }));
+    for (const it of items) if (it.locked) { const t = PASS.findIndex((r) => r.kind === lockCat && r.id === it.id); it.sub = t >= 0 ? 'Pass tier ' + (t + 1) : 'Locked'; }
+    grid.innerHTML = items.map((it) => '<div class="lk-item' + (it.on ? ' on' : '') + (it.locked ? ' locked' : '') + '" data-id="' + esc(it.id) + '">' + (it.sw ? '<span class="sw">' + it.sw.map((c) => '<i style="background:' + hx(c) + '"></i>').join('') + '</span>' : '<span style="position:absolute;top:6px;left:8px;font-size:18px">' + KIND_ICON[lockCat] + '</span>') + '<b>' + esc(it.name) + '</b>' + (it.sub ? '<small>' + esc(it.sub) + '</small>' : '') + '</div>').join('');
+    // colour pickers for custom looks
+    const pal = (label, key, list) => '<label>' + label + ' <span class="pal" data-key="' + key + '">' + list.map((c) => '<i data-c="' + c + '" class="' + (o[key] === c ? 'on' : '') + '" style="background:' + hx(c) + '"></i>').join('') + '</span></label>';
+    $('lk-colors').innerHTML = lockCat === 'outfit' || lockCat === 'trail' || lockCat === 'emote' ? '<small style="color:var(--ink-dim)">' + (lockCat === 'emote' ? 'Pick up to four emotes for the T key.' : lockCat === 'outfit' ? 'Pick any part on the other tabs to start a custom look.' : '') + '</small>'
+      : pal('Main', 'c1', PALETTE) + pal('Accent', 'c2', PALETTE) + pal('Legs', 'legs', PALETTE) + pal('Hair', 'hairC', HAIR_PAL) + pal('Skin', 'skin', SKIN_PAL) + pal('Gear', 'backC', PALETTE);
+  }
+  function customize(key, val) {
+    const L = PROFILE.loadout, base = equippedOutfit();
+    L.custom = Object.assign({}, base, { name: 'Custom', [key]: val });
+    if (key === 'glider') L.custom.glider = val;
+    saveProfile(); refreshLobbyChar(); renderLocker(); refresh();
+  }
+  function lockerClick(e) {
+    const cat = e.target.closest('.lk-cats button');
+    if (cat) { lockCat = cat.dataset.k; LOBBY.preview = previewFor(lockCat); renderLocker(); SFX.click(); return; }
+    const sw = e.target.closest('.pal i');
+    if (sw) { customize(sw.parentElement.dataset.key, +sw.dataset.c); SFX.click(); return; }
+    const it = e.target.closest('.lk-item'); if (!it || it.classList.contains('locked')) return;
+    const id = it.dataset.id, L = PROFILE.loadout;
+    if (lockCat === 'outfit') { L.preset = id; L.custom = null; saveProfile(); refreshLobbyChar(); }
+    else if (lockCat === 'trail') { L.trail = id; saveProfile(); refreshLobbyChar(); }
+    else if (lockCat === 'emote') { const k = L.emotes.indexOf(id); if (k >= 0) { if (L.emotes.length > 1) L.emotes.splice(k, 1); } else { L.emotes.push(id); if (L.emotes.length > 4) L.emotes.shift(); } saveProfile(); lobbyEmote(id); }
+    else customize(lockCat, id);
+    SFX.click(); renderLocker(); refresh();
+  }
+  // ---- pass ----
+  function renderPass() {
+    $('pass-sub').innerHTML = 'Level ' + PROFILE.level + ' · ' + PROFILE.xp.toLocaleString() + ' / ' + xpForLevel(PROFILE.level).toLocaleString() + ' XP<br>Earn XP from matches and challenges. Every level unlocks something.';
+    $('pass-track').innerHTML = PASS.map((r, i) => {
+      const lv = i + 1, got = PROFILE.level >= lv;
+      return '<div class="tier' + (got ? ' got' : '') + (PROFILE.level + 1 === lv ? ' cur' : '') + '"><span class="n">' + lv + '</span><span class="ic">' + KIND_ICON[r.kind] + '</span><b>' + esc(r.label) + '</b><small>' + r.kind + '</small></div>';
+    }).join('');
+    const cur = $('pass-track').querySelector('.cur'); if (cur) cur.scrollIntoView({ inline: 'center', block: 'nearest' });
+  }
+  // ---- challenges ----
+  function renderChallenges() {
+    refreshChallenges();
+    $('ch-daily').innerHTML = PROFILE.challenges.daily.map(chRow).join('');
+    $('ch-weekly').innerHTML = PROFILE.challenges.weekly.map(chRow).join('');
+    const now = Date.now(), dLeft = 86400000 - (now % 86400000), wLeft = ((7 - ((Math.floor(now / 86400000) + 3) % 7)) * 86400000) - (now % 86400000);
+    const fmtH = (ms) => { const h = Math.floor(ms / 3600000), m = Math.floor(ms / 60000) % 60; return h >= 24 ? Math.floor(h / 24) + 'd ' + (h % 24) + 'h' : h + 'h ' + m + 'm'; };
+    $('ch-dtime').textContent = 'New in ' + fmtH(dLeft); $('ch-wtime').textContent = 'New in ' + fmtH(wLeft);
+  }
+  // ---- career ----
+  function renderCareer() {
+    const S = PROFILE.stats, kd = S.deaths ? (S.kills / S.deaths).toFixed(2) : S.kills.toFixed(2);
+    const cells = [['Matches', S.matches], ['Wins', S.wins], ['Win rate', S.matches ? Math.round(S.wins / S.matches * 100) + '%' : '0%'], ['Top 10', S.top10], ['Eliminations', S.kills], ['K/D', kd], ['Damage', S.damage.toLocaleString()], ['Headshots', S.headshots], ['Builds', S.builds.toLocaleString()], ['Chests', S.chests], ['Revives', S.revives], ['Wardens', S.bossKills], ['Time played', fmtTime(S.time)], ['Level', PROFILE.level]];
+    $('career-stats').innerHTML = cells.map((c) => '<div class="sg"><b>' + c[1] + '</b><span>' + c[0] + '</span></div>').join('');
+    $('career-hist').innerHTML = PROFILE.history.length ? PROFILE.history.slice(0, 8).map((h) => '<div class="hist' + (h.win ? ' win' : '') + '"><span class="p">#' + h.place + '</span><span>' + esc((MODES[h.mode] || MODES.solo).name) + ' · ' + h.kills + ' elims · ' + h.dmg + ' dmg</span><span>+' + h.xp + ' XP</span></div>').join('') : '<p style="color:var(--ink-dim);font-size:13px">No matches yet. Drop in!</p>';
+    renderLeaderboard();
+  }
+  async function renderLeaderboard() {
+    const el = $('lb');
+    if (!CLOUD.ready) { el.innerHTML = '<p style="color:var(--ink-dim);font-size:13px">Personal bests (sign in on claude.ai to compare with others):</p>' + [['Wins', PROFILE.stats.wins], ['Most elims in a match', Math.max(0, ...PROFILE.history.map((h) => h.kills))], ['Best placement', PROFILE.history.length ? '#' + Math.min(...PROFILE.history.map((h) => h.place)) : '-']].map((r) => '<div class="lbrow"><span class="p">★</span><span>' + r[0] + '</span><span>' + r[1] + '</span></div>').join(''); return; }
+    el.innerHTML = '<p style="color:var(--ink-dim);font-size:13px">Loading…</p>';
+    const rows = await CLOUD.top(lbField);
+    if (!rows) { el.innerHTML = '<p style="color:var(--ink-dim);font-size:13px">Leaderboard unavailable right now.</p>'; return; }
+    if (!rows.length) { el.innerHTML = '<p style="color:var(--ink-dim);font-size:13px">Nobody on the board yet. Finish a match to claim #1.</p>'; return; }
+    el.innerHTML = '';
+    rows.forEach((r, i) => { const d = document.createElement('div'); d.className = 'lbrow' + (r.me ? ' me' : ''); d.innerHTML = '<span class="p">' + (i + 1) + '</span><span class="nm"></span><span>' + (r[lbField] || 0) + '</span>'; d.querySelector('.nm').textContent = r.name; el.appendChild(d); });
+  }
+  // ---- wiring ----
+  function init() {
+    document.body.classList.toggle('is-touch', IS_TOUCH);
+    $('controls-help').hidden = IS_TOUCH; $('touch-help').hidden = !IS_TOUCH;
+    $('tabs').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) setTab(b.dataset.tab); });
+    $('modecards').innerHTML = MODE_CARDS.map((m) => '<div class="mcard" data-v="' + m.v + '"><div class="ic">' + m.ic + '</div><b>' + m.name + '</b><small>' + m.d + '</small></div>').join('');
+    $('modecards').addEventListener('click', (e) => { const c = e.target.closest('.mcard'); if (!c) return; SETTINGS.mode = c.dataset.v; saveSettings(); syncSegs(); SFX.click(); });
+    document.querySelectorAll('.seg[data-opt]').forEach((seg) => seg.addEventListener('click', (e) => {
+      const b = e.target.closest('button'); if (!b) return;
+      const k = seg.dataset.opt, v = b.dataset.v;
+      SETTINGS[k] = seg.dataset.bool ? v === 'true' : k === 'bots' ? +v : v; saveSettings(); syncSegs(); SFX.click();
+      if (k === 'quality' || k === 'autoRes' || k === 'blur' || k === 'grain') applyQuality();
+      if (k === 'fps') $('fps').hidden = !SETTINGS.fps;
+    }));
+    $('set-tabs').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; document.querySelectorAll('#set-tabs button').forEach((x) => x.classList.toggle('on', x === b)); document.querySelectorAll('.set-page').forEach((p) => { p.hidden = p.dataset.page !== b.dataset.v; }); SFX.click(); });
+    $('lb-tabs').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; lbField = b.dataset.v; document.querySelectorAll('#lb-tabs button').forEach((x) => x.classList.toggle('on', x === b)); renderLeaderboard(); });
+    $('lk-cats').addEventListener('click', lockerClick); $('lk-grid').addEventListener('click', lockerClick); $('lk-colors').addEventListener('click', lockerClick);
+    bindRange('fov', 'fov', (v) => Math.round(v) + '°');
+    bindRange('vol0', 'vol', (v) => Math.round(v * 100), () => SFX.setVolume(SETTINGS.vol));
+    bindRange('music', 'music', (v) => Math.round(v * 100), () => SFX.setMusic(SETTINGS.music));
+    bindRange('sens', 'sens', (v) => (+v).toFixed(2));
+    bindRange('adsSens', 'adsSens', (v) => (+v).toFixed(2));
+    $('lobby-emote').addEventListener('click', () => lobbyEmote(pick(PROFILE.loadout.emotes)));
+    $('reset-profile').addEventListener('click', () => { if (confirm('Reset all levels, unlocks, stats and challenges?')) { PROFILE = freshProfile(); refreshChallenges(); saveProfile(); refreshLobbyChar(); refresh(); } });
+    document.querySelectorAll('#menu button, .mcard').forEach((b) => b.addEventListener('mouseenter', () => SFX.hover()));
+    refresh();
+  }
+  return { init, refresh, setTab, syncSegs, get tab() { return tab; } };
+})();
+// ---------- 3D lobby: your character on a hill, framed on the right of the screen ----------
+function pickLobbySpot() {
+  const sd = WORLD.sunDir || new V3(0.5, 0.8, 0.3), sa = Math.atan2(sd.z, sd.x);
+  for (let i = 0; i < 400; i++) {
+    const a = sa + mr(-0.9, 0.9) * (1 + i / 200), d = WORLD.islandR * mr(0.4, 0.72), x = Math.cos(a) * d, z = Math.sin(a) * d, h = groundH(x, z);
+    if (h < 3 || h > 16 || nearPOI(x, z, 12) || overlapsFootprint(x - 3, z - 3, x + 3, z + 3, 2)) continue;
+    if (Math.abs(groundH(x + 3, z) - h) > 0.8 || Math.abs(groundH(x, z + 3) - h) > 0.8) continue;
+    const yaw = Math.atan2(-sd.x, -sd.z);   // face the sun: front-lit, with the island behind
+    return { x, y: h, z, yaw };
+  }
+  return { x: 0, y: groundH(0, 0), z: 0, yaw: 0 };
+}
+function refreshLobbyChar() {
+  if (!worldGroup) return;
+  if (!LOBBY.spot) LOBBY.spot = pickLobbySpot();
+  if (LOBBY.char) { if (LOBBY.char.rig.root.parent) LOBBY.char.rig.root.parent.remove(LOBBY.char.rig.root); }
+  const c = LOBBY.char = makeCharacter(false, 'lobby', equippedOutfit());
+  c.pos.set(LOBBY.spot.x, LOBBY.spot.y, LOBBY.spot.z); c.yaw = c.modelYaw = LOBBY.spot.yaw; c.mode = 'ground'; c.grounded = true;
+  c.rig.root.visible = GAME.state === 'menu'; c.rig.root.rotation.y = c.modelYaw;
+}
+function lobbyEmote(id) { const c = LOBBY.char; if (!c || !id) return; c.mode = 'ground'; playEmote(c, id); LOBBY.emoteT = GAME.time + 4.5; LOBBY.lastEmote = performance.now(); }
+function updateLobby(dt) {
+  const c = LOBBY.char; if (!c) return;
+  LOBBY.t += dt;
+  c.rig.root.visible = true;
+  const pv = LOBBY.preview;
+  c.mode = pv === 'glide' ? 'glide' : 'ground';
+  c.pos.set(LOBBY.spot.x, LOBBY.spot.y + (pv === 'glide' ? 1.2 + Math.sin(LOBBY.t * 1.4) * 0.15 : 0), LOBBY.spot.z);
+  if (pv === 'pick' && c.swingT <= 0 && Math.random() < dt * 0.7) c.swingT = 0.5;
+  if (c.swingT > 0) c.swingT -= dt;
+  if (c.emote && performance.now() - (LOBBY.lastEmote || 0) > 4500) stopEmote(c);
+  if (!c.emote && pv === 'idle' && performance.now() - (LOBBY.lastEmote || 0) > 14000 && Math.random() < dt * 0.2) lobbyEmote(pick(PROFILE.loadout.emotes));
+  c.vel.set(0, 0, 0); c.grounded = true;
+  animateRig(c, dt);
+  // camera: in front of the character, offset so it sits right of the menu panels
+  const yaw = LOBBY.spot.yaw, fx = -Math.sin(yaw), fz = -Math.cos(yaw), rx = Math.cos(yaw), rz = -Math.sin(yaw);
+  const narrow = innerWidth < 760, close = MENU.tab === 'locker' ? 0.78 : 1;
+  const glide = pv === 'glide', sway = Math.sin(LOBBY.t * 0.25) * 0.25, dist = (glide ? 7.5 : 4.8) * close, shift = narrow ? 0 : dist * 0.3 * (innerWidth / innerHeight) / 1.78;
+  const tx = c.pos.x + fx * dist + rx * sway, tz = c.pos.z + fz * dist + rz * sway, ty = LOBBY.spot.y + 1.5 + (pv === 'glide' ? 1 : 0);
+  _tmpV.set(tx, Math.max(ty, walkH(tx, tz) + 0.6), tz);
+  if (camera.position.distanceToSquared(_tmpV) > 400) camera.position.copy(_tmpV); else camera.position.lerp(_tmpV, Math.min(1, dt * 3));
+  // aiming at a point on the character's right puts them on the right of the screen, clear of the menu
+  camera.lookAt(c.pos.x + rx * shift, LOBBY.spot.y + (glide ? 3.1 : 1.05), c.pos.z + rz * shift);
+  if (Math.abs(camera.fov - 50) > 0.01) { camera.fov = 50; camera.updateProjectionMatrix(); FX.setScale(pointScale()); }
+}
+// ---------- post-match: XP breakdown, animated bar, unlock reveals ----------
+function showMatchRewards(res) {
+  const box = document.getElementById('xpbox');
+  if (!res) { box.hidden = true; return; }
+  box.hidden = false;
+  const rows = document.getElementById('xprows'), fill = document.getElementById('xp-fill'), lvEl = document.getElementById('xp-lvl'), gain = document.getElementById('xp-gain'), unl = document.getElementById('unlocks');
+  rows.innerHTML = res.log.map((r) => '<div class="xprow"><span></span><b>+' + r[1].toLocaleString() + '</b></div>').join('');
+  [...rows.children].forEach((el, i) => { el.firstChild.textContent = res.log[i][0]; setTimeout(() => el.classList.add('in'), 200 + i * 140); });
+  unl.innerHTML = '';
+  let lv = res.lv0, xp = res.xp0, left = res.total, shown = 0;
+  const badge = (n) => { lvEl.innerHTML = '<span style="display:block;transform:rotate(-45deg)">' + n + '</span>'; };
+  badge(lv); fill.style.transition = 'none'; fill.style.width = (xp / xpForLevel(lv) * 100) + '%';
+  const t0 = performance.now() + 300 + res.log.length * 140, dur = 1600;
+  let last = t0;
+  function step(now) {
+    if (now < t0) { requestAnimationFrame(step); return; }
+    const k = Math.min(1, (now - t0) / dur), want = Math.round(res.total * (1 - Math.pow(1 - k, 3)));
+    let add = want - shown; shown = want; gain.textContent = '+' + shown.toLocaleString();
+    while (add > 0) {
+      const need = xpForLevel(lv) - xp, take = Math.min(need, add);
+      xp += take; add -= take; left -= take;
+      if (xp >= xpForLevel(lv)) {
+        xp = 0; lv++; badge(lv); SFX.chestOpen(null);
+        const r = tierReward(lv);
+        const d = document.createElement('div'); d.className = 'unl'; d.innerHTML = '<small>Level ' + lv + '</small>' + (r ? KIND_ICON[r.kind] + ' ' : '') + '<span></span>';
+        d.querySelector('span').textContent = r ? r.label : 'Level up'; unl.appendChild(d);
+      }
+    }
+    fill.style.width = (xp / xpForLevel(lv) * 100).toFixed(1) + '%';
+    if (k < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+// ==== 12e_ui.js ====
+// ---------- in-match UI: Tab inventory and pings ----------
+const INV = (() => {
+  let el = null, open = false, sel = -1;
+  function ensure() {
+    if (el) return;
+    el = document.createElement('div'); el.id = 'inv'; el.hidden = true;
+    el.innerHTML = '<div class="inv-panel"><div class="inv-head"><h2 class="disp">Inventory</h2><span>Click two slots to swap · Tab to close</span></div><div class="inv-slots" id="inv-slots"></div><div class="inv-row"><div class="inv-box"><h3 class="disp">Ammo</h3><div id="inv-ammo"></div></div><div class="inv-box"><h3 class="disp">Materials</h3><div id="inv-mats"></div></div></div></div>';
+    document.body.appendChild(el);
+    el.addEventListener('click', (e) => {
+      if (e.target === el) { toggle(false); return; }
+      const drop = e.target.closest('[data-drop]'), dm = e.target.closest('[data-dropmat]'), s = e.target.closest('.inv-slot');
+      if (drop) { dropSlot(+drop.dataset.drop); e.stopPropagation(); return; }
+      if (dm) { dropMat(dm.dataset.dropmat); return; }
+      if (s) { const i = +s.dataset.i; if (sel < 0) sel = i; else { const p = player, t = p.inv[i]; p.inv[i] = p.inv[sel]; p.inv[sel] = t; if (p.slot === sel) p.slot = i; else if (p.slot === i) p.slot = sel; updateHeld(p); sel = -1; SFX.click(); } render(); }
+    });
+  }
+  function itemHTML(s) {
+    if (!s) return '<span class="empty">Empty</span>';
+    if (s.kind === 'weapon') return '<svg viewBox="0 0 64 28"><path d="' + ICON[s.id] + '"/></svg><b>' + WEAPONS[s.id].name + '</b><small>' + RARITY[s.rarity].name + ' · ' + s.mag + '/' + WEAPONS[s.id].mag + '</small>';
+    const d = CONSUMABLES[s.id];
+    return '<svg viewBox="0 0 64 28">' + (CONS_SVG[s.id] || '') + '</svg><b>' + d.name + '</b><small>×' + s.count + '</small>';
+  }
+  function render() {
+    const p = player; if (!p) return;
+    document.getElementById('inv-slots').innerHTML = p.inv.map((s, i) => '<div class="inv-slot' + (s && s.kind === 'weapon' ? ' r' + s.rarity : '') + (sel === i ? ' sel' : '') + (p.slot === i ? ' eq' : '') + '" data-i="' + i + '"><span class="k">' + (i + 1) + '</span>' + itemHTML(s) + (s ? '<button class="btn mini" data-drop="' + i + '">Drop</button>' : '') + '</div>').join('');
+    document.getElementById('inv-ammo').innerHTML = Object.keys(AMMO).map((k) => '<div class="inv-line"><i style="background:' + hexCss(AMMO[k].color) + '"></i><span>' + AMMO[k].name + '</span><b>' + (p.ammo[k] || 0) + '</b></div>').join('');
+    document.getElementById('inv-mats').innerHTML = MAT_ORDER.map((k) => '<div class="inv-line">' + MAT_SVG[k] + '<span>' + MATNAME[k] + '</span><b>' + p.mats[k] + '</b><button class="btn mini" data-dropmat="' + k + '">Drop 30</button></div>').join('');
+  }
+  function dropSlot(i) {
+    const p = player, s = p.inv[i]; if (!s) return;
+    p.inv[i] = null; if (p.slot === i) { p.slot = -1; updateHeld(p); }
+    const fx = -Math.sin(p.yaw), fz = -Math.cos(p.yaw);
+    dropItem(invToItem(s), p.pos.x + fx, p.pos.y + 1, p.pos.z + fz, fx * 3, 3, fz * 3);
+    SFX.click(); render();
+  }
+  function dropMat(k) {
+    const p = player, n = Math.min(30, p.mats[k]); if (!n || MODE().creative) return;
+    p.mats[k] -= n; const fx = -Math.sin(p.yaw), fz = -Math.cos(p.yaw);
+    dropItem({ kind: 'mats', mat: k, count: n }, p.pos.x + fx, p.pos.y + 1, p.pos.z + fz, fx * 3, 3, fz * 3); render();
+  }
+  function toggle(on) {
+    ensure(); open = on === undefined ? !open : on; el.hidden = !open; sel = -1;
+    if (open) { releaseLock(); render(); } else if (GAME.state === 'play' && !GAME.paused) requestLock();
+  }
+  return { toggle, render, get open() { return open; } };
+})();
+// ---------- pings ----------
+const PINGS = [];
+const PING = (() => {
+  let host = null;
+  function ensure() { if (!host) { host = document.createElement('div'); host.id = 'pings'; document.getElementById('hud').appendChild(host); } }
+  function place(p) {
+    camera.getWorldDirection(_tmpV);
+    const o = camera.position;
+    const hc = rayCharacters(o.x, o.y, o.z, _tmpV.x, _tmpV.y, _tmpV.z, 300, p);
+    const hw = raycastWorld(o.x, o.y, o.z, _tmpV.x, _tmpV.y, _tmpV.z, 400, true);
+    let ping;
+    if (hc.c && hc.t < hw.t && !sameTeam(hc.c, p)) ping = { type: 'enemy', char: hc.c, pos: hc.c.pos.clone(), label: 'Enemy', life: 5 };
+    else {
+      const t = Math.min(hw.t, 400), pos = new V3(o.x + _tmpV.x * t, o.y + _tmpV.y * t, o.z + _tmpV.z * t);
+      let it = null, bd = 4; for (const q of ITEMS) { if (!q.alive) continue; const d = q.pos.distanceTo(pos); if (d < bd) { bd = d; it = q; } }
+      const ch = CHESTS.find((c) => !c.opened && c.pos.distanceTo(pos) < 3);
+      ping = it ? { type: 'item', pos: it.pos.clone(), label: itemLabel(it), life: 12, rar: itemRarity(it) } : ch ? { type: 'item', pos: ch.pos.clone(), label: 'Chest', life: 12, rar: 4 } : { type: 'go', pos, label: 'Go here', life: 12 };
+    }
+    ping.t = GAME.time; ping.by = p;
+    // one location ping per player: a new one replaces the old
+    for (let i = PINGS.length - 1; i >= 0; i--) if (PINGS[i].by === p && PINGS[i].type === ping.type) PINGS.splice(i, 1);
+    PINGS.push(ping);
+    SFX.ping ? SFX.ping(ping.type) : SFX.click();
+    // teammates react
+    for (const b of bots) {
+      if (!b.alive || b.team !== p.team || b === p || !teamMode()) continue;
+      if (ping.type === 'enemy' && hasWeapon(b)) { b.target = ping.char; b.lastSeen = GAME.time; b.lastSeenPos.copy(ping.char.pos); }
+      else if (ping.type === 'go' && !b.visible) { b.pingGo = { x: ping.pos.x, z: ping.pos.z, until: GAME.time + 25 }; }
+    }
+  }
+  const _p = new V3();
+  function update(dt) {
+    ensure();
+    for (let i = PINGS.length - 1; i >= 0; i--) { const P = PINGS[i]; if (GAME.time - P.t > P.life || (P.char && !P.char.alive)) { if (P.el) P.el.remove(); PINGS.splice(i, 1); } }
+    const W = innerWidth, H = innerHeight;
+    for (const P of PINGS) {
+      if (!P.el) { P.el = document.createElement('div'); P.el.className = 'ping ' + P.type; P.el.innerHTML = '<span class="ic"></span><span class="lb"></span>'; P.el.querySelector('.lb').textContent = P.label; host.appendChild(P.el); }
+      if (P.char) P.pos.copy(P.char.pos);
+      _p.set(P.pos.x, P.pos.y + (P.char ? 2.6 : 0.6), P.pos.z).project(camera);
+      let x = (_p.x * 0.5 + 0.5) * W, y = (-_p.y * 0.5 + 0.5) * H;
+      if (_p.z > 1) { x = W - x; y = H - 12; }
+      x = clamp(x, 30, W - 30); y = clamp(y, 40, H - 40);
+      P.el.style.transform = 'translate(' + x.toFixed(0) + 'px,' + y.toFixed(0) + 'px) translate(-50%,-100%)';
+      const d = player ? Math.round(player.pos.distanceTo(P.pos)) : 0;
+      P.el.querySelector('.lb').textContent = P.label + ' · ' + d + 'm';
+      P.el.style.opacity = Math.min(1, (P.life - (GAME.time - P.t)) * 1.5).toFixed(2);
+    }
+  }
+  function clear() { for (const P of PINGS) if (P.el) P.el.remove(); PINGS.length = 0; }
+  return { place, update, clear };
 })();
 
 // ==== 13_game.js ====
@@ -6536,12 +7257,14 @@ function updatePlayer(dt) {
   const p = player, A = GAME.forceA ? Object.assign({ mx: 0, my: 0, slotKey: -1 }, GAME.forceA) : INPUT.actions();
   GAME.pendingA = A;
   if (A.map) HUD.toggleMap();
+  if (A.inventory && GAME.state === 'play') INV.toggle();
+  if (A.ping && p.alive && GAME.state === 'play' && p.mode !== 'bus') PING.place(p);
   if (!p.alive) return;
   if (GAME.state === 'won') { p.vel.x = 0; p.vel.z = 0; p.aiming = false; charPhysics(p, dt); animateRig(p, dt); return; }
   const w0 = curWeapon(p);
   const zoom = p.aiming && w0 ? WEAPONS[w0.id].zoom : 1;
-  const s = 0.0021 * SETTINGS.sens / zoom;
-  p.yaw -= INPUT.dx * s; p.pitch = clamp(p.pitch - INPUT.dy * s, -1.45, 1.45);
+  const s = 0.0021 * SETTINGS.sens / zoom * (p.aiming ? SETTINGS.adsSens / 0.75 : 1);
+  p.yaw -= INPUT.dx * s; p.pitch = clamp(p.pitch - INPUT.dy * s * (SETTINGS.invertY ? -1 : 1), -1.45, 1.45);
   if (p.mode === 'bus') { if (A.jump || BUS.t >= 1) jumpOut(p); return; }
   if (p.mode === 'sky' || p.mode === 'glide') {
     skyPhysics(p, dt, clamp(A.mx, -1, 1), clamp(A.my, -1, 1), A.jump);
@@ -6564,7 +7287,7 @@ function updatePlayer(dt) {
     const E = EMOTES[p.emote];
     if (Math.abs(mx) + Math.abs(my) > 0.1 || A.fire || A.jump || A.aim || A.buildToggle || A.piece || A.slotKey >= 0 || A.crouchPressed || (E && E.len && GAME.time - p.emoteStart > E.len)) stopEmote(p);
   }
-  if (A.emote && p.grounded && !p.sliding && !p.mantle) { const ids = Object.keys(EMOTES); playEmote(p, ids[(ids.indexOf(p.emote) + 1) % ids.length]); HUD.banner(EMOTES[p.emote].name, '', 0.9); }
+  if (A.emote && p.grounded && !p.sliding && !p.mantle && !p.knocked) { const ids = PROFILE.loadout.emotes.filter((k) => EMOTES[k]); if (ids.length) { playEmote(p, ids[(ids.indexOf(p.emote) + 1) % ids.length]); HUD.banner(EMOTES[p.emote].name, '', 0.9); ev('emote'); } }
   if (p.mantle) { updateMantle(p, dt); tickEye(p, dt); p.modelYaw = p.yaw; return; }
   if (p.zip) { updateZip(p, dt, A.jump); tickEye(p, dt); return; }
   if (p.vehicle) { updateVehicle(p.vehicle, dt, { mx, my, jump: A.jump }); if (A.interact) exitVehicle(p); tickEye(p, dt); return; }
@@ -6761,7 +7484,7 @@ function updateCamera(dt) {
   CAM.yaw = yaw; CAM.scoped = scoped && CAM.dist < 0.35;
   if (player.alive && player.mode !== 'bus') player.rig.root.visible = !CAM.scoped;
   CAM.fovAdd = lerp(CAM.fovAdd, f === player && !w ? (player.sliding ? 9 : player.sprinting && fsp > 7.5 ? 5 : 0) : 0, 1 - Math.exp(-dt * 6));
-  setFov(w ? 75 / WEAPONS[w.id].zoom : f.mode === 'sky' ? 84 : 75 + CAM.fovAdd, dt);
+  setFov(w ? SETTINGS.fov / WEAPONS[w.id].zoom : f.mode === 'sky' ? SETTINGS.fov + 9 : SETTINGS.fov + CAM.fovAdd, dt);
 }
 function updateEnv(dt) {
   const cp = camera.position;
@@ -6784,7 +7507,7 @@ function updateEnv(dt) {
   if (p && GAME.state !== 'menu') {
     POST.U.hurt.value = Math.max(0, POST.U.hurt.value - dt * 2.2);
     POST.U.lowhp.value = lerp(POST.U.lowhp.value, p.alive && p.hp < 35 && p.mode === 'ground' ? (1 - p.hp / 35) * 0.9 + 0.1 : 0, 1 - Math.exp(-dt * 4));
-    POST.U.speed.value = lerp(POST.U.speed.value, p.alive && p.mode === 'sky' ? clamp((-p.vel.y - 30) / 22, 0, 1) * 0.9 : 0, 1 - Math.exp(-dt * 5));
+    POST.U.speed.value = lerp(POST.U.speed.value, p.alive && p.mode === 'sky' && SETTINGS.blur ? clamp((-p.vel.y - 30) / 22, 0, 1) * 0.9 : 0, 1 - Math.exp(-dt * 5));
     UPLAYER.value.copy(p.pos);
   } else { POST.U.hurt.value = 0; POST.U.lowhp.value = 0; POST.U.speed.value = 0; }
   POST.U.flash.value = Math.max(0, POST.U.flash.value - dt * 4);
@@ -6868,7 +7591,9 @@ function setupMatch() {
   GAME.menuWorldFresh = false;
   characters.length = 0; bots.length = 0; usedNames.clear(); NOISE.length = 0; PATHQ.length = 0; DROPS.clear();
   FX.clear(); VFX.clear(); HUD.reset(); INPUT.clearAim(); INPUT.clearCrouch();
-  player = makeCharacter(true, 'You', OUTFITS[SETTINGS.outfit % OUTFITS.length]); player.emote = null;
+  player = makeCharacter(true, 'You', equippedOutfit()); player.emote = null;
+  if (LOBBY.char) LOBBY.char.rig.root.visible = false;
+  GAME.rewards = null;
   characters.push(player);
   const nb = MODE().creative ? 6 : SETTINGS.bots;
   for (let i = 0; i < nb; i++) { const b = makeBot(); bots.push(b); characters.push(b); }
@@ -6891,6 +7616,8 @@ function setupMatch() {
   HUD.banner('Jump when ready', TOD[tod].name + ' · ' + WEATHER[wx].name + ' — ' + (IS_TOUCH ? 'tap JUMP to leave the dropship' : 'press Space to leave the dropship'), 5);
   STORM.mesh.visible = true;
   GAME.endShown = false;
+  matchStart();
+  PING.clear(); if (INV.open) INV.toggle(false);
   if (MODE().rumble) rumbleSetup();
   if (MODE().creative) creativeSetup();
   if (MODE().name !== 'Solo' || MUT().name !== 'No mutator') HUD.banner(MODE().creative ? 'Creative' : 'Jump when ready', MODE().name + (MUT().name !== 'No mutator' ? ' · ' + MUT().name : '') + ' — ' + (IS_TOUCH ? 'tap JUMP to leave the dropship' : 'press Space to leave the dropship'), 5);
@@ -6950,6 +7677,9 @@ function checkEnd() {
   }
 }
 function showEnd(win) {
+  if (INV.open) INV.toggle(false);
+  if (!GAME.rewards) GAME.rewards = matchEnd(win) || 'none';
+  showMatchRewards(GAME.rewards === 'none' ? null : GAME.rewards);
   releaseLock(); HUD.hideBanner();
   $id('endscreen').hidden = false; $id('spec').hidden = true;
   HUD.toggleMap(false);
@@ -6999,10 +7729,15 @@ function quitToMenu() {
   BUS.mesh.visible = false; showGhost(null); STORM.mesh.visible = false; if (player) endEdit(player, false);
   for (const n of ['wind', 'hum', 'storm', 'glide', 'slide', 'bus']) SFX.loop(n, 0);
   CAM.storm = 0;
+  if (MATCH.active) matchEnd(false);
+  PING.clear(); if (INV.open) INV.toggle(false);
+  if (LOBBY.char && LOBBY.char.rig.root.parent !== worldGroup) LOBBY.spot = null;
+  refreshLobbyChar(); MENU.refresh(); MENU.setTab('play');
 }
 
 // ---------- settings + menu ----------
 function applyQuality() {
+  POST.U.grain.value = SETTINGS.grain ? 0.025 : 0;
   VFX.setLights(Q().lights);
   const q = Q();
   const sh = q.shadows > 0;
@@ -7026,38 +7761,14 @@ function onResize() {
   camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
   FX.setScale(pointScale());
 }
-function syncSegs() {
-  document.querySelectorAll('.seg').forEach((seg) => {
-    const k = seg.dataset.opt;
-    seg.querySelectorAll('button').forEach((b) => b.classList.toggle('on', String(SETTINGS[k]) === b.dataset.v));
-  });
-}
-function syncOutfit() {
-  const o = OUTFITS[SETTINGS.outfit % OUTFITS.length];
-  $id('of-name').textContent = o.name;
-  $id('of-chips').innerHTML = [o.c1, o.c2, o.legs, o.hairC].map((c) => '<i style="background:' + hexCss(c) + '"></i>').join('');
-}
 function wireMenu() {
-  document.body.classList.toggle('is-touch', IS_TOUCH);
-  $id('controls-help').hidden = IS_TOUCH; $id('touch-help').hidden = !IS_TOUCH;
-  document.querySelectorAll('.seg').forEach((seg) => seg.addEventListener('click', (e) => {
-    const b = e.target.closest('button'); if (!b) return;
-    const k = seg.dataset.opt, v = b.dataset.v;
-    SETTINGS[k] = k === 'bots' ? +v : v; saveSettings(); syncSegs(); SFX.click();
-    if (k === 'quality') applyQuality();
-  }));
-  $id('of-prev').addEventListener('click', () => { SETTINGS.outfit = (SETTINGS.outfit + OUTFITS.length - 1) % OUTFITS.length; saveSettings(); syncOutfit(); });
-  $id('of-next').addEventListener('click', () => { SETTINGS.outfit = (SETTINGS.outfit + 1) % OUTFITS.length; saveSettings(); syncOutfit(); });
+  MENU.init();
   const bindRange = (id, key, fmt) => {
     const el = $id(id), out = $id(id + '-out');
     el.value = SETTINGS[key]; out.textContent = fmt(SETTINGS[key]);
-    el.addEventListener('input', () => {
-      SETTINGS[key] = +el.value; out.textContent = fmt(SETTINGS[key]); saveSettings();
-      if (key === 'vol') SFX.setVolume(SETTINGS.vol);
-      for (const other of ['sens', 'sens2']) if (other !== id && key === 'sens') { $id(other).value = SETTINGS.sens; $id(other + '-out').textContent = fmt(SETTINGS.sens); }
-    });
+    el.addEventListener('input', () => { SETTINGS[key] = +el.value; out.textContent = fmt(SETTINGS[key]); saveSettings(); if (key === 'vol') SFX.setVolume(SETTINGS.vol); });
   };
-  bindRange('sens', 'sens', (v) => (+v).toFixed(1)); bindRange('sens2', 'sens', (v) => (+v).toFixed(1)); bindRange('vol', 'vol', (v) => Math.round(v * 100));
+  bindRange('sens2', 'sens', (v) => (+v).toFixed(1)); bindRange('vol', 'vol', (v) => Math.round(v * 100));
   $id('play').addEventListener('click', startMatch);
   $id('again').addEventListener('click', startMatch);
   $id('resume').addEventListener('click', resume);
@@ -7067,15 +7778,13 @@ function wireMenu() {
   $id('spec-next').addEventListener('click', nextSpectate);
   $id('spec-back').addEventListener('click', backToResults);
   for (const ev of ['pointerdown', 'keydown']) addEventListener(ev, () => SFX.init(), { once: true });
-  document.querySelectorAll('.play, .seg button, .outfit button').forEach((b) => b.addEventListener('mouseenter', () => SFX.hover()));
-  syncSegs(); syncOutfit();
 }
 
 // ---------- main loop ----------
 let _last = performance.now(), _fpsT = 0, _fpsN = 0;
 function frame(dt) {
   GAME.dtLast = dt;
-  if (GAME.state === 'menu') { menuCamera(dt); updateEnv(dt); updateAudio(dt); FX.update(dt); VFX.update(dt); INPUT.endFrame(); return; }
+  if (GAME.state === 'menu') { updateLobby(dt); updateEnv(dt); updateAudio(dt); FX.update(dt); VFX.update(dt); INPUT.endFrame(); return; }
   if (GAME.paused) { INPUT.endFrame(); return; }
   GAME.time += dt;
   updateBus(dt);
@@ -7103,6 +7812,7 @@ function frame(dt) {
   updateAudio(dt);
   HUD.update(dt);
   TEAMHUD.update(dt);
+  PING.update(dt);
   if (!$id('spec').hidden && (!GAME.spectating || !GAME.spectating.alive)) nextSpectate();
   $id('clickplay').hidden = IS_TOUCH || INPUT.locked || GAME.state !== 'play' || !player.alive;
   $id('rotate').hidden = !(IS_TOUCH && innerHeight > innerWidth * 1.1);
@@ -7118,7 +7828,7 @@ function loop(now) {
   POST.render();
   updateDynRes(raw);
   _fpsT += dt; _fpsN++;
-  if (_fpsT > 1) { GAME.fps = Math.round(_fpsN / _fpsT); _fpsT = 0; _fpsN = 0; }
+  if (_fpsT > 1) { GAME.fps = Math.round(_fpsN / _fpsT); _fpsT = 0; _fpsN = 0; const fe = $id('fps'); fe.hidden = !SETTINGS.fps; if (SETTINGS.fps) fe.textContent = GAME.fps + ' fps'; }
 }
 function init() {
   renderer = new THREE.WebGLRenderer({ canvas: $id('c'), antialias: false, powerPreference: 'high-performance', stencil: false });
@@ -7135,16 +7845,18 @@ function init() {
   const sc = sun.shadow.camera; sc.near = 10; sc.far = 520;
   sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.05;
   scene.add(sun); scene.add(sun.target);
+  loadProfile();
   makeTextures(); makeMaterials(); makeEnvironment(); initBuildGeo(); makeStormMesh(); makeBusMesh();
   FX.init(); VFX.init(); HUD.init(); INPUT.init(); wireMenu();
   addEventListener('resize', onResize);
   applyEnvironment('golden', 'clear');
   newWorld((Math.random() * 1e9) | 0); GAME.menuWorldFresh = true; GAME.worldMut = SETTINGS.mutator;
   stormInit(); STORM.mesh.visible = false;
+  refreshLobbyChar(); MENU.refresh();
+  CLOUD.init();
   applyQuality();
   requestAnimationFrame(loop);
-  if (GAME.freeze) { _last = now; return; }
-  window.STORMDROP = { grassWeight, groundH, WATER, RAIN, GRASS, sun, renderer: () => renderer, setEnv(v) { scene.environment = v ? ENVSTATE.envRT.texture : null; }, scene: () => scene, applyEnvironment, POST, ENVSTATE, renderOnce() { const t0 = performance.now(); POST.render(); return performance.now() - t0; }, frameOnce(dt) { const t0 = performance.now(); frame(dt); return performance.now() - t0; }, dbg: { traceShot, AIM, raycastWorld, rayCharacters, computeAim, eyeOf }, get info() { return renderer.info.render; }, step(n, dt) { for (let i = 0; i < n; i++) frame(dt || 0.05); }, GAME, get player() { return player; }, bots, characters, STORM, BUS, WORLD, startMatch, setupMatch, jumpOut, CAM, PIECES, ITEMS, CHESTS, SETTINGS, animateRig, updateHeld, giveItem, playEmote, makeCharacter, genOutfit, camera: () => camera, SFX, FX, VFX, placePiece, buildTarget, explode, fireWeapon, updateBuild, frame: (dt) => frame(dt), updateCamera: (dt) => updateCamera(dt), WEAPONS, CONSUMABLES, GADGETS, useGadget, AIM, ZIPS, biomeAt, VEHICLES, enterVehicle, RUMBLE, MODE, startEdit, endEdit, editTarget, applyWallEdit, PIECES_: () => PIECES, testBox(x, y, z, w, h, d) { const c = boxCollider(x - w / 2, y, z - d / 2, x + w / 2, y + h, z + d / 2, { kind: "test", hp: Infinity }); const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), MAT.build.stone); m.position.set(x, y + h / 2, z); worldGroup.add(m); return c; } };
+  window.STORMDROP = { grassWeight, groundH, WATER, RAIN, GRASS, sun, renderer: () => renderer, setEnv(v) { scene.environment = v ? ENVSTATE.envRT.texture : null; }, scene: () => scene, applyEnvironment, POST, ENVSTATE, renderOnce() { const t0 = performance.now(); POST.render(); return performance.now() - t0; }, frameOnce(dt) { const t0 = performance.now(); frame(dt); return performance.now() - t0; }, dbg: { traceShot, AIM, raycastWorld, rayCharacters, computeAim, eyeOf }, get info() { return renderer.info.render; }, step(n, dt) { for (let i = 0; i < n; i++) frame(dt || 0.05); }, GAME, get player() { return player; }, bots, characters, STORM, BUS, WORLD, startMatch, setupMatch, jumpOut, CAM, PIECES, ITEMS, CHESTS, SETTINGS, animateRig, updateHeld, giveItem, playEmote, makeCharacter, genOutfit, camera: () => camera, SFX, FX, VFX, placePiece, buildTarget, explode, fireWeapon, updateBuild, frame: (dt) => frame(dt), updateCamera: (dt) => updateCamera(dt), WEAPONS, CONSUMABLES, GADGETS, useGadget, AIM, ZIPS, biomeAt, VEHICLES, enterVehicle, RUMBLE, MODE, showEnd, PROFILE_: () => PROFILE, MENU, INV, PING, ev, startEdit, endEdit, editTarget, applyWallEdit, PIECES_: () => PIECES, testBox(x, y, z, w, h, d) { const c = boxCollider(x - w / 2, y, z - d / 2, x + w / 2, y + h, z + d / 2, { kind: "test", hp: Infinity }); const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), MAT.build.stone); m.position.set(x, y + h / 2, z); worldGroup.add(m); return c; } };
 }
 init();
 

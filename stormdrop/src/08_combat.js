@@ -120,14 +120,14 @@ function applyDamage(t, amt, src, wname, head, kind) {
       const s = Math.min(t.shield, amt); t.shield -= s; amt -= s;
       if (src && src.isPlayer) FX.number(t.pos.x, t.pos.y + 2.1, t.pos.z, s, 'sh', t);
       if (t.shield <= 0) { if (t.isPlayer) SFX.shieldBreak(); if (t.rig.root.visible) VFX.shieldBreak(t); }
-      if (src && src.isPlayer) src.damageDealt += s;
+      if (src && src.isPlayer) { src.damageDealt += s; ev('damage', s); }
     }
   }
   if (t.armor) amt *= 1 - t.armor;
   amt = Math.round(amt * 10) / 10;
   if (amt > 0) {
     t.hp -= amt;
-    if (src && src.isPlayer && src !== t) { FX.number(t.pos.x, t.pos.y + 2.1, t.pos.z, amt, head ? 'head' : '', t); src.damageDealt += amt; }
+    if (src && src.isPlayer && src !== t) { FX.number(t.pos.x, t.pos.y + 2.1, t.pos.z, amt, head ? 'head' : '', t); src.damageDealt += amt; ev('damage', amt); if (head) ev('headshots'); }
   }
   if (src && src.isPlayer && src !== t) { SFX.hit(head, t.shield > 0); HUD.hitmarker(head); }
   if (t.isPlayer) { if (kind !== 'storm') { HUD.hurt(src); SFX.hurt(); GAME.combatT = GAME.time; CAM.shake = Math.min(1, CAM.shake + 0.12 + Math.min(0.3, amt / 140)); } }
@@ -155,7 +155,7 @@ function eliminate(t, src, wname, kind) {
   else msg = nm(t) + ' was eliminated';
   HUD.feed(msg);
   if (src && src !== t && src.alive && !src.isPlayer) src.killEmoteT = GAME.time + mr(0.8, 1.6);
-  if (src && src !== t && src.alive) { src.kills++; if (src.isPlayer) { HUD.elimToast(t.name, src.kills); SFX.elim(); HUD.elimMark(); src.streak = (GAME.time - (src.lastElimT || -99) < 5) ? (src.streak || 1) + 1 : 1; src.lastElimT = GAME.time; if (src.streak >= 2) SFX.announce(['', '', 'Double elimination', 'Triple elimination', 'Quad elimination', 'Unstoppable'][Math.min(5, src.streak)], true); } }
+  if (src && src !== t && src.alive) { src.kills++; if (src.isPlayer) { HUD.elimToast(t.name, src.kills); SFX.elim(); HUD.elimMark(); ev('kills'); const wg = weaponGroup(wname || ''); if (wg) ev('kills_' + wg); if (t.boss) ev('boss'); src.streak = (GAME.time - (src.lastElimT || -99) < 5) ? (src.streak || 1) + 1 : 1; src.lastElimT = GAME.time; if (src.streak >= 2) SFX.announce(['', '', 'Double elimination', 'Triple elimination', 'Quad elimination', 'Unstoppable'][Math.min(5, src.streak)], true); } }
   FX.elim(t.pos);
   GAME.alive = characters.reduce((n, c) => n + (c.alive && !c.npc && !c.dummy ? 1 : 0), 0);
   if (MODE().rumble) rumbleElim(t, src);
@@ -213,7 +213,7 @@ function meleeSwing(c, ox, oy, oz, d, reach) {
   if (col.harvest && !col.piece) {
     const mat = col.harvest, amt = Math.round((col.kind === 'tree' ? 7 : col.kind === 'rock' ? 8 : 6) * (crit ? 2 : 1) * mr(0.85, 1.25));
     c.mats[mat] = Math.min(999, c.mats[mat] + amt);
-    if (c.isPlayer) { HUD.matPop(mat, amt); GAME.stats.mats += amt; }
+    if (c.isPlayer) { HUD.matPop(mat, amt); GAME.stats.mats += amt; ev('mats', amt); }
   }
   damageCollider(col, dmg, c, ex, ey, ez);
   if (c.isPlayer) placeWeakSpot(col, ex, ey, ez, h.nx, h.ny, h.nz);
@@ -387,6 +387,7 @@ const FX = (() => {
       tracers.setColorAt(i, dcol.set(hex).convertSRGBToLinear().multiplyScalar(6)); tracers.instanceColor.needsUpdate = true;
     },
     number(x, y, z, amt, kind, target) {
+      if (!SETTINGS.dmgNums) return;
       // hits on the same target within a short window stack into one growing number
       const sk = kind === 'sh' ? 'sh' : 'hp';
       let d = target ? dnLive.find((q) => q.target === target && q.sk === sk && q.life > 0.45) : null;

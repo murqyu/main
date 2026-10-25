@@ -69,6 +69,7 @@ function reviveDone(t, by) {
   HUD.feed(nm(by) + ' revived ' + nm(t));
   FX.burst(t.pos.x, t.pos.y + 1, t.pos.z, 24, 0x5ee05a, 4, 0.6, 0.25, true, -2);
   if (t.isPlayer || by.isPlayer) SFX.heal(false);
+  if (by.isPlayer && by !== t) ev('revive');
 }
 // called when a standing character goes down for good: knocked teammates with nobody left are wiped
 function checkTeamWipe(team, src) {
@@ -185,6 +186,7 @@ function mateThink(b, now) {
     return true;
   }
   if (!b.mate || !player) return false;
+  if (b.pingGo && GAME.time < b.pingGo.until && !b.visible && !b.target) { b.state = 'follow'; b.wantSprint = true; if (Math.hypot(b.pingGo.x - b.pos.x, b.pingGo.z - b.pos.z) > 4) setMove(b, b.pingGo.x + mr(-3, 3), b.pingGo.z + mr(-3, 3), 'ping'); else b.pingGo = null; return true; }
   // share the player's fights
   if (!b.visible && player.alive && player.aimChar && player.aimChar.alive && now - (GAME.combatT || -99) < 2 && !sameTeam(b, player.aimChar) && hasWeapon(b)) {
     const t = player.aimChar; if (b.pos.distanceTo(t.pos) < 90) { b.target = t; b.lastSeen = now; b.lastSeenPos.copy(t.pos); }

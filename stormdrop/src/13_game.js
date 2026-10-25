@@ -63,12 +63,14 @@ function updatePlayer(dt) {
   const p = player, A = GAME.forceA ? Object.assign({ mx: 0, my: 0, slotKey: -1 }, GAME.forceA) : INPUT.actions();
   GAME.pendingA = A;
   if (A.map) HUD.toggleMap();
+  if (A.inventory && GAME.state === 'play') INV.toggle();
+  if (A.ping && p.alive && GAME.state === 'play' && p.mode !== 'bus') PING.place(p);
   if (!p.alive) return;
   if (GAME.state === 'won') { p.vel.x = 0; p.vel.z = 0; p.aiming = false; charPhysics(p, dt); animateRig(p, dt); return; }
   const w0 = curWeapon(p);
   const zoom = p.aiming && w0 ? WEAPONS[w0.id].zoom : 1;
-  const s = 0.0021 * SETTINGS.sens / zoom;
-  p.yaw -= INPUT.dx * s; p.pitch = clamp(p.pitch - INPUT.dy * s, -1.45, 1.45);
+  const s = 0.0021 * SETTINGS.sens / zoom * (p.aiming ? SETTINGS.adsSens / 0.75 : 1);
+  p.yaw -= INPUT.dx * s; p.pitch = clamp(p.pitch - INPUT.dy * s * (SETTINGS.invertY ? -1 : 1), -1.45, 1.45);
   if (p.mode === 'bus') { if (A.jump || BUS.t >= 1) jumpOut(p); return; }
   if (p.mode === 'sky' || p.mode === 'glide') {
     skyPhysics(p, dt, clamp(A.mx, -1, 1), clamp(A.my, -1, 1), A.jump);
@@ -91,7 +93,7 @@ function updatePlayer(dt) {
     const E = EMOTES[p.emote];
     if (Math.abs(mx) + Math.abs(my) > 0.1 || A.fire || A.jump || A.aim || A.buildToggle || A.piece || A.slotKey >= 0 || A.crouchPressed || (E && E.len && GAME.time - p.emoteStart > E.len)) stopEmote(p);
   }
-  if (A.emote && p.grounded && !p.sliding && !p.mantle) { const ids = Object.keys(EMOTES); playEmote(p, ids[(ids.indexOf(p.emote) + 1) % ids.length]); HUD.banner(EMOTES[p.emote].name, '', 0.9); }
+  if (A.emote && p.grounded && !p.sliding && !p.mantle && !p.knocked) { const ids = PROFILE.loadout.emotes.filter((k) => EMOTES[k]); if (ids.length) { playEmote(p, ids[(ids.indexOf(p.emote) + 1) % ids.length]); HUD.banner(EMOTES[p.emote].name, '', 0.9); ev('emote'); } }
   if (p.mantle) { updateMantle(p, dt); tickEye(p, dt); p.modelYaw = p.yaw; return; }
   if (p.zip) { updateZip(p, dt, A.jump); tickEye(p, dt); return; }
   if (p.vehicle) { updateVehicle(p.vehicle, dt, { mx, my, jump: A.jump }); if (A.interact) exitVehicle(p); tickEye(p, dt); return; }
@@ -288,7 +290,7 @@ function updateCamera(dt) {
   CAM.yaw = yaw; CAM.scoped = scoped && CAM.dist < 0.35;
   if (player.alive && player.mode !== 'bus') player.rig.root.visible = !CAM.scoped;
   CAM.fovAdd = lerp(CAM.fovAdd, f === player && !w ? (player.sliding ? 9 : player.sprinting && fsp > 7.5 ? 5 : 0) : 0, 1 - Math.exp(-dt * 6));
-  setFov(w ? 75 / WEAPONS[w.id].zoom : f.mode === 'sky' ? 84 : 75 + CAM.fovAdd, dt);
+  setFov(w ? SETTINGS.fov / WEAPONS[w.id].zoom : f.mode === 'sky' ? SETTINGS.fov + 9 : SETTINGS.fov + CAM.fovAdd, dt);
 }
 function updateEnv(dt) {
   const cp = camera.position;
@@ -311,7 +313,7 @@ function updateEnv(dt) {
   if (p && GAME.state !== 'menu') {
     POST.U.hurt.value = Math.max(0, POST.U.hurt.value - dt * 2.2);
     POST.U.lowhp.value = lerp(POST.U.lowhp.value, p.alive && p.hp < 35 && p.mode === 'ground' ? (1 - p.hp / 35) * 0.9 + 0.1 : 0, 1 - Math.exp(-dt * 4));
-    POST.U.speed.value = lerp(POST.U.speed.value, p.alive && p.mode === 'sky' ? clamp((-p.vel.y - 30) / 22, 0, 1) * 0.9 : 0, 1 - Math.exp(-dt * 5));
+    POST.U.speed.value = lerp(POST.U.speed.value, p.alive && p.mode === 'sky' && SETTINGS.blur ? clamp((-p.vel.y - 30) / 22, 0, 1) * 0.9 : 0, 1 - Math.exp(-dt * 5));
     UPLAYER.value.copy(p.pos);
   } else { POST.U.hurt.value = 0; POST.U.lowhp.value = 0; POST.U.speed.value = 0; }
   POST.U.flash.value = Math.max(0, POST.U.flash.value - dt * 4);
@@ -395,7 +397,9 @@ function setupMatch() {
   GAME.menuWorldFresh = false;
   characters.length = 0; bots.length = 0; usedNames.clear(); NOISE.length = 0; PATHQ.length = 0; DROPS.clear();
   FX.clear(); VFX.clear(); HUD.reset(); INPUT.clearAim(); INPUT.clearCrouch();
-  player = makeCharacter(true, 'You', OUTFITS[SETTINGS.outfit % OUTFITS.length]); player.emote = null;
+  player = makeCharacter(true, 'You', equippedOutfit()); player.emote = null;
+  if (LOBBY.char) LOBBY.char.rig.root.visible = false;
+  GAME.rewards = null;
   characters.push(player);
   const nb = MODE().creative ? 6 : SETTINGS.bots;
   for (let i = 0; i < nb; i++) { const b = makeBot(); bots.push(b); characters.push(b); }
@@ -418,6 +422,8 @@ function setupMatch() {
   HUD.banner('Jump when ready', TOD[tod].name + ' · ' + WEATHER[wx].name + ' — ' + (IS_TOUCH ? 'tap JUMP to leave the dropship' : 'press Space to leave the dropship'), 5);
   STORM.mesh.visible = true;
   GAME.endShown = false;
+  matchStart();
+  PING.clear(); if (INV.open) INV.toggle(false);
   if (MODE().rumble) rumbleSetup();
   if (MODE().creative) creativeSetup();
   if (MODE().name !== 'Solo' || MUT().name !== 'No mutator') HUD.banner(MODE().creative ? 'Creative' : 'Jump when ready', MODE().name + (MUT().name !== 'No mutator' ? ' · ' + MUT().name : '') + ' — ' + (IS_TOUCH ? 'tap JUMP to leave the dropship' : 'press Space to leave the dropship'), 5);
@@ -477,6 +483,9 @@ function checkEnd() {
   }
 }
 function showEnd(win) {
+  if (INV.open) INV.toggle(false);
+  if (!GAME.rewards) GAME.rewards = matchEnd(win) || 'none';
+  showMatchRewards(GAME.rewards === 'none' ? null : GAME.rewards);
   releaseLock(); HUD.hideBanner();
   $id('endscreen').hidden = false; $id('spec').hidden = true;
   HUD.toggleMap(false);
@@ -526,10 +535,15 @@ function quitToMenu() {
   BUS.mesh.visible = false; showGhost(null); STORM.mesh.visible = false; if (player) endEdit(player, false);
   for (const n of ['wind', 'hum', 'storm', 'glide', 'slide', 'bus']) SFX.loop(n, 0);
   CAM.storm = 0;
+  if (MATCH.active) matchEnd(false);
+  PING.clear(); if (INV.open) INV.toggle(false);
+  if (LOBBY.char && LOBBY.char.rig.root.parent !== worldGroup) LOBBY.spot = null;
+  refreshLobbyChar(); MENU.refresh(); MENU.setTab('play');
 }
 
 // ---------- settings + menu ----------
 function applyQuality() {
+  POST.U.grain.value = SETTINGS.grain ? 0.025 : 0;
   VFX.setLights(Q().lights);
   const q = Q();
   const sh = q.shadows > 0;
@@ -553,38 +567,14 @@ function onResize() {
   camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
   FX.setScale(pointScale());
 }
-function syncSegs() {
-  document.querySelectorAll('.seg').forEach((seg) => {
-    const k = seg.dataset.opt;
-    seg.querySelectorAll('button').forEach((b) => b.classList.toggle('on', String(SETTINGS[k]) === b.dataset.v));
-  });
-}
-function syncOutfit() {
-  const o = OUTFITS[SETTINGS.outfit % OUTFITS.length];
-  $id('of-name').textContent = o.name;
-  $id('of-chips').innerHTML = [o.c1, o.c2, o.legs, o.hairC].map((c) => '<i style="background:' + hexCss(c) + '"></i>').join('');
-}
 function wireMenu() {
-  document.body.classList.toggle('is-touch', IS_TOUCH);
-  $id('controls-help').hidden = IS_TOUCH; $id('touch-help').hidden = !IS_TOUCH;
-  document.querySelectorAll('.seg').forEach((seg) => seg.addEventListener('click', (e) => {
-    const b = e.target.closest('button'); if (!b) return;
-    const k = seg.dataset.opt, v = b.dataset.v;
-    SETTINGS[k] = k === 'bots' ? +v : v; saveSettings(); syncSegs(); SFX.click();
-    if (k === 'quality') applyQuality();
-  }));
-  $id('of-prev').addEventListener('click', () => { SETTINGS.outfit = (SETTINGS.outfit + OUTFITS.length - 1) % OUTFITS.length; saveSettings(); syncOutfit(); });
-  $id('of-next').addEventListener('click', () => { SETTINGS.outfit = (SETTINGS.outfit + 1) % OUTFITS.length; saveSettings(); syncOutfit(); });
+  MENU.init();
   const bindRange = (id, key, fmt) => {
     const el = $id(id), out = $id(id + '-out');
     el.value = SETTINGS[key]; out.textContent = fmt(SETTINGS[key]);
-    el.addEventListener('input', () => {
-      SETTINGS[key] = +el.value; out.textContent = fmt(SETTINGS[key]); saveSettings();
-      if (key === 'vol') SFX.setVolume(SETTINGS.vol);
-      for (const other of ['sens', 'sens2']) if (other !== id && key === 'sens') { $id(other).value = SETTINGS.sens; $id(other + '-out').textContent = fmt(SETTINGS.sens); }
-    });
+    el.addEventListener('input', () => { SETTINGS[key] = +el.value; out.textContent = fmt(SETTINGS[key]); saveSettings(); if (key === 'vol') SFX.setVolume(SETTINGS.vol); });
   };
-  bindRange('sens', 'sens', (v) => (+v).toFixed(1)); bindRange('sens2', 'sens', (v) => (+v).toFixed(1)); bindRange('vol', 'vol', (v) => Math.round(v * 100));
+  bindRange('sens2', 'sens', (v) => (+v).toFixed(1)); bindRange('vol', 'vol', (v) => Math.round(v * 100));
   $id('play').addEventListener('click', startMatch);
   $id('again').addEventListener('click', startMatch);
   $id('resume').addEventListener('click', resume);
@@ -594,15 +584,13 @@ function wireMenu() {
   $id('spec-next').addEventListener('click', nextSpectate);
   $id('spec-back').addEventListener('click', backToResults);
   for (const ev of ['pointerdown', 'keydown']) addEventListener(ev, () => SFX.init(), { once: true });
-  document.querySelectorAll('.play, .seg button, .outfit button').forEach((b) => b.addEventListener('mouseenter', () => SFX.hover()));
-  syncSegs(); syncOutfit();
 }
 
 // ---------- main loop ----------
 let _last = performance.now(), _fpsT = 0, _fpsN = 0;
 function frame(dt) {
   GAME.dtLast = dt;
-  if (GAME.state === 'menu') { menuCamera(dt); updateEnv(dt); updateAudio(dt); FX.update(dt); VFX.update(dt); INPUT.endFrame(); return; }
+  if (GAME.state === 'menu') { updateLobby(dt); updateEnv(dt); updateAudio(dt); FX.update(dt); VFX.update(dt); INPUT.endFrame(); return; }
   if (GAME.paused) { INPUT.endFrame(); return; }
   GAME.time += dt;
   updateBus(dt);
@@ -630,6 +618,7 @@ function frame(dt) {
   updateAudio(dt);
   HUD.update(dt);
   TEAMHUD.update(dt);
+  PING.update(dt);
   if (!$id('spec').hidden && (!GAME.spectating || !GAME.spectating.alive)) nextSpectate();
   $id('clickplay').hidden = IS_TOUCH || INPUT.locked || GAME.state !== 'play' || !player.alive;
   $id('rotate').hidden = !(IS_TOUCH && innerHeight > innerWidth * 1.1);
@@ -645,7 +634,7 @@ function loop(now) {
   POST.render();
   updateDynRes(raw);
   _fpsT += dt; _fpsN++;
-  if (_fpsT > 1) { GAME.fps = Math.round(_fpsN / _fpsT); _fpsT = 0; _fpsN = 0; }
+  if (_fpsT > 1) { GAME.fps = Math.round(_fpsN / _fpsT); _fpsT = 0; _fpsN = 0; const fe = $id('fps'); fe.hidden = !SETTINGS.fps; if (SETTINGS.fps) fe.textContent = GAME.fps + ' fps'; }
 }
 function init() {
   renderer = new THREE.WebGLRenderer({ canvas: $id('c'), antialias: false, powerPreference: 'high-performance', stencil: false });
@@ -662,15 +651,17 @@ function init() {
   const sc = sun.shadow.camera; sc.near = 10; sc.far = 520;
   sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.05;
   scene.add(sun); scene.add(sun.target);
+  loadProfile();
   makeTextures(); makeMaterials(); makeEnvironment(); initBuildGeo(); makeStormMesh(); makeBusMesh();
   FX.init(); VFX.init(); HUD.init(); INPUT.init(); wireMenu();
   addEventListener('resize', onResize);
   applyEnvironment('golden', 'clear');
   newWorld((Math.random() * 1e9) | 0); GAME.menuWorldFresh = true; GAME.worldMut = SETTINGS.mutator;
   stormInit(); STORM.mesh.visible = false;
+  refreshLobbyChar(); MENU.refresh();
+  CLOUD.init();
   applyQuality();
   requestAnimationFrame(loop);
-  if (GAME.freeze) { _last = now; return; }
-  window.STORMDROP = { grassWeight, groundH, WATER, RAIN, GRASS, sun, renderer: () => renderer, setEnv(v) { scene.environment = v ? ENVSTATE.envRT.texture : null; }, scene: () => scene, applyEnvironment, POST, ENVSTATE, renderOnce() { const t0 = performance.now(); POST.render(); return performance.now() - t0; }, frameOnce(dt) { const t0 = performance.now(); frame(dt); return performance.now() - t0; }, dbg: { traceShot, AIM, raycastWorld, rayCharacters, computeAim, eyeOf }, get info() { return renderer.info.render; }, step(n, dt) { for (let i = 0; i < n; i++) frame(dt || 0.05); }, GAME, get player() { return player; }, bots, characters, STORM, BUS, WORLD, startMatch, setupMatch, jumpOut, CAM, PIECES, ITEMS, CHESTS, SETTINGS, animateRig, updateHeld, giveItem, playEmote, makeCharacter, genOutfit, camera: () => camera, SFX, FX, VFX, placePiece, buildTarget, explode, fireWeapon, updateBuild, frame: (dt) => frame(dt), updateCamera: (dt) => updateCamera(dt), WEAPONS, CONSUMABLES, GADGETS, useGadget, AIM, ZIPS, biomeAt, VEHICLES, enterVehicle, RUMBLE, MODE, startEdit, endEdit, editTarget, applyWallEdit, PIECES_: () => PIECES, testBox(x, y, z, w, h, d) { const c = boxCollider(x - w / 2, y, z - d / 2, x + w / 2, y + h, z + d / 2, { kind: "test", hp: Infinity }); const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), MAT.build.stone); m.position.set(x, y + h / 2, z); worldGroup.add(m); return c; } };
+  window.STORMDROP = { grassWeight, groundH, WATER, RAIN, GRASS, sun, renderer: () => renderer, setEnv(v) { scene.environment = v ? ENVSTATE.envRT.texture : null; }, scene: () => scene, applyEnvironment, POST, ENVSTATE, renderOnce() { const t0 = performance.now(); POST.render(); return performance.now() - t0; }, frameOnce(dt) { const t0 = performance.now(); frame(dt); return performance.now() - t0; }, dbg: { traceShot, AIM, raycastWorld, rayCharacters, computeAim, eyeOf }, get info() { return renderer.info.render; }, step(n, dt) { for (let i = 0; i < n; i++) frame(dt || 0.05); }, GAME, get player() { return player; }, bots, characters, STORM, BUS, WORLD, startMatch, setupMatch, jumpOut, CAM, PIECES, ITEMS, CHESTS, SETTINGS, animateRig, updateHeld, giveItem, playEmote, makeCharacter, genOutfit, camera: () => camera, SFX, FX, VFX, placePiece, buildTarget, explode, fireWeapon, updateBuild, frame: (dt) => frame(dt), updateCamera: (dt) => updateCamera(dt), WEAPONS, CONSUMABLES, GADGETS, useGadget, AIM, ZIPS, biomeAt, VEHICLES, enterVehicle, RUMBLE, MODE, showEnd, PROFILE_: () => PROFILE, MENU, INV, PING, ev, startEdit, endEdit, editTarget, applyWallEdit, PIECES_: () => PIECES, testBox(x, y, z, w, h, d) { const c = boxCollider(x - w / 2, y, z - d / 2, x + w / 2, y + h, z + d / 2, { kind: "test", hp: Infinity }); const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), MAT.build.stone); m.position.set(x, y + h / 2, z); worldGroup.add(m); return c; } };
 }
 init();

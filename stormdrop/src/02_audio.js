@@ -444,6 +444,7 @@ const SFX = (() => {
       const E = loops.engine, t = now();
       E.g.gain.setTargetAtTime(v, t, 0.08); E.o.frequency.setTargetAtTime(Math.max(20, f), t, 0.06); E.o2.frequency.setTargetAtTime(Math.max(10, f / 2), t, 0.06); E.lp.frequency.setTargetAtTime(400 + f * 9, t, 0.1);
     },
+    ping(type) { const d = voice(null, 0.4, {}); if (!d) return; const t = now(); const f = type === 'enemy' ? 990 : 784; tn(t, 0.09, f, f, 'sine', 0.35, d); tn(t + 0.08, 0.14, f * 1.5, f * 1.5, 'sine', 0.3, d); },
     heartbeat() { const d = voice(null, 0.5, {}); if (!d) return; const t = now(); tn(t, 0.1, 70, 45, 'sine', 0.9, d); tn(t + 0.22, 0.12, 62, 40, 'sine', 0.7, d); },
   };
   return api;

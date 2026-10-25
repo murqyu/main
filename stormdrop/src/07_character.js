@@ -169,7 +169,7 @@ function landed(c) {
   const vy = c.vel.y;
   if (c.mode === 'sky' || c.mode === 'glide') {
     c.mode = 'ground'; c.rig.glider.visible = false; c.landedAt = GAME.time;
-    if (c.isPlayer) { SFX.land(c.pos); SFX.loop('wind', 0); }
+    if (c.isPlayer) { SFX.land(c.pos); SFX.loop('wind', 0); const bw = biomeAt(c.pos.x, c.pos.z, c.pos.y); if (bw.snow > 0.5) ev('land_snow'); if (bw.desert > 0.5) ev('land_desert'); }
     if (c.rig.root.visible) VFX.landDust(c, 0.6);
     return;
   }

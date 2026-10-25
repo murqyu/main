@@ -250,7 +250,7 @@ function openChest(ch, who) {
   });
   FX.burst(ch.pos.x, ch.pos.y + 0.9, ch.pos.z, 26, 0xffd75a, 5, 0.7, 0.35, true, -4);
   VFX.chestOpen(ch.pos);
-  if (who && who.isPlayer) GAME.stats.chests++;
+  if (who && who.isPlayer) { GAME.stats.chests++; ev('chests'); }
 }
 function nearestChest(c, maxD) {
   let best = null, bd = maxD * maxD;

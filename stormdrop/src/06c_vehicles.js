@@ -153,6 +153,7 @@ function updateVehicle(v, dt, input) {
   if (v.driver && Math.random() < dt * 8) FX.emitN(v.pos.x + nfx * -1.15 + nrx * 0.4, v.pos.y + 0.1, v.pos.z + nfz * -1.15 + nrz * 0.4, mr(-0.2, 0.2), mr(0.3, 0.7), mr(-0.2, 0.2), 0.8, 0.15, 0.6, 0.6, 0.6, 0.62, 0.3, 0.2, 0.5);
   if (v.driver) {
     const c = v.driver; c.pos.set(v.pos.x - nfx * 0.15, v.pos.y + 0.32, v.pos.z - nfz * 0.15); c.vel.copy(v.vel); c.modelYaw = v.yaw; c.grounded = true;
+    if (c.isPlayer) ev('drive', Math.abs(vf) * dt);
     if (c.isPlayer) SFX.engine(0.14 + Math.min(0.12, Math.abs(vf) * 0.006), 34 + Math.abs(vf) * 5.5 + (thr ? 12 : 0));
   }
 }

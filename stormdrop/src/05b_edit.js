@@ -105,6 +105,6 @@ function updateEdit(p, A) {
 }
 function endEdit(p, apply) {
   const E = p.editing; if (!E) return;
-  if (apply && E.sel !== (E.piece.editMask || 0)) { if (applyWallEdit(E.piece, E.sel)) SFX.build(E.piece.mesh.position, E.piece.mat); }
+  if (apply && E.sel !== (E.piece.editMask || 0)) { if (applyWallEdit(E.piece, E.sel)) { SFX.build(E.piece.mesh.position, E.piece.mat); if (p.isPlayer) ev('edits'); } }
   p.editing = null; if (EDIT.overlay) EDIT.overlay.visible = false;
 }

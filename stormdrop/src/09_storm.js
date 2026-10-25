@@ -58,6 +58,7 @@ function updateStorm(dt) {
     S.cur.x = lerp(S.from.x, S.to.x, t); S.cur.z = lerp(S.from.z, S.to.z, t); S.cur.r = lerp(S.from.r, S.to.r, t);
     if (S.timer <= 0) {
       S.idx++;
+      if (player && player.alive) ev('survive');
       if (S.idx >= STORM_PHASES.length) { S.state = 'done'; S.timer = 0; S.dmg = 14; }
       else { const ph = phaseAt(S.idx); S.state = 'wait'; S.timer = ph[0]; S.total = ph[0]; S.to = nextCircle(S.cur, ph[2]); S.warned = false; HUD.banner('New safe zone marked', 'The storm moves again in ' + ph[0] + ' seconds', 3, 'storm'); }
     }

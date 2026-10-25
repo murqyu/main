@@ -149,6 +149,7 @@ function placePiece(s, mat, owner) {
   piece.edges = pieceEdges(s);
   for (const e of piece.edges) { let set = EDGES.get(e); if (!set) { set = new Set(); EDGES.set(e, set); } set.add(piece); }
   PIECES.set(key, piece); constructing.push(piece);
+  if (owner && owner.isPlayer) ev('builds');
   SFX.build(m.position, mat);
   return piece;
 }

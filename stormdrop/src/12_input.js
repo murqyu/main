@@ -10,6 +10,7 @@ const INPUT = (() => {
     addEventListener('keydown', (e) => {
       if (GAME.state === 'menu') return;
       const k = e.code;
+      if (k === 'Escape' && INV.open) { INV.toggle(false); return; }
       if (k === 'Escape') { if (locked) document.exitPointerLock(); else if (GAME.paused) resume(); else pause(); return; }
       if (GAME_KEYS.has(k) || k.startsWith('Key') || k.startsWith('Digit') || k.startsWith('Shift')) e.preventDefault();
       if (e.repeat) return;
@@ -23,6 +24,7 @@ const INPUT = (() => {
       if (!locked && !IS_TOUCH) requestLock();
       if (e.button === 0) { mouseL = true; pressed.add('Mouse0'); }
       if (e.button === 2) { mouseR = true; pressed.add('Mouse2'); }
+      if (e.button === 1) { e.preventDefault(); pressed.add('Mouse1'); }
     });
     addEventListener('mouseup', (e) => { if (e.button === 0) mouseL = false; if (e.button === 2) mouseR = false; });
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -68,6 +70,8 @@ const INPUT = (() => {
     tap('tb-use', () => { pressed.add('KeyE'); T.useHeld = true; });
     $('tb-use').addEventListener('pointerup', () => { T.useHeld = false; }); $('tb-use').addEventListener('pointercancel', () => { T.useHeld = false; });
     tap('tb-map', () => pressed.add('KeyM'));
+    tap('tb-ping', () => pressed.add('TouchPing'));
+    tap('tb-inv', () => pressed.add('KeyI'));
     tap('tb-pause', () => pause());
     tap('tb-aim', () => { if (player && player.buildMode) pressed.add('Mouse2'); else { T.aim = !T.aim; $('tb-aim').classList.toggle('on', T.aim); } });
     $('tb-pieces').addEventListener('pointerdown', (e) => {
@@ -95,6 +99,8 @@ const INPUT = (() => {
       A.crouch = !!keys.KeyC || T.crouch;
       A.crouchPressed = pressed.has('KeyC') || pressed.has('TouchCrouch');
       A.emote = pressed.has('KeyT');
+      A.inventory = pressed.has('Tab') || pressed.has('KeyI');
+      A.ping = pressed.has('Mouse1') || pressed.has('TouchPing');
       A.fire = mouseL || T.fire > 0;
       A.firePressed = pressed.has('Mouse0');
       A.aim = mouseR || T.aim;

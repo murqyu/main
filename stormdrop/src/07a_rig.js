@@ -280,6 +280,7 @@ function updateHeld(c) {
 // ---------- animation ----------
 const EMOTES = {
   victory: { name: 'Victory Pump', len: 0 }, wave: { name: 'Wave', len: 2.4 }, robot: { name: 'Robot', len: 0 }, spin: { name: 'Spin Move', len: 0 }, hype: { name: 'Hype', len: 0 }, shuffle: { name: 'Shuffle', len: 0 },
+  clap: { name: 'Slow Clap', len: 0 }, salute: { name: 'Salute', len: 2.2 }, jacks: { name: 'Jumping Jacks', len: 0 }, disco: { name: 'Disco Point', len: 0 }, flap: { name: 'Bird Flap', len: 0 }, bow: { name: 'Take a Bow', len: 2.6 },
 };
 function rigTargets(c, dt, A) {
   const R = c.rig, t = GAME.time;
@@ -293,6 +294,12 @@ function rigTargets(c, dt, A) {
     else if (em === 'wave') { set('upperR', 0.2, 0, 2.6); set('foreR', 0, 0, Math.sin(e * 9) * 0.6); set('head', 0, 0.2, 0.1); set('upperL', 0, 0, -0.15); }
     else if (em === 'robot') { const s = Math.floor(e * 2.5) % 4; set('upperL', s === 0 || s === 2 ? 1.57 : 0, 0, -0.1); set('foreL', s === 1 ? 1.57 : 0); set('upperR', s === 1 || s === 3 ? 1.57 : 0, 0, 0.1); set('foreR', s === 2 ? 1.57 : 0); set('head', 0, (s - 1.5) * 0.4, 0); set('chest', 0, (s % 2 ? 0.3 : -0.3), 0); }
     else if (em === 'spin') { A.bodyY = e * 9; set('upperL', 0, 0, -1.4); set('upperR', 0, 0, 1.4); set('thighL', 0.4); set('shinL', -0.8); A.hipsY = 0.05; }
+    else if (em === 'clap') { const k = Math.max(0, Math.sin(e * 3.2)); set('upperL', 1.2, 0, 0.25 + k * 0.35); set('upperR', 1.2, 0, -0.25 - k * 0.35); set('foreL', 0.9, 0, 0.5); set('foreR', 0.9, 0, -0.5); set('head', 0.1, Math.sin(e * 1.6) * 0.2, 0); }
+    else if (em === 'salute') { const k = Math.min(1, e * 3); set('upperR', 0.3 * k, 0, 2.2 * k); set('foreR', 2.0 * k); set('upperL', 0, 0, -0.1); set('chest', 0.05, 0, 0); set('head', 0.1, 0, 0); }
+    else if (em === 'jacks') { const w = Math.abs(Math.sin(e * 5)); set('upperL', 0, 0, -0.3 - w * 2.4); set('upperR', 0, 0, 0.3 + w * 2.4); set('thighL', 0, 0, -w * 0.4); set('thighR', 0, 0, w * 0.4); A.hipsY = w * 0.25; }
+    else if (em === 'disco') { const w = e * 4, up = Math.sin(w) > 0; set('upperR', 0, 0, up ? 2.6 : 0.6); set('upperL', 0, 0, up ? -0.4 : -1.2); set('foreL', 0.9); set('chest', 0, up ? 0.3 : -0.3, up ? -0.15 : 0.1); set('thighL', 0.15); set('shinL', -0.3); A.hipsY = Math.abs(Math.cos(w)) * 0.06; }
+    else if (em === 'flap') { const w = Math.sin(e * 9); set('upperL', 0.2, 0, -0.6 - w * 0.5); set('upperR', 0.2, 0, 0.6 + w * 0.5); set('foreL', 1.8); set('foreR', 1.8); set('head', Math.sin(e * 4.5) * 0.35, 0, 0); set('thighL', 0.6); set('shinL', -1.0); set('thighR', 0.6); set('shinR', -1.0); A.hipsY = -0.25 + Math.abs(w) * 0.05; }
+    else if (em === 'bow') { const k = Math.sin(Math.min(1, e / 2.2) * Math.PI); set('chest', -1.0 * k, 0, 0); set('head', -0.3 * k, 0, 0); set('upperR', 0.9 * k, 0, 0.3); set('foreR', 1.4 * k); set('upperL', -0.4 * k, 0, -0.3); }
     else if (em === 'shuffle') { const w = e * 8; set('thighL', Math.sin(w) * 0.6); set('shinL', -Math.max(0, Math.sin(w)) * 0.9); set('thighR', -Math.sin(w) * 0.6); set('shinR', -Math.max(0, -Math.sin(w)) * 0.9); set('upperL', -0.3 + Math.sin(w) * 0.5, 0, -0.3); set('upperR', -0.3 - Math.sin(w) * 0.5, 0, 0.3); set('foreL', 1.2); set('foreR', 1.2); set('chest', 0, Math.sin(w) * 0.3, 0); A.hipsY = Math.abs(Math.cos(w)) * 0.08; }
     return;
   }
