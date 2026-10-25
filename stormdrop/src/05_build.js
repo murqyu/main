@@ -2,7 +2,7 @@
 const BMAT = { wood: { hp: 150, time: 1.0, name: 'Wood' }, stone: { hp: 300, time: 1.8, name: 'Stone' }, metal: { hp: 500, time: 2.6, name: 'Metal' } };
 const MAT_ORDER = ['wood', 'stone', 'metal'];
 const PIECES = new Map(), EDGES = new Map();
-let constructing = [], collapsing = [];
+let constructing = [], collapsing = [], popping = [];
 const GEO_B = {};
 const RAMP_ANG = Math.atan2(LVL, CELL);
 const DIRS = [[1, 0], [0, 1], [-1, 0], [0, -1]];
@@ -21,7 +21,7 @@ function initBuildGeo() {
   scene.add(ghostMesh);
 }
 function resetBuild() {
-  PIECES.clear(); EDGES.clear(); constructing = []; collapsing = [];
+  PIECES.clear(); EDGES.clear(); constructing = []; collapsing = []; popping = [];
   if (ghostMesh) ghostMesh.visible = false;
 }
 function keyOf(s) { return s.t + ':' + s.ix + ':' + s.iz + ':' + s.L; }
@@ -132,7 +132,8 @@ function placePiece(s, mat, owner) {
   else if (s.t === 'c') col = addCollider(Object.assign({ shape: 'cone', minX: b[0], minY: b[1], minZ: b[2], maxX: b[3], maxY: b[4], maxZ: b[5], y0: b[1], y1: b[4] }, props));
   else col = boxCollider(b[0], b[1], b[2], b[3], b[4], b[5], props);
   piece.collider = col;
-  const m = new THREE.Mesh(GEO_B.f, new THREE.MeshLambertMaterial({ map: TEX[mat], transparent: true, opacity: 0.35, emissive: new THREE.Color(0x1d5aa8) }));
+  const m = new THREE.Mesh(GEO_B.f, VFX.holoMaterial(mat));
+  piece.b = b;
   pieceTransform(m, s);
   if (s.t === 'wx' || s.t === 'wz') {
     // on uneven ground a wall reaches down to the terrain so there is no gap under it
@@ -143,7 +144,8 @@ function placePiece(s, mat, owner) {
     }
   }
   m.castShadow = true; m.receiveShadow = true;
-  worldGroup.add(m); piece.mesh = m;
+  worldGroup.add(m); piece.mesh = m; m.userData.bs = m.scale.clone();
+  if (camera.position.distanceToSquared(m.position) < 3600) VFX.pieceSpark(b);
   piece.edges = pieceEdges(s);
   for (const e of piece.edges) { let set = EDGES.get(e); if (!set) { set = new Set(); EDGES.set(e, set); } set.add(piece); }
   PIECES.set(key, piece); constructing.push(piece);
@@ -161,7 +163,7 @@ function tryBuild(c, s) {
 function damagePiece(p, amt) {
   if (!p.alive) return;
   p.hp -= amt;
-  if (p.mesh.material !== MAT.build[p.mat]) p.mesh.material.emissive.setRGB(0.5, 0.2, 0.1);
+  if (p.mesh.material !== MAT.build[p.mat]) { const U = p.mesh.material.userData.U; if (U) U.uPop.value = 0.5; }
   else { p.flashT = 0.08; }
   if (p.hp <= 0) destroyPiece(p, true);
 }
@@ -171,7 +173,9 @@ function destroyPiece(p, check) {
   removeCollider(p.collider);
   worldGroup.remove(p.mesh);
   if (p.mesh.material !== MAT.build[p.mat]) p.mesh.material.dispose();
-  FX.debris(p.mesh.position, p.mat === 'wood' ? 0xb07a43 : p.mat === 'stone' ? 0x8a8e94 : 0x9fb0bf, 9);
+  const bc = p.mat === 'wood' ? 0xb07a43 : p.mat === 'stone' ? 0x8a8e94 : 0x9fb0bf;
+  FX.debris(p.mesh.position, bc, 14);
+  if (camera.position.distanceToSquared(p.mesh.position) < 8100) VFX.pieceBreak(p.mesh.position, bc);
   for (const e of p.edges) { const set = EDGES.get(e); if (set) { set.delete(p); if (!set.size) EDGES.delete(e); } }
   PIECES.delete(p.key);
   if (check) collapseCheck(p);
@@ -207,9 +211,15 @@ function updateBuild(dt) {
     p.buildT += dt;
     const k = Math.min(1, p.buildT / p.buildTime);
     p.hp = Math.min(p.maxHp, p.hp + p.maxHp * 0.9 * dt / p.buildTime);
-    p.mesh.material.opacity = 0.35 + 0.65 * k;
-    p.mesh.material.emissive.setRGB(0.11 * (1 - k), 0.35 * (1 - k), 0.66 * (1 - k));
-    if (k >= 1) { p.mesh.material.dispose(); p.mesh.material = MAT.build[p.mat]; constructing.splice(i, 1); }
+    const U = p.mesh.material.userData.U;
+    if (U) { U.uFill.value = lerp(p.b[1] - 0.05, p.b[4] + 0.05, k); U.uPop.value = Math.max(0, U.uPop.value - dt * 5); }
+    if (k >= 1) { p.mesh.material.dispose(); p.mesh.material = MAT.build[p.mat]; constructing.splice(i, 1); p.popT = 0.22; popping.push(p); }
+  }
+  for (let i = popping.length - 1; i >= 0; i--) {
+    const p = popping[i]; p.popT -= dt;
+    const bs = p.mesh.userData.bs, k = Math.max(0, p.popT / 0.22), s = 1 + Math.sin(k * Math.PI) * 0.035;
+    p.mesh.scale.set(bs.x * s, bs.y * s, bs.z * s);
+    if (p.popT <= 0 || !p.alive) { p.mesh.scale.copy(bs); popping.splice(i, 1); }
   }
   for (let i = collapsing.length - 1; i >= 0; i--) {
     const p = collapsing[i];

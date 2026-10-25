@@ -2,7 +2,7 @@
 const INPUT = (() => {
   const keys = {}, pressed = new Set();
   let dx = 0, dy = 0, wheel = 0, mouseL = false, mouseR = false, locked = false, expectUnlock = false;
-  const T = { jx: 0, jy: 0, joyId: null, jox: 0, joyY: 0, looks: new Map(), fire: 0, aim: false };
+  const T = { jx: 0, jy: 0, joyId: null, jox: 0, joyY: 0, looks: new Map(), fire: 0, aim: false, crouch: false };
   const canvas = document.getElementById('c');
   const GAME_KEYS = new Set(['Space', 'Tab', 'F1', 'F2', 'F3', 'F4', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
   function inGame() { return GAME.state !== 'menu' && !GAME.paused; }
@@ -61,6 +61,7 @@ const INPUT = (() => {
     look.addEventListener('pointermove', lookMove); look.addEventListener('pointerup', lookEnd); look.addEventListener('pointercancel', lookEnd);
     const tap = (id, fn) => $(id).addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); fn(e); });
     tap('tb-jump', () => pressed.add('Space'));
+    tap('tb-crouch', () => { T.crouch = !T.crouch; $('tb-crouch').classList.toggle('on', T.crouch); if (T.crouch) pressed.add('TouchCrouch'); });
     tap('tb-reload', () => pressed.add('KeyR'));
     tap('tb-build', () => pressed.add('KeyQ'));
     tap('tb-use', () => pressed.add('KeyE'));
@@ -69,7 +70,7 @@ const INPUT = (() => {
     tap('tb-aim', () => { if (player && player.buildMode) pressed.add('Mouse2'); else { T.aim = !T.aim; $('tb-aim').classList.toggle('on', T.aim); } });
     $('tb-pieces').addEventListener('pointerdown', (e) => {
       const b = e.target.closest('[data-p]'); if (!b) return; e.preventDefault();
-      const p = b.dataset.p; pressed.add(p === 'wall' ? 'KeyZ' : p === 'floor' ? 'KeyX' : p === 'ramp' ? 'KeyC' : p === 'cone' ? 'KeyV' : 'Mouse2');
+      const p = b.dataset.p; pressed.add(p === 'wall' ? 'KeyZ' : p === 'floor' ? 'KeyX' : p === 'ramp' ? 'KeyV' : p === 'cone' ? 'KeyB' : 'Mouse2');
     });
     $('hotbar').addEventListener('pointerdown', (e) => {
       const s = e.target.closest('[data-slot]'); if (!s) return; e.preventDefault();
@@ -81,6 +82,7 @@ const INPUT = (() => {
     get dx() { return dx; }, get dy() { return dy; },
     get locked() { return locked; },
     expectUnlock() { expectUnlock = !!document.pointerLockElement; },
+    clearCrouch() { T.crouch = false; const b = document.getElementById('tb-crouch'); if (b) b.classList.remove('on'); },
     clearAim() { T.aim = false; const b = document.getElementById('tb-aim'); if (b) b.classList.remove('on'); },
     actions() {
       const A = {};
@@ -88,6 +90,9 @@ const INPUT = (() => {
       A.my = (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0) - T.jy;
       A.sprint = !!(keys.ShiftLeft || keys.ShiftRight) || Math.hypot(T.jx, T.jy) > 0.96;
       A.jump = pressed.has('Space');
+      A.crouch = !!keys.KeyC || T.crouch;
+      A.crouchPressed = pressed.has('KeyC') || pressed.has('TouchCrouch');
+      A.emote = pressed.has('KeyT');
       A.fire = mouseL || T.fire > 0;
       A.firePressed = pressed.has('Mouse0');
       A.aim = mouseR || T.aim;
@@ -96,7 +101,7 @@ const INPUT = (() => {
       A.interact = pressed.has('KeyE');
       A.pickaxe = pressed.has('KeyF');
       A.buildToggle = pressed.has('KeyQ') || pressed.has('KeyG');
-      A.piece = (pressed.has('KeyZ') || pressed.has('F1')) ? 'wall' : (pressed.has('KeyX') || pressed.has('F2')) ? 'floor' : (pressed.has('KeyC') || pressed.has('F3')) ? 'ramp' : (pressed.has('KeyV') || pressed.has('F4')) ? 'cone' : null;
+      A.piece = (pressed.has('KeyZ') || pressed.has('F1')) ? 'wall' : (pressed.has('KeyX') || pressed.has('F2')) ? 'floor' : (pressed.has('KeyV') || pressed.has('F3')) ? 'ramp' : (pressed.has('KeyB') || pressed.has('F4')) ? 'cone' : null;
       A.slotKey = -1; for (let i = 1; i <= 5; i++) if (pressed.has('Digit' + i)) A.slotKey = i - 1;
       A.wheel = wheel;
       A.map = pressed.has('KeyM');

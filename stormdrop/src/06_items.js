@@ -82,7 +82,7 @@ function consModel(id) {
 }
 const _beamGeo = keepGeo(new THREE.CylinderGeometry(0.12, 0.2, 3.2, 8, 1, true));
 const _ringGeo = keepGeo(new THREE.RingGeometry(0.45, 0.62, 24).rotateX(-Math.PI / 2));
-const _beamMats = RARITY.map((r) => { const m = new THREE.MeshBasicMaterial({ color: r.hex, transparent: true, opacity: 0.32, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }); m.userData.keep = true; return m; });
+const _beamMats = RARITY.map((r) => { const m = new THREE.MeshBasicMaterial({ color: new THREE.Color(r.hex).convertSRGBToLinear().multiplyScalar(1.8), transparent: true, opacity: 0.32, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }); m.userData.keep = true; return m; });
 function itemMesh(it) {
   const root = new THREE.Group(), spin = new THREE.Group(); root.add(spin);
   let model;
@@ -216,6 +216,7 @@ function openChest(ch, who) {
     dropItem(d, ch.pos.x, ch.pos.y + 0.8, ch.pos.z, vx, mr(4.5, 6.5), vz);
   });
   FX.burst(ch.pos.x, ch.pos.y + 0.9, ch.pos.z, 26, 0xffd75a, 5, 0.7, 0.35, true, -4);
+  VFX.chestOpen(ch.pos);
   if (who && who.isPlayer) GAME.stats.chests++;
 }
 function nearestChest(c, maxD) {

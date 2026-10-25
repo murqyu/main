@@ -127,7 +127,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 #dmgnums{position:fixed;inset:0;pointer-events:none;z-index:6;overflow:hidden}
 .dn{position:absolute;left:0;top:0;font-family:var(--display);font-weight:900;font-style:italic;font-size:26px;color:#fff;
   text-shadow:0 2px 0 rgba(0,0,0,.55),0 0 6px rgba(0,0,0,.4);will-change:transform,opacity;white-space:nowrap}
-.dn.head{color:#ffd23f;font-size:32px}.dn.sh{color:#8fdcff}.dn.bld{color:#e9edf2;font-size:18px;opacity:.9}
+.dn.head{color:#ffd23f;font-size:34px}.dn.sh{color:#8fdcff}.dn.big{font-size:40px}.dn.head.big{font-size:46px}.dn.bld{color:#e9edf2;font-size:18px;opacity:.9}
 
 /* ---------- big map ---------- */
 #bigmap{position:fixed;inset:0;z-index:8;background:rgba(5,9,24,.78);display:flex;align-items:center;justify-content:center;pointer-events:none}
@@ -207,6 +207,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 #tb-jump{width:68px;height:68px;right:calc(30px + var(--sr));bottom:calc(26px + var(--sb))}
 #tb-aim{width:54px;height:54px;right:calc(134px + var(--sr));bottom:calc(186px + var(--sb))}
 #tb-reload{width:50px;height:50px;right:calc(132px + var(--sr));bottom:calc(112px + var(--sb))}
+#tb-crouch{width:50px;height:50px;right:calc(196px + var(--sr));bottom:calc(30px + var(--sb));font-size:18px}
 #tb-build{width:60px;height:60px;right:calc(114px + var(--sr));bottom:calc(24px + var(--sb))}
 #tb-use{width:auto;min-width:96px;height:42px;border-radius:21px;padding:0 14px;left:50%;transform:translateX(-50%);top:calc(50% + 34px);background:rgba(255,198,46,.85);color:#1b1300;border-color:transparent}
 #tb-map{width:42px;height:42px;left:calc(64px + var(--sl));top:calc(10px + var(--st));font-size:12px}
@@ -300,6 +301,7 @@ body.is-touch #progress{top:calc(50% + 60px)}
   <button class="tb" id="tb-aim" aria-label="Aim">AIM</button>
   <button class="tb" id="tb-reload" aria-label="Reload or rotate">R</button>
   <button class="tb" id="tb-jump" aria-label="Jump">JUMP</button>
+  <button class="tb" id="tb-crouch" aria-label="Crouch or slide">▼</button>
   <button class="tb" id="tb-build" aria-label="Build mode">BUILD</button>
   <div id="tb-pieces" hidden></div>
   <button class="tb" id="tb-use" hidden>OPEN</button>
@@ -320,17 +322,17 @@ body.is-touch #progress{top:calc(50% + 60px)}
     <div class="panel">
       <div class="opt"><label>Opponents</label><div class="seg" data-opt="bots"><button data-v="14">14</button><button data-v="29">29</button><button data-v="49">49</button></div></div>
       <div class="opt"><label>Bot skill</label><div class="seg" data-opt="diff"><button data-v="casual">Casual</button><button data-v="normal">Normal</button><button data-v="sweaty">Sweaty</button></div></div>
-      <div class="opt"><label>Graphics</label><div class="seg" data-opt="quality"><button data-v="low">Fast</button><button data-v="high">Pretty</button></div></div>
+      <div class="opt"><label>Graphics</label><div class="seg" data-opt="quality"><button data-v="low">Low</button><button data-v="medium">Med</button><button data-v="high">High</button><button data-v="ultra">Ultra</button></div></div>
       <div class="opt"><label>Outfit</label><div class="outfit"><button id="of-prev" aria-label="Previous outfit">‹</button><div class="sw"><div class="chips" id="of-chips"></div><div class="nm" id="of-name"></div></div><button id="of-next" aria-label="Next outfit">›</button></div></div>
       <div class="opt"><label>Look speed</label><div class="range"><input type="range" id="sens" min="0.3" max="2.5" step="0.05" value="1"><output id="sens-out">1.0</output></div></div>
       <button id="play" class="play disp">Play</button>
       <div class="controls" id="controls-help">
-        <div><span class="key">WASD</span>Move</div><div><span class="key">Shift</span>Sprint</div>
+        <div><span class="key">WASD</span>Move</div><div><span class="key">Shift</span>Walk <span class="key" style="margin-left:6px">C</span>Crouch / slide</div>
         <div><span class="key">Space</span>Jump / glide</div><div><span class="key">E</span>Open / pick up</div>
         <div><span class="key">L-Click</span>Fire / place</div><div><span class="key">R-Click</span>Aim / swap material</div>
         <div><span class="key">1-5</span>Items <span class="key" style="margin-left:6px">F</span>Pickaxe</div><div><span class="key">R</span>Reload / rotate</div>
         <div><span class="key">Q</span>Build mode</div><div><span class="key">Z</span>Wall <span class="key" style="margin-left:6px">X</span>Floor</div>
-        <div><span class="key">C</span>Ramp <span class="key" style="margin-left:6px">V</span>Cone</div><div><span class="key">M</span>Map <span class="key" style="margin-left:6px">Esc</span>Pause</div>
+        <div><span class="key">V</span>Ramp <span class="key" style="margin-left:6px">B</span>Cone <span class="key" style="margin-left:6px">T</span>Emote</div><div><span class="key">M</span>Map <span class="key" style="margin-left:6px">Esc</span>Pause</div>
       </div>
       <div class="touch-note" id="touch-help" hidden>Left thumb moves. Drag on the right to look. Hold FIRE and drag to shoot while turning. Tap BUILD for walls, floors, ramps and cones.</div>
     </div>
@@ -342,7 +344,7 @@ body.is-touch #progress{top:calc(50% + 60px)}
     <h2>Paused</h2>
     <div class="opt"><label>Look speed</label><div class="range"><input type="range" id="sens2" min="0.3" max="2.5" step="0.05" value="1"><output id="sens2-out">1.0</output></div></div>
     <div class="opt"><label>Volume</label><div class="range"><input type="range" id="vol" min="0" max="1" step="0.05" value="0.8"><output id="vol-out">80</output></div></div>
-    <div class="opt"><label>Graphics</label><div class="seg" data-opt="quality"><button data-v="low">Fast</button><button data-v="high">Pretty</button></div></div>
+    <div class="opt"><label>Graphics</label><div class="seg" data-opt="quality"><button data-v="low">Low</button><button data-v="medium">Med</button><button data-v="high">High</button><button data-v="ultra">Ultra</button></div></div>
     <div class="row"><button class="btn primary" id="resume">Resume</button><button class="btn" id="quit">Leave match</button></div>
   </div>
 </div>

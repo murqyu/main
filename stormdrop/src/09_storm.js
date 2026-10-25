@@ -5,17 +5,19 @@ const STORM = { idx: 0, state: 'wait', timer: 0, total: 1, cur: { x: 0, z: 0, r:
 function makeStormMesh() {
   STORM.mat = new THREE.ShaderMaterial({
     transparent: true, side: THREE.DoubleSide, depthWrite: false, fog: false,
-    uniforms: { t: { value: 0 } },
+    uniforms: { t: { value: 0 }, uFogFar: { value: 700 }, uFogCol: { value: new THREE.Color() } },
     vertexShader: 'varying vec3 vW; varying vec2 vUv; void main(){ vUv = uv; vec4 w = modelMatrix * vec4(position,1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }',
     fragmentShader: [
-      'uniform float t; varying vec3 vW; varying vec2 vUv;',
+      'uniform float t, uFogFar; uniform vec3 uFogCol; varying vec3 vW; varying vec2 vUv;',
       'float h(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }',
       'float n(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f); return mix(mix(h(i), h(i+vec2(1.0,0.0)), f.x), mix(h(i+vec2(0.0,1.0)), h(i+vec2(1.0,1.0)), f.x), f.y); }',
       'void main(){ float a = vUv.x * 90.0; float y = vW.y * 0.045;',
       ' float v = n(vec2(a + t*0.5, y - t*0.7)) * 0.6 + n(vec2(a*2.3 - t*0.9, y*2.1 - t*1.6)) * 0.4;',
       ' float bands = smoothstep(0.5, 0.92, v);',
-      ' vec3 col = mix(vec3(0.40,0.12,0.74), vec3(0.88,0.6,1.0), bands);',
-      ' float alpha = (0.34 + bands * 0.32) * (1.0 - smoothstep(150.0, 290.0, vW.y)) * mix(1.0, 0.45, smoothstep(120.0, 520.0, distance(vW, cameraPosition)));',
+      ' vec3 col = mix(vec3(0.16,0.015,0.55), vec3(1.6,0.7,2.2), bands);',
+      ' float dist = distance(vW, cameraPosition); float fogk = smoothstep(uFogFar * 0.35, uFogFar * 1.05, dist);',
+      ' col = mix(col, uFogCol * 1.2 + vec3(0.06, 0.0, 0.12), fogk);',
+      ' float alpha = (0.34 + bands * 0.32) * (1.0 - smoothstep(150.0, 290.0, vW.y)) * (1.0 - fogk * 0.92);',
       ' gl_FragColor = vec4(col, alpha); }',
     ].join('\n'),
   });
@@ -68,5 +70,6 @@ function updateStorm(dt) {
   S.mesh.scale.set(Math.max(0.5, S.cur.r), 1, Math.max(0.5, S.cur.r));
   S.mesh.position.x = S.cur.x; S.mesh.position.z = S.cur.z;
   S.mat.uniforms.t.value += dt;
+  S.mat.uniforms.uFogFar.value = Math.max(220, scene.fog.far); S.mat.uniforms.uFogCol.value.copy(scene.fog.color);
 }
 function inStorm(p) { return Math.hypot(p.x - STORM.cur.x, p.z - STORM.cur.z) > STORM.cur.r; }

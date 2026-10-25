@@ -239,34 +239,37 @@ function pickPOIs(rng, raw) {
     }
   }
 }
-const _tc = [0, 0, 0];
+const _tc = [0, 0, 0], _ts = [1, 0, 0, 0];
 function terrainColor(x, z, h, ny) {
   const P = WORLD.perlin;
   const n = P(x * 0.018, z * 0.018) * 0.5 + 0.5, n2 = P(x * 0.06 + 11, z * 0.06 - 4) * 0.5 + 0.5;
-  let r, g, b;
-  if (h < 0.4) { r = 0.80; g = 0.72; b = 0.50; }
-  else if (h < 2.1) { const t = smoothstep(1.5, 2.1, h); r = lerp(0.9, 0.46, t); g = lerp(0.8, 0.76, t); b = lerp(0.55, 0.30, t); }
+  let r, g, b, sg = 1, sdirt = 0, ssand = 0, srock = 0;
+  if (h < 0.4) { r = 0.80; g = 0.72; b = 0.50; sg = 0; ssand = 1; }
+  else if (h < 2.1) { const t = smoothstep(1.5, 2.1, h); r = lerp(0.9, 0.46, t); g = lerp(0.8, 0.76, t); b = lerp(0.55, 0.30, t); sg = t; ssand = 1 - t; }
   else {
     r = lerp(0.46, 0.32, n); g = lerp(0.79, 0.63, n); b = lerp(0.30, 0.21, n);
     const dry = smoothstep(0.62, 0.84, n2) * 0.7; r = lerp(r, 0.72, dry); g = lerp(g, 0.75, dry); b = lerp(b, 0.34, dry);
+    sdirt = dry * 0.6; sg = 1 - sdirt;
   }
   const rock = smoothstep(0.86, 0.72, ny);
-  if (rock > 0) { r = lerp(r, 0.57, rock); g = lerp(g, 0.57, rock); b = lerp(b, 0.56, rock); }
+  if (rock > 0) { r = lerp(r, 0.57, rock); g = lerp(g, 0.57, rock); b = lerp(b, 0.56, rock); sg *= 1 - rock; sdirt *= 1 - rock; ssand *= 1 - rock; srock = rock; }
   for (const p of WORLD.pois) {
     const d = Math.hypot(x - p.x, z - p.z); const w = 1 - smoothstep(p.r - 6, p.r + 4, d); if (w <= 0) continue;
-    let pr, pg, pb;
+    let pr, pg, pb, pgr = 0, pd = 1;
     if (p.type === 'city') {
       pr = 0.40; pg = 0.41; pb = 0.44;
       const lx = (((x - p.x) % 24) + 24) % 24, lz = (((z - p.z) % 24) + 24) % 24;
       if (lx < 3 || lz < 3) { pr = 0.30; pg = 0.31; pb = 0.34; }
-    } else if (p.type === 'farm') { const row = Math.sin((x - p.x) * 0.9) > 0; pr = row ? 0.56 : 0.48; pg = row ? 0.43 : 0.68; pb = row ? 0.27 : 0.25; }
+    } else if (p.type === 'farm') { const row = Math.sin((x - p.x) * 0.9) > 0; pr = row ? 0.56 : 0.48; pg = row ? 0.43 : 0.68; pb = row ? 0.27 : 0.25; pgr = row ? 0 : 1; pd = row ? 1 : 0; }
     else if (p.type === 'docks') { pr = 0.62; pg = 0.63; pb = 0.64; }
     else if (p.type === 'quarry') { pr = 0.68; pg = 0.62; pb = 0.53; }
-    else if (p.type === 'town') { pr = lerp(0.52, 0.42, n); pg = lerp(0.74, 0.63, n); pb = 0.33; }
-    else { pr = 0.40; pg = 0.58; pb = 0.27; }
+    else if (p.type === 'town') { pr = lerp(0.52, 0.42, n); pg = lerp(0.74, 0.63, n); pb = 0.33; pgr = 1; pd = 0; }
+    else { pr = 0.40; pg = 0.58; pb = 0.27; pgr = 1; pd = 0; }
     r = lerp(r, pr, w); g = lerp(g, pg, w); b = lerp(b, pb, w);
+    sg = lerp(sg, pgr, w); sdirt = lerp(sdirt, pd, w); ssand *= 1 - w; srock *= 1 - w * 0.8;
   }
   _tc[0] = r * 1.02; _tc[1] = g * 1.02; _tc[2] = b * 1.02;
+  _ts[0] = sg; _ts[1] = sdirt; _ts[2] = ssand; _ts[3] = srock;
   return _tc;
 }
 function buildTerrainMesh() {
@@ -287,29 +290,27 @@ function buildTerrainMesh() {
   geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
   geo.setIndex(new THREE.BufferAttribute(idx, 1));
   geo.computeVertexNormals();
-  const nrm = geo.attributes.normal.array;
-  for (let k = 0; k < N * N; k++) { const c = terrainColor(pos[k * 3], pos[k * 3 + 2], pos[k * 3 + 1], nrm[k * 3 + 1]); col[k * 3] = c[0]; col[k * 3 + 1] = c[1]; col[k * 3 + 2] = c[2]; }
+  const nrm = geo.attributes.normal.array, spl = new Float32Array(N * N * 4);
+  for (let k = 0; k < N * N; k++) {
+    const c = terrainColor(pos[k * 3], pos[k * 3 + 2], pos[k * 3 + 1], nrm[k * 3 + 1]);
+    col[k * 3] = Math.pow(c[0], 2.2); col[k * 3 + 1] = Math.pow(c[1], 2.2); col[k * 3 + 2] = Math.pow(c[2], 2.2);
+    spl[k * 4] = _ts[0]; spl[k * 4 + 1] = _ts[1]; spl[k * 4 + 2] = _ts[2]; spl[k * 4 + 3] = _ts[3];
+  }
   geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
-  const mesh = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true, map: TEX.grass }));
+  geo.setAttribute('splat', new THREE.BufferAttribute(spl, 4));
+  WORLD.tintArr = col; WORLD.splatArr = spl;
+  if (!WORLD.terrainMat) { WORLD.terrainMat = makeTerrainMaterial(); WORLD.terrainMat.userData.keep = true; }
+  const mesh = new THREE.Mesh(geo, WORLD.terrainMat);
   mesh.receiveShadow = true;
   worldGroup.add(mesh);
 }
 
 // ---------- sky, water, clouds (built once) ----------
 function makeEnvironment() {
-  const sunDir = new V3(0.45, 0.8, 0.3).normalize(); WORLD.sunDir = sunDir;
-  const skyMat = new THREE.ShaderMaterial({
-    side: THREE.BackSide, depthWrite: false, fog: false,
-    uniforms: { top: { value: new THREE.Color(0x2a78dc) }, mid: { value: new THREE.Color(0x86c4ff) }, bot: { value: new THREE.Color(0xcfe8ff) }, sunDir: { value: sunDir }, storm: { value: 0 } },
-    vertexShader: 'varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
-    fragmentShader: 'uniform vec3 top, mid, bot, sunDir; uniform float storm; varying vec3 vP; void main(){ float h = vP.y; vec3 c = mix(mid, top, smoothstep(0.05, 0.6, h)); c = mix(bot, c, smoothstep(-0.05, 0.14, h)); float s = max(dot(normalize(vP), sunDir), 0.0); c += vec3(1.0,0.93,0.75) * pow(s, 500.0) * 1.4 + vec3(1.0,0.85,0.6) * pow(s, 8.0) * 0.22; c = mix(c, vec3(0.42,0.2,0.62) + vec3(0.12,0.05,0.18)*h, storm); gl_FragColor = vec4(c, 1.0); }',
-  });
-  skyMesh = new THREE.Mesh(new THREE.SphereGeometry(820, 32, 16), skyMat);
-  skyMesh.renderOrder = -1; skyMesh.frustumCulled = false; scene.add(skyMesh);
-  waterMesh = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3000, 1, 1), new THREE.MeshPhongMaterial({ color: 0x1f78c0, specular: 0x6f9fc8, shininess: 60, transparent: true, opacity: 0.86 }));
-  waterMesh.rotation.x = -Math.PI / 2; scene.add(waterMesh);
+  WORLD.sunDir = new V3(0.45, 0.8, 0.3).normalize();
+  makeSkyAndEnv(); makeWater(); RAIN.init();
   cloudGroup = new THREE.Group();
-  const cg = new THREE.IcosahedronGeometry(1, 1), cm = new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: 0x7d8ca6, flatShading: true });
+  const cg = new THREE.IcosahedronGeometry(1, 1), cm = ENVSTATE.cloudMat;
   for (let i = 0; i < 26; i++) {
     const cl = new THREE.Group(); const n = 4 + (Math.random() * 4 | 0);
     for (let k = 0; k < n; k++) { const m = new THREE.Mesh(cg, cm); const s = 8 + Math.random() * 13; m.scale.set(s * 1.4, s * 0.65, s); m.position.set((k - n / 2) * 12 + Math.random() * 6, Math.random() * 5, Math.random() * 14 - 7); cl.add(m); }
@@ -635,7 +636,7 @@ function genVegetation() {
     const th = 2.2 * t.s; t.tree = { x: t.x, y: t.y, z: t.z, s: t.s, parts: [], shakeT: 0, alive: true };
     _q4.setFromAxisAngle(UP, rand() * TAU);
     addPart(t.tree, trunks, ti++, _p4.set(t.x, t.y - 0.3, t.z), _q4, _s4.set(t.s, th + 0.3, t.s), null);
-    _c4.setHSL(0.31 + rr(-0.03, 0.03), rr(0.42, 0.58), rr(0.25, 0.33));
+    _c4.setHSL(0.31 + rr(-0.03, 0.03), rr(0.42, 0.58), rr(0.25, 0.33)).convertSRGBToLinear();
     addPart(t.tree, pineM, pi++, _p4.set(t.x, t.y + th * 0.7, t.z), _q4, _s4.set(2.4 * t.s, 4.2 * t.s, 2.4 * t.s), _c4);
     addPart(t.tree, pineM, pi++, _p4.set(t.x, t.y + th * 0.7 + 2.5 * t.s, t.z), _q4, _s4.set(1.7 * t.s, 3.3 * t.s, 1.7 * t.s), _c4);
     mkTree(t, th + 5.6 * t.s);
@@ -644,7 +645,7 @@ function genVegetation() {
     const th = 2.6 * t.s; t.tree = { x: t.x, y: t.y, z: t.z, s: t.s, parts: [], shakeT: 0, alive: true };
     _q4.setFromAxisAngle(UP, rand() * TAU);
     addPart(t.tree, trunks, ti++, _p4.set(t.x, t.y - 0.3, t.z), _q4, _s4.set(t.s, th + 0.3, t.s), null);
-    _c4.setHSL(0.26 + rr(-0.04, 0.05), rr(0.45, 0.6), rr(0.3, 0.4));
+    _c4.setHSL(0.26 + rr(-0.04, 0.05), rr(0.45, 0.6), rr(0.3, 0.4)).convertSRGBToLinear();
     addPart(t.tree, roundM, oi++, _p4.set(t.x, t.y + th + 1.3 * t.s, t.z), _q4, _s4.set(2.6 * t.s, 2.3 * t.s, 2.6 * t.s), _c4);
     mkTree(t, th + 3.4 * t.s);
   }
@@ -664,7 +665,7 @@ function genVegetation() {
   rocks.forEach((r, i) => {
     const obj = { parts: [], alive: true, shakeT: 0 };
     _q4.setFromEuler(new THREE.Euler(rr(-0.4, 0.4), rand() * TAU, rr(-0.4, 0.4)));
-    const g = rr(0.5, 0.66); _c4.setRGB(g, g * rr(0.97, 1.02), g * rr(0.98, 1.06));
+    const g = rr(0.5, 0.66); _c4.setRGB(g, g * rr(0.97, 1.02), g * rr(0.98, 1.06)).convertSRGBToLinear();
     addPart(obj, rockM, i, _p4.set(r.x, r.y + r.sy * 0.3, r.z), _q4, _s4.set(r.s * rr(0.95, 1.3), r.sy, r.s * rr(0.95, 1.3)), _c4);
     boxCollider(r.x - r.s * 0.8, r.y - 0.5, r.z - r.s * 0.8, r.x + r.s * 0.8, r.y + r.sy * 1.15, r.z + r.s * 0.8, { kind: 'rock', harvest: 'stone', hp: 100 + r.s * 90, maxHp: 100 + r.s * 90, tree: obj });
   });
@@ -677,7 +678,7 @@ function genVegetation() {
   }
   const bushM = new THREE.InstancedMesh(VEG.bush, MAT.bush, Math.max(1, bushes.length));
   bushes.forEach((b, i) => {
-    _q4.setFromAxisAngle(UP, rand() * TAU); _c4.setHSL(0.28 + rr(-0.04, 0.04), 0.5, rr(0.28, 0.36));
+    _q4.setFromAxisAngle(UP, rand() * TAU); _c4.setHSL(0.28 + rr(-0.04, 0.04), 0.5, rr(0.28, 0.36)).convertSRGBToLinear();
     _m4.compose(_p4.set(b.x, b.y + b.s * 0.4, b.z), _q4, _s4.set(b.s * 1.3, b.s, b.s * 1.3)); bushM.setMatrixAt(i, _m4); bushM.setColorAt(i, _c4);
   });
   finishInst(bushM, false);
@@ -733,14 +734,40 @@ function newWorld(seed) {
   worldGroup = new THREE.Group(); scene.add(worldGroup);
   gridInit(); resetBuild(); resetItems(); SHAKING.clear(); ASM.length = 0;
   WORLD.footprints = []; WORLD.mapRects = []; WORLD.lootSpots = []; WORLD.trees = []; WORLD.statics = [];
+  WORLD.seed = seed | 0;
   genTerrain(seed);
   buildTerrainMesh();
+  buildWaterHeightTexture();
   genStructures();
   genVegetation();
   spawnLoot();
   buildMapCanvas();
+  buildBlockedGrid();
   rand = Math.random;
+  initGrass();
 }
+// 2-unit bitmap of building and prop footprints so grass never grows through floors
+function buildBlockedGrid() {
+  const S = 2, n = Math.ceil(WORLD.half * 2 / S), b = new Uint8Array(n * n);
+  for (const f of WORLD.footprints) {
+    const x0 = Math.max(0, Math.floor((f[0] + WORLD.half) / S)), x1 = Math.min(n - 1, Math.floor((f[2] + WORLD.half) / S));
+    const z0 = Math.max(0, Math.floor((f[1] + WORLD.half) / S)), z1 = Math.min(n - 1, Math.floor((f[3] + WORLD.half) / S));
+    for (let z = z0; z <= z1; z++) for (let x = x0; x <= x1; x++) b[z * n + x] = 1;
+  }
+  WORLD.blocked = b; WORLD.blockN = n;
+}
+function terrainSampleIndex(x, z) {
+  const N = WORLD.N, i = clamp(Math.round((x + WORLD.half) / WORLD.step), 0, N - 1), j = clamp(Math.round((z + WORLD.half) / WORLD.step), 0, N - 1);
+  return j * N + i;
+}
+function grassWeight(x, z) {
+  if (WORLD.blocked) { const n = WORLD.blockN, bx = Math.floor((x + WORLD.half) / 2), bz = Math.floor((z + WORLD.half) / 2); if (bx >= 0 && bz >= 0 && bx < n && bz < n && WORLD.blocked[bz * n + bx]) return 0; }
+  const k = terrainSampleIndex(x, z), s = WORLD.splatArr;
+  if (WORLD.heights[k] < 1.7) return 0;
+  return s[k * 4] / Math.max(0.001, s[k * 4] + s[k * 4 + 1] + s[k * 4 + 2] + s[k * 4 + 3]);
+}
+const _tt = [0, 0, 0];
+function terrainTint(x, z) { const k = terrainSampleIndex(x, z), c = WORLD.tintArr; _tt[0] = c[k * 3] * 1.45; _tt[1] = c[k * 3 + 1] * 1.5; _tt[2] = c[k * 3 + 2] * 1.4; return _tt; }
 let _cullT = 0;
 function updateStaticCulling(dt, cx, cz) {
   _cullT -= dt; if (_cullT > 0) return; _cullT = 0.3;

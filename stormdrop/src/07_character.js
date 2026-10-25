@@ -1,44 +1,18 @@
 // ---------- characters: rigs, animation, movement, inventory ----------
+// curated named outfits (the player's picks); bots get procedurally generated ones
 const OUTFITS = [
-  { name: 'Ranger', skin: 0xf0c8a0, shirt: 0x2f6fd6, pants: 0x2a2f45, hair: 0x3b2416, acc: 0xffc62e },
-  { name: 'Ember', skin: 0xd9a07a, shirt: 0xe0482f, pants: 0x3a2a22, hair: 0x141414, acc: 0x2b2b2b },
-  { name: 'Mint', skin: 0xf3d2b5, shirt: 0x3fcf9a, pants: 0x1f3b3a, hair: 0xe8c25a, acc: 0xffffff },
-  { name: 'Nightshade', skin: 0x8d5a3b, shirt: 0x6c3fd1, pants: 0x1b1630, hair: 0x0e0e0e, acc: 0x41b8ff },
-  { name: 'Sunny', skin: 0xffd9b8, shirt: 0xffb02e, pants: 0x5a3e9a, hair: 0xb0442c, acc: 0x2fd06f },
-  { name: 'Glacier', skin: 0xe8c4a8, shirt: 0xe9f2ff, pants: 0x3a5f8f, hair: 0xdddddd, acc: 0x3aa0ff },
-  { name: 'Moss', skin: 0xc68f62, shirt: 0x5b7f2a, pants: 0x4a3b26, hair: 0x2a1a0e, acc: 0xd6b25a },
-  { name: 'Cherry', skin: 0xf6cfb0, shirt: 0xff5d8f, pants: 0x2b2d42, hair: 0x2b1b17, acc: 0xffffff },
+  { name: 'Ranger', skin: 0xf0c8a0, top: 'jacket', c1: 0x2f6fd6, c2: 0xffc62e, pattern: 'none', legs: 0x2a2f45, hair: 'crop', hairC: 0x3b2416, head: 'none', back: 'backpack', backC: 0xffc62e, glider: 'wing', gliderC1: 0xffc62e, gliderC2: 0x2f6fd6, pick: 'axe', pickC: 0xffc62e, shoes: 0x1d2026, eyes: 'normal', trail: 0x41b8ff },
+  { name: 'Ember', skin: 0xd9a07a, top: 'hoodie', c1: 0xe0482f, c2: 0x2b2b2b, pattern: 'band', legs: 0x3a2a22, hair: 'spiky', hairC: 0x141414, head: 'none', back: 'jetpack', backC: 0x2b2b2b, glider: 'wing', gliderC1: 0xff8a3d, gliderC2: 0xe0482f, pick: 'sickle', pickC: 0xff8a3d, shoes: 0xe0482f, eyes: 'focused', trail: 0xff8a3d },
+  { name: 'Mint', skin: 0xf3d2b5, top: 'tee', c1: 0x3fcf9a, c2: 0xffffff, pattern: 'stripe', legs: 0x1f3b3a, hair: 'bun', hairC: 0xe8c25a, head: 'none', back: 'backpack', backC: 0xffffff, glider: 'umbrella', gliderC1: 0x3fcf9a, gliderC2: 0xffffff, pick: 'pick', pickC: 0x3fcf9a, shoes: 0xffffff, eyes: 'happy', trail: 0x2fd06f },
+  { name: 'Nightshade', skin: 0x8d5a3b, top: 'armor', c1: 0x6c3fd1, c2: 0x41b8ff, pattern: 'none', legs: 0x1b1630, hair: 'mohawk', hairC: 0x41b8ff, head: 'none', back: 'wings', backC: 0x41b8ff, glider: 'kite', gliderC1: 0x6c3fd1, gliderC2: 0x41b8ff, pick: 'crowbar', pickC: 0x41b8ff, shoes: 0x1d2026, eyes: 'shades', trail: 0xb45cff },
+  { name: 'Sunny', skin: 0xffd9b8, top: 'tank', c1: 0xffb02e, c2: 0x2fd06f, pattern: 'none', legs: 0x5a3e9a, shorts: true, hair: 'curly', hairC: 0xb0442c, head: 'headphones', headC: 0x2fd06f, back: 'none', glider: 'para', gliderC1: 0xffb02e, gliderC2: 0x2fd06f, pick: 'hammer', pickC: 0x2fd06f, shoes: 0xffb02e, eyes: 'happy', trail: 0xffd23f },
+  { name: 'Glacier', skin: 0xe8c4a8, top: 'jacket', c1: 0xe9f2ff, c2: 0x3aa0ff, pattern: 'split', legs: 0x3a5f8f, hair: 'long', hairC: 0xdddddd, head: 'beanie', headC: 0x3aa0ff, back: 'shield', backC: 0x3aa0ff, glider: 'wing', gliderC1: 0xe9f2ff, gliderC2: 0x3aa0ff, pick: 'pick', pickC: 0x9fd8ff, shoes: 0xffffff, eyes: 'normal', gloves: 0x3aa0ff, trail: 0xffffff },
+  { name: 'Moss', skin: 0xc68f62, top: 'hoodie', c1: 0x5b7f2a, c2: 0xd6b25a, pattern: 'none', legs: 0x4a3b26, hair: 'swoop', hairC: 0x2a1a0e, head: 'cap', headC: 0xd6b25a, back: 'quiver', backC: 0x8a5a3a, glider: 'kite', gliderC1: 0x5b7f2a, gliderC2: 0xd6b25a, pick: 'axe', pickC: 0xd6b25a, shoes: 0x8a5a3a, eyes: 'focused', trail: 0x2fd06f },
+  { name: 'Cherry', skin: 0xf6cfb0, top: 'tee', c1: 0xff5d8f, c2: 0xffffff, pattern: 'band', legs: 0x2b2d42, hair: 'long', hairC: 0x2b1b17, head: 'bandana', headC: 0xffffff, back: 'cape', backC: 0xff5d8f, glider: 'umbrella', gliderC1: 0xff5d8f, gliderC2: 0xffffff, pick: 'sickle', pickC: 0xff5d8f, shoes: 0xff5d8f, eyes: 'happy', trail: 0xff5d8f },
+  { name: 'Vanguard', skin: 0xa86c45, top: 'armor', c1: 0x34495e, c2: 0xe0482f, pattern: 'none', legs: 0x262626, hair: 'crop', hairC: 0x141414, head: 'helmet', headC: 0x34495e, back: 'jetpack', backC: 0x6b6b6b, glider: 'wing', gliderC1: 0xe0482f, gliderC2: 0x34495e, pick: 'hammer', pickC: 0xe0482f, shoes: 0x1d2026, eyes: 'focused', gloves: 0x1d2026, trail: 0xe0482f },
+  { name: 'Aurora', skin: 0xeac2a0, top: 'jacket', c1: 0x8e44ad, c2: 0x2fd06f, pattern: 'stripe', legs: 0x1b1630, hair: 'spiky', hairC: 0xff5d8f, head: 'none', back: 'cape', backC: 0x2fd06f, glider: 'para', gliderC1: 0x8e44ad, gliderC2: 0x2fd06f, pick: 'crowbar', pickC: 0x2fd06f, shoes: 0x8e44ad, eyes: 'shades', trail: 0xb45cff },
 ];
-function randomOutfit() {
-  const o = Object.assign({}, OUTFITS[Math.floor(Math.random() * OUTFITS.length)]);
-  const c = new THREE.Color(o.shirt); const hsl = {}; c.getHSL(hsl); c.setHSL((hsl.h + mr(-0.08, 0.08) + 1) % 1, hsl.s, clamp(hsl.l + mr(-0.08, 0.08), 0.15, 0.85)); o.shirt = c.getHex();
-  return o;
-}
-function buildRig(o) {
-  const root = new THREE.Group(), body = new THREE.Group(); root.add(body);
-  const hips = new THREE.Group(); hips.position.y = 0.9; body.add(hips);
-  const M = (w, h, d, mat, x, y, z, parent) => { const m = new THREE.Mesh(boxGeo(w, h, d), mat); m.position.set(x, y, z); m.castShadow = true; parent.add(m); return m; };
-  const skin = lam(o.skin), shirt = lam(o.shirt), pants = lam(o.pants), hair = lam(o.hair), acc = lam(o.acc), dark = lam(0x1d2026);
-  M(0.56, 0.62, 0.32, shirt, 0, 0.33, 0, hips);
-  M(0.58, 0.1, 0.34, dark, 0, 0.04, 0, hips);
-  M(0.4, 0.42, 0.18, acc, 0, 0.36, 0.24, hips);
-  const head = new THREE.Group(); head.position.y = 0.66; hips.add(head);
-  M(0.4, 0.4, 0.4, skin, 0, 0.21, 0, head);
-  M(0.44, 0.14, 0.44, hair, 0, 0.44, 0.01, head);
-  M(0.44, 0.24, 0.1, hair, 0, 0.3, 0.19, head);
-  M(0.07, 0.07, 0.02, dark, -0.09, 0.24, -0.205, head); M(0.07, 0.07, 0.02, dark, 0.09, 0.24, -0.205, head);
-  const limb = (x, y, w, h, mat, handMat) => { const pv = new THREE.Group(); pv.position.set(x, y, 0); hips.add(pv); M(w, h, w, mat, 0, -h / 2, 0, pv); if (handMat) M(w * 0.9, w * 0.9, w * 0.9, handMat, 0, -h - w * 0.35, 0, pv); return pv; };
-  const armL = limb(-0.37, 0.58, 0.16, 0.5, shirt, skin), armR = limb(0.37, 0.58, 0.16, 0.5, shirt, skin);
-  const legL = limb(-0.14, 0.02, 0.22, 0.86, pants, null), legR = limb(0.14, 0.02, 0.22, 0.86, pants, null);
-  M(0.24, 0.12, 0.32, dark, 0, -0.86, -0.04, legL); M(0.24, 0.12, 0.32, dark, 0, -0.86, -0.04, legR);
-  const gun = new THREE.Group(); gun.position.set(0, -0.62, -0.06); gun.rotation.x = -Math.PI / 2; armR.add(gun);
-  const glider = new THREE.Group(); glider.position.y = 2.7; glider.visible = false; root.add(glider);
-  const gm = lam(o.acc === 0xffffff ? 0xff5d8f : o.acc), gm2 = lam(o.shirt);
-  const w1 = new THREE.Mesh(boxGeo(2.1, 0.06, 1.1), gm); w1.position.x = -0.95; w1.rotation.z = 0.22; glider.add(w1);
-  const w2 = new THREE.Mesh(boxGeo(2.1, 0.06, 1.1), gm2); w2.position.x = 0.95; w2.rotation.z = -0.22; glider.add(w2);
-  const bar = new THREE.Mesh(boxGeo(0.06, 1.1, 0.06), dark); bar.position.y = -0.55; glider.add(bar);
-  return { root, body, hips, head, armL, armR, legL, legR, gun, glider, heldKey: '' };
-}
+function randomOutfit() { return genOutfit(); }
 function makeCharacter(isPlayer, name, outfit) {
   const c = {
     isPlayer, name, outfit, pos: new V3(), vel: new V3(), yaw: 0, pitch: 0, modelYaw: 0,
@@ -48,66 +22,17 @@ function makeCharacter(isPlayer, name, outfit) {
     kills: 0, damageDealt: 0, fireCD: 0, reloadT: 0, reloadTotal: 0, using: null, useT: 0, useTotal: 0,
     swingT: 0, bloom: 0, radius: 0.42, height: 2.0, aiming: false, lastAttacker: null, lastHurt: -99,
     deathT: 0, blocked: false, blockC: null, animPhase: 0, autoReload: 0, landedAt: 0,
+    anim: { phase: 0, recoil: 0, land: 0, turn: 0 }, emote: null, emoteStart: 0, crouch: false, sliding: false, knocked: false, throwT: 0, eyeH: 1.6, mantle: null, slideT: 0,
   };
+  if (!CHAR_MAT) initCharMaterials();
   c.rig = buildRig(outfit); c.rig.root.visible = false;
   worldGroup.add(c.rig.root);
   return c;
 }
 function curItem(c) { return c.slot >= 0 ? c.inv[c.slot] : null; }
 function curWeapon(c) { const it = curItem(c); return it && it.kind === 'weapon' ? it : null; }
-function updateHeld(c) {
-  const R = c.rig, it = curItem(c);
-  const key = c.buildMode ? 'build' : it ? (it.kind + ':' + (it.id) + ':' + (it.rarity || 0)) : 'pick';
-  if (R.heldKey === key) return;
-  R.heldKey = key;
-  while (R.gun.children.length) R.gun.remove(R.gun.children[0]);
-  if (c.buildMode) return;
-  if (!it) {
-    const pg = new THREE.Group();
-    const h = new THREE.Mesh(boxGeo(0.05, 0.05, 0.9), lam(0x6b4a2a)); h.position.z = -0.25; pg.add(h);
-    const hd = new THREE.Mesh(boxGeo(0.06, 0.5, 0.1), lam(c.outfit.acc === 0x2b2b2b ? 0xffc62e : c.outfit.acc)); hd.position.set(0, 0.12, -0.68); pg.add(hd);
-    R.gun.add(pg);
-  } else if (it.kind === 'weapon') R.gun.add(gunModel(it.id, it.rarity));
-  else { const m = consModel(it.id); m.position.z = -0.1; R.gun.add(m); }
-}
-const _kTmp = { x: 0 };
-function animateRig(c, dt) {
-  const R = c.rig;
-  if (!R.root.visible) return;
-  R.root.position.copy(c.pos);
-  R.root.rotation.y += angleDiff(R.root.rotation.y, c.modelYaw) * Math.min(1, dt * 16);
-  const k = Math.min(1, dt * 14);
-  let bx = 0, aLx = 0, aLz = 0, aRx = 0, aRz = 0, lLx = 0, lRx = 0, lLz = 0, lRz = 0, hx = 0;
-  R.glider.visible = c.mode === 'glide';
-  if (c.dance) {
-    const t = GAME.time * 6.5;
-    aLz = -(2.3 + Math.sin(t) * 0.55); aRz = 2.3 + Math.sin(t + Math.PI) * 0.55; aLx = 0.3; aRx = 0.3;
-    lLx = Math.max(0, Math.sin(t)) * 0.6; lRx = Math.max(0, -Math.sin(t)) * 0.6; hx = Math.sin(t * 0.5) * 0.25;
-    R.body.position.y = Math.abs(Math.sin(t)) * 0.28;
-  } else if (c.mode === 'sky') { bx = -1.25; aLz = -1.25; aRz = 1.25; lLz = -0.28; lRz = 0.28; lLx = 0.15; lRx = 0.15; hx = 0.9; }
-  else if (c.mode === 'glide') { bx = -0.12; aLz = -2.75; aRz = 2.75; lLx = 0.25; lRx = 0.1; }
-  else {
-    const sp = Math.hypot(c.vel.x, c.vel.z);
-    c.animPhase += dt * sp * 1.55;
-    const sw = Math.sin(c.animPhase) * Math.min(1, sp / 6) * 0.85;
-    lLx = sw; lRx = -sw;
-    if (!c.grounded) { lLx = 0.55; lRx = -0.25; }
-    const it = curItem(c);
-    if (c.swingT > 0) { const t = 1 - Math.min(1, c.swingT / 0.5); aRx = t < 0.35 ? lerp(1.4, 2.9, t / 0.35) : lerp(2.9, 0.4, (t - 0.35) / 0.65); aLx = -sw * 0.5; }
-    else if (c.buildMode) { aRx = 1.0; aLx = 0.9; aLz = 0.2; aRz = -0.2; }
-    else if (c.using) { aRx = 1.3; aLx = 1.3; aLz = 0.45; aRz = -0.45; }
-    else if (it && it.kind === 'weapon') { const p = c.pitch; aRx = 1.5 + p; aLx = 1.45 + p; aLz = 0.5; aRz = 0.05; hx = -p * 0.5; }
-    else { aRx = 0.5 - sw * 0.3; aLx = -sw * 0.8; }
-    if (c.reloadT > 0) { aLx -= 0.5; aLz += 0.3; }
-  }
-  R.body.rotation.x += (bx - R.body.rotation.x) * k;
-  R.head.rotation.x += (hx - R.head.rotation.x) * k;
-  R.armL.rotation.x += (aLx - R.armL.rotation.x) * k; R.armL.rotation.z += (aLz - R.armL.rotation.z) * k;
-  R.armR.rotation.x += (aRx - R.armR.rotation.x) * k * (c.swingT > 0 ? 2 : 1); R.armR.rotation.z += (aRz - R.armR.rotation.z) * k;
-  R.legL.rotation.x += (lLx - R.legL.rotation.x) * k; R.legR.rotation.x += (lRx - R.legR.rotation.x) * k;
-  R.legL.rotation.z += (lLz - R.legL.rotation.z) * k; R.legR.rotation.z += (lRz - R.legR.rotation.z) * k;
-  if (c.dance) { /* body bounce set above */ } else if (c.mode === 'sky') R.body.position.y = 1.0; else R.body.position.y += (0 - R.body.position.y) * k;
-}
+function playEmote(c, id) { c.emote = id; c.emoteStart = GAME.time; c.buildMode = null; updateHeld(c); }
+function stopEmote(c) { if (c.emote) { c.emote = null; updateHeld(c); } }
 
 // ---------- movement ----------
 const _cq = [];
@@ -176,11 +101,76 @@ function charPhysics(c, dt) {
     vertical(c, _cq);
   }
 }
+// ---------- crouch, slide, mantle ----------
+const STAND_H = 2.0, CROUCH_H = 1.32;
+function headroom(c, h) {
+  const r = c.radius * 0.9;
+  queryBox(c.pos.x - r, c.pos.z - r, c.pos.x + r, c.pos.z + r, _cq);
+  for (const k of _cq) {
+    if (k.shape !== 'box' || c.pos.x + r < k.minX || c.pos.x - r > k.maxX || c.pos.z + r < k.minZ || c.pos.z - r > k.maxZ) continue;
+    if (k.minY > c.pos.y + 0.4 && k.minY < c.pos.y + h) return false;
+  }
+  return true;
+}
+function setCrouch(c, on) {
+  if (!on && (c.crouch || c.sliding) && !headroom(c, STAND_H)) return false;
+  c.crouch = on; if (!on) c.sliding = false;
+  c.height = on || c.sliding ? CROUCH_H : STAND_H;
+  return true;
+}
+function startSlide(c) {
+  const sp = Math.hypot(c.vel.x, c.vel.z); if (sp < 0.1) return;
+  const boost = Math.max(sp, 11.5) / sp;
+  c.vel.x *= boost; c.vel.z *= boost;
+  c.sliding = true; c.crouch = false; c.height = CROUCH_H; c.slideT = 0;
+  if (c.isPlayer) SFX.slide && SFX.slide(c.pos);
+}
+// slope-aware slide: downhill keeps you going, uphill and friction bleed speed; steering is limited
+function slidePhysics(c, dt, wx, wz, wantCrouch) {
+  let sp = Math.hypot(c.vel.x, c.vel.z);
+  if (sp < 0.01) sp = 0.01;
+  let dx = c.vel.x / sp, dz = c.vel.z / sp;
+  const y0 = c.pos.y + 0.6, a = surfaceBelow(c.pos.x + dx * 0.6, y0, c.pos.z + dz * 0.6), b = surfaceBelow(c.pos.x - dx * 0.6, y0, c.pos.z - dz * 0.6);
+  const slope = clamp((a - b) / 1.2, -1, 1);
+  c.slideT += dt;
+  sp += (-slope * 15 - (c.grounded ? 3.4 : 0.6)) * dt;
+  sp = Math.min(sp, 17);
+  if (wx * wx + wz * wz > 0.01) {
+    const want = Math.atan2(wx, wz), cur = Math.atan2(dx, dz), d = angleDiff(cur, want);
+    const turn = clamp(d, -dt * 1.6, dt * 1.6), nc = cur + turn; dx = Math.sin(nc); dz = Math.cos(nc);
+  }
+  c.vel.x = dx * Math.max(0, sp); c.vel.z = dz * Math.max(0, sp);
+  if (sp < 4.4 || (c.blocked && sp < 7)) { c.sliding = false; if (!setCrouch(c, !!wantCrouch)) setCrouch(c, true); }
+}
+// climb a ledge up to ~2 m when running or jumping into it
+function tryMantle(c) {
+  if (c.mantle || c.mode !== 'ground') return false;
+  const fx = -Math.sin(c.yaw), fz = -Math.cos(c.yaw);
+  const px = c.pos.x + fx * 0.8, pz = c.pos.z + fz * 0.8;
+  const top = surfaceBelow(px, c.pos.y + 2.2, pz), dh = top - c.pos.y;
+  if (dh < 0.75 || dh > 2.25) return false;
+  let h = raycastWorld(px, top + 0.06, pz, 0, 1, 0, 1.95, false);
+  if (h.t < 1.9 && h.c) return false;
+  h = raycastWorld(c.pos.x, c.pos.y + 1.7, c.pos.z, fx, 0, fz, 0.9, false);
+  if (h.t < 0.85 && (h.terrain || (h.c && h.c.maxY > top + 0.3))) return false;
+  c.mantle = { t: 0, dur: 0.22 + dh * 0.1, fx: c.pos.x, fy: c.pos.y, fz: c.pos.z, tx: px, ty: top, tz: pz };
+  c.vel.set(0, 0, 0); c.sliding = false; setCrouch(c, false);
+  if (c.isPlayer) { SFX.mantle && SFX.mantle(c.pos); }
+  return true;
+}
+function updateMantle(c, dt) {
+  const M = c.mantle; M.t += dt;
+  const k = Math.min(1, M.t / M.dur), up = Math.min(1, k / 0.6), fw = k < 0.45 ? 0 : (k - 0.45) / 0.55;
+  const e = 1 - (1 - up) * (1 - up);
+  c.pos.set(lerp(M.fx, M.tx, fw * fw * (3 - 2 * fw)), lerp(M.fy, M.ty + 0.05, e), lerp(M.fz, M.tz, fw * fw * (3 - 2 * fw)));
+  if (k >= 1) { c.mantle = null; c.pos.y = M.ty; c.grounded = true; c.vel.set(-Math.sin(c.yaw) * 3, 0, -Math.cos(c.yaw) * 3); if (c.anim) c.anim.land = 0.35; }
+}
 function landed(c) {
   const vy = c.vel.y;
   if (c.mode === 'sky' || c.mode === 'glide') {
     c.mode = 'ground'; c.rig.glider.visible = false; c.landedAt = GAME.time;
     if (c.isPlayer) { SFX.land(c.pos); SFX.loop('wind', 0); }
+    if (c.rig.root.visible) VFX.landDust(c, 0.6);
     return;
   }
   if (vy < -19.5) {
@@ -188,6 +178,9 @@ function landed(c) {
     if (dmg > 0) applyDamage(c, dmg, null, 'fall', false, 'fall');
   }
   if (c.isPlayer && vy < -8) SFX.land(c.pos);
+  if (c.anim && vy < -6) c.anim.land = clamp((-vy - 4) / 16, 0.15, 1);
+  if (vy < -9 && c.rig.root.visible && camera.position.distanceToSquared(c.pos) < 2500) VFX.landDust(c, clamp((-vy - 9) / 14, 0, 1));
+  if (c.isPlayer && vy < -12) CAM.shake = Math.min(1, CAM.shake + clamp((-vy - 12) / 20, 0, 0.5));
 }
 function skyPhysics(c, dt, mx, my, deploy) {
   const above = c.pos.y - surfaceBelow(c.pos.x, c.pos.y, c.pos.z);
@@ -295,8 +288,11 @@ function tickTimers(c, dt) {
   if (c.autoReload > 0) { c.autoReload -= dt; if (c.autoReload <= 0) startReload(c); }
   if (c.using) { c.useT += dt; if (c.useT >= c.useTotal) finishUse(c); }
 }
-function eyeOf(c, out) { return out.set(c.pos.x, c.pos.y + 1.6, c.pos.z); }
+function eyeOf(c, out) { return out.set(c.pos.x, c.pos.y + (c.eyeH || 1.6), c.pos.z); }
+function tickEye(c, dt) { c.eyeH += (c.height * 0.8 - c.eyeH) * Math.min(1, dt * 14); }
 function muzzleOf(c, out) {
+  const R = c.rig;
+  if (R && R.muzzle && R.root.visible && R.muzzle.parent) { R.muzzle.getWorldPosition(out); return out; }
   const fx = -Math.sin(c.yaw) * Math.cos(c.pitch), fy = Math.sin(c.pitch), fz = -Math.cos(c.yaw) * Math.cos(c.pitch);
   return out.set(c.pos.x + fx * 0.9 + Math.cos(c.yaw) * 0.32, c.pos.y + 1.45 + fy * 0.9, c.pos.z + fz * 0.9 - Math.sin(c.yaw) * 0.32);
 }

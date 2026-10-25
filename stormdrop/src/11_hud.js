@@ -25,7 +25,7 @@ const PIECE_SVG = {
   ramp: '<svg viewBox="0 0 32 32"><path d="M4 26 L28 26 L28 7 Z"/></svg>',
   cone: '<svg viewBox="0 0 32 32"><path d="M3 24 L16 7 L29 24 Z"/></svg>',
 };
-const PIECE_KEYS = { wall: 'Z', floor: 'X', ramp: 'C', cone: 'V' };
+const PIECE_KEYS = { wall: 'Z', floor: 'X', ramp: 'V', cone: 'B' };
 const HUD = (() => {
   const $ = (id) => document.getElementById(id);
   let E = {}, hotSig = '', matSig = '', buildSig = '', promptSig = '', bannerT = 0, toastT = 0, hitT = 0, flashT = 0, mmT = 0;
@@ -197,7 +197,7 @@ const HUD = (() => {
         d.el.style.opacity = Math.min(1, d.t).toFixed(2);
         if (d.t <= 0) d.src = null;
       }
-      E['storm-tint'].style.opacity = (f.alive && f.mode !== 'bus' && inStorm(f.pos)) ? '1' : '0';
+
       mmT -= dt;
       if (mmT <= 0) { mmT = 1 / 30; const fc = focusChar() || p; drawMap(mm, 368, 368, fc.mode === 'bus' ? BUS.pos.x : fc.pos.x, fc.mode === 'bus' ? BUS.pos.z : fc.pos.z, fc.mode === 'bus' ? 520 : 220, false); if (!E.bigmap.hidden) drawMap(bm, 900, 900, 0, 0, 1000, true); }
     },

@@ -279,9 +279,9 @@ function botCombat(b, dt) {
 }
 function deathAnim(c, dt) {
   if (c.deathT <= 0 || !c.rig.root.visible) return;
-  c.deathT += dt; const t = Math.min(1, c.deathT / 0.6);
-  c.rig.root.scale.set(1 - t * 0.6, Math.max(0.01, 1 - t), 1 - t * 0.6); c.rig.root.position.y = c.pos.y + t * 1.2;
-  if (t >= 1) c.rig.root.visible = false;
+  c.deathT += dt;
+  if (!c.rig.dissolve) startDissolve(c);
+  rigDeath(c, dt);
 }
 function botSky(b, dt) {
   const dx = b.dropTarget.x - b.pos.x, dz = b.dropTarget.z - b.pos.z, d = Math.hypot(dx, dz);

@@ -29,9 +29,10 @@ function rayCharacters(ox, oy, oz, dx, dy, dz, maxT, ignore) {
     if (tc < -2 || tc > best + 2) continue;
     const px = cx - dx * tc, py = cy - dy * tc, pz = cz - dz * tc;
     if (px * px + py * py + pz * pz > 5) continue;
-    let t = raySphere(ox, oy, oz, dx, dy, dz, c.pos.x, c.pos.y + 1.76, c.pos.z, 0.27);
+    const H = c.height || 2;
+    let t = raySphere(ox, oy, oz, dx, dy, dz, c.pos.x, c.pos.y + H * 0.88, c.pos.z, 0.27);
     if (t >= 0 && t < best) { best = t; CH.c = c; CH.head = true; }
-    t = rayCyl(ox, oy, oz, dx, dy, dz, c.pos.x, c.pos.z, 0.42, c.pos.y, c.pos.y + 1.53);
+    t = rayCyl(ox, oy, oz, dx, dy, dz, c.pos.x, c.pos.z, 0.42, c.pos.y, c.pos.y + H * 0.765);
     if (t >= 0 && t < best) { best = t; CH.c = c; CH.head = false; }
   }
   CH.t = best;
@@ -64,10 +65,14 @@ function fireWeapon(c, w, origin, aim) {
   const def = WEAPONS[w.id], r = w.rarity;
   const moving = Math.hypot(c.vel.x, c.vel.z) > 1.5;
   let spread = (c.aiming ? def.ads : def.spread) * (moving ? 1.25 : 1) * (c.grounded ? 1 : 1.6) + c.bloom;
+  spread *= c.crouch ? 0.72 : c.sliding ? 1.3 : 1;
   if (def.id === 'sniper' && c.aiming) spread = moving ? 0.01 : 0;
   SFX.shot(def.sound, c.pos);
   muzzleOf(c, _mz);
-  FX.burst(_mz.x, _mz.y, _mz.z, 4, 0xffd27a, 2, 0.06, 0.35, true, 0);
+  const big = def.id === 'shotgun' || def.id === 'sniper' || def.id === 'rocket';
+  VFX.muzzle(c, _mz.x, _mz.y, _mz.z, big);
+  FX.burst(_mz.x, _mz.y, _mz.z, 3, 0xffd27a, 2.5, 0.08, 0.22, true, 0);
+  if (!def.projectile) VFX.casing(c, def.id === 'shotgun');
   if (def.projectile) { applySpread(aim, spread, _fd); spawnRocket(c, _mz, _fd, def, r); }
   else {
     const n = def.pellets || 1;
@@ -78,12 +83,14 @@ function fireWeapon(c, w, origin, aim) {
       const fall = h.t <= def.falloff ? 1 : lerp(1, def.minFall, clamp((h.t - def.falloff) / Math.max(1, def.range - def.falloff), 0, 1));
       const dmg = def.dmg[r] * fall;
       if (h.char) { applyDamage(h.char, dmg * (h.head ? def.head : 1), c, def.name, h.head); FX.burst(ex, ey, ez, 5, h.head ? 0xffe066 : 0xffffff, 3, 0.18, 0.18, true, -5); }
-      else if (h.col) { damageCollider(h.col, dmg, c, ex, ey, ez); const k = colMatKind(h.col); FX.burst(ex + h.nx * 0.05, ey + h.ny * 0.05, ez + h.nz * 0.05, 4, IMPACT_COL[k], 3.5, 0.3, 0.16, false, -12); if (p === 0) SFX.impact({ x: ex, y: ey, z: ez }, k); }
-      else if (h.terrain) FX.burst(ex, ey + 0.05, ez, 4, IMPACT_COL.dirt, 2.5, 0.4, 0.22, false, -8);
-      if (p < 4) FX.tracer(_mz.x, _mz.y, _mz.z, ex, ey, ez, c.isPlayer ? 0xfff2b0 : 0xffd27a);
+      else if (h.col) { VFX.bulletHole(h, ex, ey, ez); damageCollider(h.col, dmg, c, ex, ey, ez); const k = colMatKind(h.col); FX.burst(ex + h.nx * 0.05, ey + h.ny * 0.05, ez + h.nz * 0.05, 4, IMPACT_COL[k], 3.5, 0.3, 0.16, false, -12); if (p === 0) SFX.impact({ x: ex, y: ey, z: ez }, k); }
+      else if (h.terrain) { VFX.bulletHole(h, ex, ey, ez); FX.burst(ex, ey + 0.05, ez, 5, IMPACT_COL.dirt, 3, 0.45, 0.24, false, -8); FX.emitN(ex, ey + 0.1, ez, 0, 0.6, 0, 0.7, 0.3, 0.9, 0.7, 0.62, 0.5, 0.5, 0, 1); }
+      if (p < 4) FX.tracer(_mz.x, _mz.y, _mz.z, ex, ey, ez, c.isPlayer ? 0xfff2b0 : 0xffd27a, def.id === 'sniper' ? 2.4 : 1);
+      if (def.id === 'sniper') VFX.smokeTrail(_mz.x, _mz.y, _mz.z, ex, ey, ez);
     }
   }
   c.bloom = Math.min(c.bloom + def.bloom, 0.07);
+  if (c.anim) c.anim.recoil = Math.min(1.2, c.anim.recoil + (def.kick || (def.id === 'sniper' || def.id === 'rocket' ? 1 : def.id === 'shotgun' ? 0.85 : 0.35)));
 }
 function damageMult(src, target) {
   if (src && !src.isPlayer && target && target.isPlayer) return DIFF[SETTINGS.diff].dmg;
@@ -96,26 +103,28 @@ function applyDamage(t, amt, src, wname, head, kind) {
     amt *= damageMult(src, t);
     if (t.shield > 0) {
       const s = Math.min(t.shield, amt); t.shield -= s; amt -= s;
-      if (src && src.isPlayer) FX.number(t.pos.x, t.pos.y + 2.1, t.pos.z, s, 'sh');
-      if (t.shield <= 0 && t.isPlayer) SFX.shieldBreak();
+      if (src && src.isPlayer) FX.number(t.pos.x, t.pos.y + 2.1, t.pos.z, s, 'sh', t);
+      if (t.shield <= 0) { if (t.isPlayer) SFX.shieldBreak(); if (t.rig.root.visible) VFX.shieldBreak(t); }
       if (src && src.isPlayer) src.damageDealt += s;
     }
   }
   amt = Math.round(amt * 10) / 10;
   if (amt > 0) {
     t.hp -= amt;
-    if (src && src.isPlayer && src !== t) { FX.number(t.pos.x, t.pos.y + 2.1, t.pos.z, amt, head ? 'head' : ''); src.damageDealt += amt; }
+    if (src && src.isPlayer && src !== t) { FX.number(t.pos.x, t.pos.y + 2.1, t.pos.z, amt, head ? 'head' : '', t); src.damageDealt += amt; }
   }
   if (src && src.isPlayer && src !== t) { SFX.hit(head, t.shield > 0); HUD.hitmarker(head); }
   if (t.isPlayer) { if (kind !== 'storm') { HUD.hurt(src); SFX.hurt(); } }
   else if (src && src !== t) onBotDamaged(t, src);
   t.lastHurt = GAME.time;
+  if (kind !== 'storm') rigHitFlash(t);
   if (t.hp <= 0) eliminate(t, src, wname, kind);
 }
 function nm(c) { return c.isPlayer ? '<b class="me">You</b>' : '<b>' + c.name + '</b>'; }
 function eliminate(t, src, wname, kind) {
   if (!t.alive) return;
-  t.alive = false; t.hp = 0; t.deathT = 0.0001; t.using = null; t.reloadT = 0;
+  t.alive = false; t.hp = 0; t.deathT = 0.0001; t.using = null; t.reloadT = 0; t.emote = null;
+  if (t.rig.root.visible) startDissolve(t);
   GAME.deathLog.push({ t: GAME.time, kind: kind || '', w: wname || '', bySelf: src === t, since: GAME.time - (t.landedAt || 0), y: t.pos.y });
   dropAll(t);
   let msg;
@@ -141,11 +150,11 @@ function dropAll(c) {
 }
 function damageCollider(col, amt, src, x, y, z) {
   if (!col.alive) return;
-  if (col.piece) { damagePiece(col.piece, amt); if (src && src.isPlayer) FX.number(x, y, z, amt, 'bld'); return; }
+  if (col.piece) { damagePiece(col.piece, amt); if (src && src.isPlayer) FX.number(x, y, z, amt, 'bld', col); return; }
   if (col.hp === Infinity) return;
   col.hp -= amt;
   if (col.tree) { col.tree.shakeT = 0.35; SHAKING.add(col.tree); }
-  if (src && src.isPlayer) FX.number(x, y, z, amt, 'bld');
+  if (src && src.isPlayer) FX.number(x, y, z, amt, 'bld', col);
   if (col.hp <= 0) destroyCollider(col);
 }
 function destroyCollider(col) {
@@ -187,7 +196,7 @@ function meleeSwing(c, ox, oy, oz, d, reach) {
 const WEAK = { col: null, x: 0, y: 0, z: 0, mesh: null };
 function placeWeakSpot(col, x, y, z, nx, ny, nz) {
   if (!WEAK.mesh) {
-    WEAK.mesh = new THREE.Mesh(keepGeo(new THREE.RingGeometry(0.2, 0.34, 20)), new THREE.MeshBasicMaterial({ color: 0x7fe0ff, transparent: true, opacity: 0.95, depthTest: false, side: THREE.DoubleSide }));
+    WEAK.mesh = new THREE.Mesh(keepGeo(new THREE.RingGeometry(0.2, 0.34, 20)), new THREE.MeshBasicMaterial({ color: LIN(0x7fe0ff).multiplyScalar(3), transparent: true, opacity: 0.95, depthTest: false, side: THREE.DoubleSide }));
     WEAK.mesh.material.userData.keep = true; WEAK.mesh.renderOrder = 10; scene.add(WEAK.mesh);
   }
   if (!col.alive || col.piece || !col.harvest) { WEAK.col = null; WEAK.mesh.visible = false; return; }
@@ -237,8 +246,7 @@ function updateRockets(dt) {
 const _eq = [];
 function explode(x, y, z, R) {
   SFX.explode({ x, y, z });
-  FX.burst(x, y, z, 40, 0xffa23a, 9, 0.45, 0.9, true, 0);
-  FX.burst(x, y, z, 26, 0x5a5550, 4, 1.6, 2.2, false, 1.5);
+  VFX.explosion(x, y, z, R.radius);
   const rad = R.radius;
   for (const c of characters) {
     if (!c.alive || c.mode === 'bus') continue;
@@ -256,15 +264,26 @@ function explode(x, y, z, R) {
 
 // ---------- particles, debris, tracers, damage numbers ----------
 const FX = (() => {
-  const VS = 'attribute float size; attribute vec4 pcolor; varying vec4 vC; uniform float uScale; void main(){ vC = pcolor; vec4 mv = modelViewMatrix * vec4(position,1.0); gl_PointSize = min(256.0, size * uScale / max(0.1, -mv.z)); gl_Position = projectionMatrix * mv; }';
-  const FS = 'varying vec4 vC; void main(){ vec2 d = gl_PointCoord - 0.5; float r = dot(d,d); if (r > 0.25) discard; gl_FragColor = vec4(vC.rgb, vC.a * (1.0 - r * 2.4)); }';
+  const VS = 'attribute float size; attribute float seed; attribute vec4 pcolor; varying vec4 vC; varying float vS; uniform float uScale; void main(){ vC = pcolor; vS = seed; vec4 mv = modelViewMatrix * vec4(position,1.0); gl_PointSize = min(320.0, size * uScale / max(0.1, -mv.z)); gl_Position = projectionMatrix * mv; }';
+  const FS = 'varying vec4 vC; varying float vS; void main(){ vec2 d = gl_PointCoord - 0.5; float r = dot(d,d); if (r > 0.25) discard; gl_FragColor = vec4(vC.rgb, vC.a * (1.0 - r * 2.4)); }';
+  // non-additive particles are smoke/dust: noisy puffs with a little top-lighting
+  const FS_PUFF = `varying vec4 vC; varying float vS;
+    float h(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+    float n2(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(h(i), h(i + vec2(1.0, 0.0)), f.x), mix(h(i + vec2(0.0, 1.0)), h(i + vec2(1.0, 1.0)), f.x), f.y); }
+    void main(){ vec2 d = gl_PointCoord - 0.5; float r = length(d) * 2.0; if (r > 1.0) discard;
+      float n = n2(gl_PointCoord * 3.5 + vS * 37.0) * 0.6 + n2(gl_PointCoord * 8.0 - vS * 19.0) * 0.4;
+      float a = smoothstep(1.0, 0.25, r + (n - 0.5) * 0.8);
+      float lit = 0.8 + 0.4 * (0.5 - gl_PointCoord.y) + (n - 0.5) * 0.3;
+      gl_FragColor = vec4(vC.rgb * lit, vC.a * a); }`;
   function sys(max, additive) {
     const geo = new THREE.BufferGeometry();
-    const pos = new Float32Array(max * 3), col = new Float32Array(max * 4), size = new Float32Array(max);
+    const pos = new Float32Array(max * 3), col = new Float32Array(max * 4), size = new Float32Array(max), seed = new Float32Array(max);
+    for (let i = 0; i < max; i++) seed[i] = Math.random();
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3).setUsage(THREE.DynamicDrawUsage));
     geo.setAttribute('pcolor', new THREE.BufferAttribute(col, 4).setUsage(THREE.DynamicDrawUsage));
     geo.setAttribute('size', new THREE.BufferAttribute(size, 1).setUsage(THREE.DynamicDrawUsage));
-    const mat = new THREE.ShaderMaterial({ uniforms: { uScale: { value: 600 } }, vertexShader: VS, fragmentShader: FS, transparent: true, depthWrite: false, blending: additive ? THREE.AdditiveBlending : THREE.NormalBlending });
+    geo.setAttribute('seed', new THREE.BufferAttribute(seed, 1));
+    const mat = new THREE.ShaderMaterial({ uniforms: { uScale: { value: 600 } }, vertexShader: VS, fragmentShader: additive ? FS : FS_PUFF, transparent: true, depthWrite: false, blending: additive ? THREE.AdditiveBlending : THREE.NormalBlending });
     const pts = new THREE.Points(geo, mat); pts.frustumCulled = false; pts.renderOrder = 3; scene.add(pts);
     return { max, pos, col, size, geo, mat, vel: new Float32Array(max * 3), life: new Float32Array(max), ml: new Float32Array(max), s0: new Float32Array(max), s1: new Float32Array(max), rgba: new Float32Array(max * 4), grav: new Float32Array(max), drag: new Float32Array(max), next: 0, live: 0 };
   }
@@ -290,7 +309,8 @@ const FX = (() => {
     S.pos[i * 3] = x; S.pos[i * 3 + 1] = y; S.pos[i * 3 + 2] = z;
     S.vel[i * 3] = vx; S.vel[i * 3 + 1] = vy; S.vel[i * 3 + 2] = vz;
     S.life[i] = life; S.ml[i] = life; S.s0[i] = s0; S.s1[i] = s1;
-    S.rgba[i * 4] = r; S.rgba[i * 4 + 1] = g; S.rgba[i * 4 + 2] = b; S.rgba[i * 4 + 3] = a;
+    const boost = S === A ? 2.6 : 1;   // additive particles go above 1.0 so the bloom catches them
+    S.rgba[i * 4] = r * r * boost; S.rgba[i * 4 + 1] = g * g * boost; S.rgba[i * 4 + 2] = b * b * boost; S.rgba[i * 4 + 3] = a;
     S.grav[i] = grav; S.drag[i] = drag || 0;
   }
   function step(S, dt) {
@@ -326,7 +346,7 @@ const FX = (() => {
       for (let i = 0; i < 46; i++) emit(A, p.x + mr(-0.4, 0.4), p.y + mr(0, 2), p.z + mr(-0.4, 0.4), mr(-0.6, 0.6), mr(1.5, 4.5), mr(-0.6, 0.6), mr(0.7, 1.4), 0.35, 0.05, 0.4, 0.85, 1, 1, 0, 0.5);
     },
     debris(p, hex, n) {
-      dcol.set(hex);
+      dcol.set(hex).convertSRGBToLinear();
       for (let k = 0; k < n; k++) {
         let i = deb.findIndex((d) => d.life <= 0); if (i < 0) i = Math.floor(Math.random() * DEB);
         const d = deb[i]; d.life = mr(0.9, 1.6); d.p.set(p.x + mr(-1, 1), p.y + mr(-0.8, 0.8), p.z + mr(-1, 1)); d.v.set(mr(-4, 4), mr(2, 7), mr(-4, 4)); d.r.set(Math.random() * 6, Math.random() * 6, 0); d.rv.set(mr(-8, 8), mr(-8, 8), 0); d.s = mr(0.6, 1.4);
@@ -334,15 +354,18 @@ const FX = (() => {
       }
       debris.instanceColor.needsUpdate = true;
     },
-    tracer(ax, ay, az, bx, by, bz, hex) {
+    tracer(ax, ay, az, bx, by, bz, hex, wid) {
       let i = trs.findIndex((t) => t.life <= 0); if (i < 0) i = Math.floor(Math.random() * TR);
-      trs[i].life = 0.07; trs[i].a.set(ax, ay, az); trs[i].b.set(bx, by, bz);
-      tracers.setColorAt(i, dcol.set(hex)); tracers.instanceColor.needsUpdate = true;
+      trs[i].life = 0.07 * (wid > 1 ? 2.5 : 1); trs[i].ml = trs[i].life; trs[i].w = wid || 1; trs[i].a.set(ax, ay, az); trs[i].b.set(bx, by, bz);
+      tracers.setColorAt(i, dcol.set(hex).convertSRGBToLinear().multiplyScalar(6)); tracers.instanceColor.needsUpdate = true;
     },
-    number(x, y, z, amt, kind) {
-      const d = dnPool.find((q) => q.life <= 0) || dnPool[0];
-      d.life = 0.9; d.x = x + mr(-0.4, 0.4); d.y = y; d.z = z + mr(-0.4, 0.4); d.vy = 1.6; d.ox = mr(-12, 12);
-      d.el.textContent = Math.max(1, Math.round(amt)); d.el.className = 'dn' + (kind ? ' ' + kind : '');
+    number(x, y, z, amt, kind, target) {
+      // hits on the same target within a short window stack into one growing number
+      const sk = kind === 'sh' ? 'sh' : 'hp';
+      let d = target ? dnLive.find((q) => q.target === target && q.sk === sk && q.life > 0.45) : null;
+      if (d) { d.total += amt; d.life = 0.95; d.pop = 1; if (kind === 'head') d.head = true; }
+      else { d = dnPool.find((q) => q.life <= 0) || dnPool[0]; d.total = amt; d.target = target || null; d.sk = sk; d.head = kind === 'head'; d.life = 0.95; d.x = x + mr(-0.4, 0.4); d.y = y; d.z = z + mr(-0.4, 0.4); d.vy = 1.6; d.ox = mr(-12, 12); d.pop = 1; }
+      d.el.textContent = Math.max(1, Math.round(d.total)); d.el.className = 'dn' + (d.sk === 'sh' ? ' sh' : d.head ? ' head' : (kind ? ' ' + kind : '')) + (d.total >= 100 && kind !== 'bld' ? ' big' : '');
       if (!dnLive.includes(d)) dnLive.push(d);
     },
     clear() {
@@ -371,7 +394,7 @@ const FX = (() => {
         if (t.life <= 0) { dm.makeScale(0, 0, 0); tracers.setMatrixAt(i, dm); continue; }
         dp.subVectors(t.b, t.a); const len = dp.length(); if (len < 0.01) continue;
         dp.multiplyScalar(1 / len); dq.setFromUnitVectors(_tmpV2.set(0, 0, 1), dp);
-        const w = 0.035 * (t.life / 0.07) + 0.01;
+        const w = (0.035 * (t.life / (t.ml || 0.07)) + 0.01) * (t.w || 1);
         dm.compose(_tmpV3.copy(t.a).lerp(t.b, 0.5), dq, ds.set(w, w, len)); tracers.setMatrixAt(i, dm);
       }
       if (td) tracers.instanceMatrix.needsUpdate = true;
@@ -382,7 +405,8 @@ const FX = (() => {
         _tmpV4.set(d.x, d.y, d.z).project(camera);
         if (_tmpV4.z > 1) { d.el.style.opacity = '0'; continue; }
         const sx = (_tmpV4.x * 0.5 + 0.5) * W + d.ox * (1 - d.life), sy = (-_tmpV4.y * 0.5 + 0.5) * H;
-        const sc = d.life > 0.75 ? 1 + (d.life - 0.75) * 3 : 1;
+        d.pop = Math.max(0, (d.pop || 0) - dt * 6);
+        const sc = 1 + d.pop * d.pop * 0.7;
         d.el.style.transform = 'translate(' + sx.toFixed(1) + 'px,' + sy.toFixed(1) + 'px) translate(-50%,-50%) scale(' + sc.toFixed(2) + ')';
         d.el.style.opacity = Math.min(1, d.life * 3).toFixed(2);
       }

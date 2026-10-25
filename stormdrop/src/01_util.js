@@ -56,14 +56,16 @@ function boxGeo(w, h, d) {
 }
 function keepGeo(g) { g.userData.keep = true; return g; }
 const _matCache = new Map();
+let ENV_INTENSITY = 0.55;
 function lam(hex, extra) {
   let k = String(hex);
   if (extra) for (const n in extra) { const v = extra[n]; k += '|' + n + ':' + (v && v.isTexture ? v.uuid : v); }
   let m = _matCache.get(k);
   if (!m) {
-    const o = Object.assign({ color: hex }, extra || {});
-    if (o.emissive !== undefined) o.emissive = new THREE.Color(o.emissive);
-    m = new THREE.MeshLambertMaterial(o); m.userData.keep = true; _matCache.set(k, m);
+    const o = Object.assign({ roughness: 0.82, metalness: 0, envMapIntensity: ENV_INTENSITY }, extra || {});
+    o.color = new THREE.Color(hex).convertSRGBToLinear();
+    if (o.emissive !== undefined) o.emissive = new THREE.Color(o.emissive).convertSRGBToLinear();
+    m = new THREE.MeshStandardMaterial(o); m.userData.keep = true; _matCache.set(k, m);
   }
   return m;
 }
@@ -71,6 +73,7 @@ function hexCss(hex) { return '#' + hex.toString(16).padStart(6, '0'); }
 const _tmpV = new V3(), _tmpV2 = new V3(), _tmpV3 = new V3(), _tmpV4 = new V3();
 const UP = new V3(0, 1, 0);
 
-let SETTINGS = { bots: 29, diff: 'normal', quality: IS_TOUCH ? 'low' : 'high', sens: 1, vol: 0.8, outfit: 0 };
+let SETTINGS = { bots: 29, diff: 'normal', quality: IS_TOUCH ? 'low' : 'high', sens: 1, vol: 0.8, outfit: 0, autoRes: true, tod: 'random', weather: 'random', autoSprint: true };
 try { const s = JSON.parse(localStorage.getItem('stormdrop.settings') || 'null'); if (s) SETTINGS = Object.assign(SETTINGS, s); } catch (e) { /* storage unavailable */ }
+if (!['low', 'medium', 'high', 'ultra'].includes(SETTINGS.quality)) SETTINGS.quality = IS_TOUCH ? 'low' : 'high';
 function saveSettings() { try { localStorage.setItem('stormdrop.settings', JSON.stringify(SETTINGS)); } catch (e) { /* ignore */ } }

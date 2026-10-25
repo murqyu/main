@@ -1,6 +1,6 @@
 // ---------- game flow, player control, camera, main loop ----------
 const GAME = { deathLog: [], state: 'menu', time: 0, alive: 0, paused: false, spectating: null, placement: 0, killer: null, deathKind: '', deathTime: 0, stats: { mats: 0, builds: 0, chests: 0 }, menuWorldFresh: false };
-const CAM = { yaw: 0, dist: 3.6, shoulder: 0.85, scoped: false, shake: 0, orbit: 0.6, storm: 0, specYaw: 0 };
+const CAM = { yaw: 0, dist: 3.6, shoulder: 0.85, scoped: false, shake: 0, orbit: 0.6, storm: 0, specYaw: 0, kick: 0, kickYaw: 0, swing: 0, roll: 0, fovAdd: 0 };
 const BUS = { start: new V3(), end: new V3(), pos: new V3(), dir: new V3(), t: 0, dur: 36, mesh: null, prop: null, alt: 175 };
 const FOG_COL = new THREE.Color(0xcfe8ff), STORM_FOG = new THREE.Color(0x5a2a8a);
 const AIM = { origin: new V3(), dir: new V3(), point: new V3() };
@@ -84,19 +84,46 @@ function updatePlayer(dt) {
   }
   if (A.buildToggle) { if (p.buildMode) exitBuild(p); else enterBuild(p, p.lastPiece || 'wall'); }
   if (A.piece) enterBuild(p, A.piece);
-  const fx = -Math.sin(p.yaw), fz = -Math.cos(p.yaw), rx = Math.cos(p.yaw), rz = -Math.sin(p.yaw);
   const mx = clamp(A.mx, -1, 1), my = clamp(A.my, -1, 1);
+  // emotes: T cycles through them; any action cancels
+  if (p.emote) {
+    const E = EMOTES[p.emote];
+    if (Math.abs(mx) + Math.abs(my) > 0.1 || A.fire || A.jump || A.aim || A.buildToggle || A.piece || A.slotKey >= 0 || A.crouchPressed || (E && E.len && GAME.time - p.emoteStart > E.len)) stopEmote(p);
+  }
+  if (A.emote && p.grounded && !p.sliding && !p.mantle) { const ids = Object.keys(EMOTES); playEmote(p, ids[(ids.indexOf(p.emote) + 1) % ids.length]); HUD.banner(EMOTES[p.emote].name, '', 0.9); }
+  if (p.mantle) { updateMantle(p, dt); tickEye(p, dt); p.modelYaw = p.yaw; return; }
+  const fx = -Math.sin(p.yaw), fz = -Math.cos(p.yaw), rx = Math.cos(p.yaw), rz = -Math.sin(p.yaw);
   let wx = fx * my + rx * mx, wz = fz * my + rz * mx; const wl = Math.hypot(wx, wz); if (wl > 1) { wx /= wl; wz /= wl; }
-  p.aiming = A.aim && !p.buildMode && !!curWeapon(p);
+  p.aiming = A.aim && !p.buildMode && !!curWeapon(p) && !p.emote;
+  // crouch / slide
+  const sp0 = Math.hypot(p.vel.x, p.vel.z);
+  if (A.crouchPressed && p.grounded && !p.sliding && sp0 > 7.4 && !p.emote) startSlide(p);
+  else if (A.crouch && !p.crouch && !p.sliding) setCrouch(p, true);
+  else if (!A.crouch && (p.crouch || (p.sliding && p.slideT > 0.2))) setCrouch(p, false);
+  const sprintKey = IS_TOUCH || !SETTINGS.autoSprint ? A.sprint : !A.sprint;
+  p.sprinting = sprintKey && my > 0.3 && !p.aiming && !p.using && !p.crouch && p.fireCD <= 0 && p.reloadT <= 0;
   let spd = 6.6;
-  if (p.aiming) spd = 4.2; else if (A.sprint && my > 0.3 && !p.using) spd = 8.8;
+  if (p.aiming) spd = 4.2; else if (p.sprinting) spd = 8.8;
+  if (p.crouch) spd = p.aiming ? 2.8 : 3.8;
   if (p.using) spd = 2.8;
   if (p.pos.y < 0.2) spd *= 0.7;
-  const k = 1 - Math.exp(-(p.grounded ? 14 : 3) * dt);
-  p.vel.x += (wx * spd - p.vel.x) * k; p.vel.z += (wz * spd - p.vel.z) * k;
-  if (A.jump && p.grounded) { p.vel.y = 8.4; p.grounded = false; }
-  charPhysics(p, dt);
-  p.modelYaw = p.yaw;
+  if (p.emote) spd = 0;
+  if (p.sliding) slidePhysics(p, dt, wx, wz, A.crouch);
+  else {
+    const k = 1 - Math.exp(-(p.grounded ? 14 : 3) * dt);
+    p.vel.x += (wx * spd - p.vel.x) * k; p.vel.z += (wz * spd - p.vel.z) * k;
+  }
+  if (A.jump && p.grounded) {
+    if (!tryMantle(p)) {
+      p.vel.y = p.crouch ? 7.2 : 8.4; p.grounded = false;
+      if (p.sliding) { p.sliding = false; setCrouch(p, false); p.vel.x *= 1.05; p.vel.z *= 1.05; }
+      else if (p.crouch) setCrouch(p, false);
+    }
+  }
+  if (!p.mantle) charPhysics(p, dt);
+  if (!p.grounded && !p.mantle && my > 0.5 && p.blocked && p.vel.y < 4) tryMantle(p);
+  tickEye(p, dt);
+  if (!p.emote) p.modelYaw = p.yaw;
 }
 function computeAim(p) {
   camera.getWorldDirection(_tmpV);
@@ -124,7 +151,9 @@ function playerCombat(p, A) {
   if (it.mag <= 0) { if (A.firePressed && !startReload(p)) { SFX.dry(); if (p.ammo[def.ammo] <= 0) HUD.banner('Out of ' + AMMO[def.ammo].name.toLowerCase(), 'Find ammo in chests or on the ground', 1.4); } return; }
   fireWeapon(p, it, AIM.origin, AIM.dir);
   it.mag--; p.fireCD = 1 / def.rate;
-  p.pitch = Math.min(1.45, p.pitch + def.recoil * (p.aiming ? 0.55 : 1));
+  const rk = def.recoil * (p.aiming ? 0.55 : 1) * (p.crouch ? 0.8 : 1);
+  p.pitch = Math.min(1.45, p.pitch + rk * 0.45); CAM.kick += rk * 0.85; CAM.kickYaw += mr(-1, 1) * rk * 0.3;
+  CAM.shake = Math.min(1, CAM.shake + (def.id === 'sniper' || def.id === 'shotgun' || def.id === 'rocket' ? 0.32 : 0.1));
   if (it.mag === 0 && p.ammo[def.ammo] > 0) p.autoReload = 0.3;
 }
 function playerBuild(p, A, dt) {
@@ -185,14 +214,19 @@ function updateCamera(dt) {
     return;
   }
   let yaw, pitch;
-  if (f === player) { yaw = player.yaw; pitch = player.pitch; }
+  CAM.kick += (0 - CAM.kick) * (1 - Math.exp(-dt * 9)); CAM.kickYaw += (0 - CAM.kickYaw) * (1 - Math.exp(-dt * 11));
+  CAM.swing += ((f === player && player.emote ? Math.PI * 0.9 : 0) - CAM.swing) * (1 - Math.exp(-dt * 4));
+  if (f === player) { yaw = player.yaw + CAM.kickYaw + CAM.swing; pitch = clamp(player.pitch + CAM.kick, -1.5, 1.5); if (player.emote) pitch = clamp(pitch, -0.7, 0.35); }
   else { CAM.specYaw += angleDiff(CAM.specYaw, f.yaw) * Math.min(1, dt * 3); yaw = CAM.specYaw; pitch = -0.3; }
   const w = f === player && player.aiming ? curWeapon(player) : null;
   const scoped = !!(w && WEAPONS[w.id].scope);
-  const tDist = f.mode === 'sky' ? 7.5 : f.mode === 'glide' ? 6.5 : scoped ? 0 : w ? 1.9 : (f === player && player.buildMode) ? 4.3 : f === player ? 3.6 : 4.6;
-  CAM.dist = lerp(CAM.dist, tDist, 1 - Math.exp(-dt * 14));
-  CAM.shoulder = lerp(CAM.shoulder, scoped ? 0 : w ? 0.62 : 0.85, 1 - Math.exp(-dt * 14));
-  const px = f.pos.x, py = f.pos.y + (f.mode === 'ground' ? 1.62 : 1.2), pz = f.pos.z;
+  const emo = f === player && player.emote;
+  const tDist = f.mode === 'sky' ? 7.5 : f.mode === 'glide' ? 6.5 : emo ? 4.6 : scoped ? 0 : w ? 1.9 : (f === player && player.buildMode) ? 4.3 : f === player ? 3.6 : 4.6;
+  CAM.dist = lerp(CAM.dist, tDist, 1 - Math.exp(-dt * (emo ? 5 : 14)));
+  CAM.shoulder = lerp(CAM.shoulder, scoped || emo ? 0 : w ? 0.62 : 0.85, 1 - Math.exp(-dt * 14));
+  const an = f.anim || { land: 0, phase: 0 }, fsp = Math.hypot(f.vel.x, f.vel.z);
+  const bob = f.mode === 'ground' && f.grounded && !f.sliding ? Math.sin(an.phase * 2) * 0.03 * Math.min(1, fsp / 7) : 0;
+  const px = f.pos.x, py = f.pos.y + (f.mode === 'ground' ? (f.eyeH || 1.6) + 0.02 - an.land * 0.2 + bob : 1.2), pz = f.pos.z;
   const cp = Math.cos(pitch), fx = -Math.sin(yaw) * cp, fy = Math.sin(pitch), fz = -Math.cos(yaw) * cp, rx = Math.cos(yaw), rz = -Math.sin(yaw);
   let tx = px + rx * CAM.shoulder - fx * CAM.dist, ty = py + (scoped ? 0 : 0.3) - fy * CAM.dist, tz = pz + rz * CAM.shoulder - fz * CAM.dist;
   if (CAM.dist > 0.1) {
@@ -204,27 +238,54 @@ function updateCamera(dt) {
     }
   }
   ty = Math.max(ty, walkH(tx, tz) + 0.3);
+  // trauma shake: smooth noise, squared so small hits stay subtle
+  let roll = 0;
+  if (CAM.shake > 0) {
+    CAM.shake = Math.max(0, CAM.shake - dt * 1.5);
+    const tr = CAM.shake * CAM.shake, T = GAME.time * 24;
+    tx += (Math.sin(T * 1.13) + Math.sin(T * 2.71 + 1.3) * 0.5) * tr * 0.16;
+    ty += (Math.sin(T * 1.37 + 2.1) + Math.sin(T * 3.1 + 0.4) * 0.5) * tr * 0.16;
+    roll += Math.sin(T * 0.93 + 4.2) * tr * 0.05;
+    pitch += Math.sin(T * 1.9 + 0.7) * tr * 0.025;
+  }
   camera.position.set(tx, ty, tz);
-  if (CAM.shake > 0) { CAM.shake = Math.max(0, CAM.shake - dt * 2.2); camera.position.x += mr(-1, 1) * CAM.shake * 0.35; camera.position.y += mr(-1, 1) * CAM.shake * 0.35; }
-  camera.rotation.set(pitch, yaw, 0);
+  if (f === player && f.mode === 'ground') { const side = f.vel.x * rx + f.vel.z * rz; CAM.roll = lerp(CAM.roll, -side * 0.0022 - (f.sliding ? 0.025 : 0), 1 - Math.exp(-dt * 6)); } else CAM.roll = lerp(CAM.roll, 0, 1 - Math.exp(-dt * 6));
+  camera.rotation.set(pitch, yaw, roll + CAM.roll);
   CAM.yaw = yaw; CAM.scoped = scoped && CAM.dist < 0.35;
   if (player.alive && player.mode !== 'bus') player.rig.root.visible = !CAM.scoped;
-  setFov(w ? 75 / WEAPONS[w.id].zoom : f.mode === 'sky' ? 84 : 75, dt);
+  CAM.fovAdd = lerp(CAM.fovAdd, f === player && !w ? (player.sliding ? 9 : player.sprinting && fsp > 7.5 ? 5 : 0) : 0, 1 - Math.exp(-dt * 6));
+  setFov(w ? 75 / WEAPONS[w.id].zoom : f.mode === 'sky' ? 84 : 75 + CAM.fovAdd, dt);
 }
 function updateEnv(dt) {
   const cp = camera.position;
-  skyMesh.position.copy(cp);
-  for (const cl of cloudGroup.children) { cl.position.x += cl.userData.v * dt; if (cl.position.x > 750) cl.position.x = -750; }
+  UTIME.value += dt;
+  ENVSTATE.sky.position.copy(cp);
+  for (const cl of cloudGroup.children) { cl.position.x += cl.userData.v * dt * (0.6 + UWIND.value); if (cl.position.x > 900) cl.position.x = -900; }
   const f = focusChar();
   const fp = !f ? cp : f.mode === 'bus' ? BUS.pos : f.pos;
-  sun.position.set(fp.x + WORLD.sunDir.x * 160, fp.y + WORLD.sunDir.y * 160, fp.z + WORLD.sunDir.z * 160);
+  const sd = 220;
+  sun.position.set(fp.x + WORLD.sunDir.x * sd, fp.y + WORLD.sunDir.y * sd, fp.z + WORLD.sunDir.z * sd);
   sun.target.position.copy(fp); sun.target.updateMatrixWorld();
   const inS = (GAME.state !== 'menu' && f && f.alive && f.mode !== 'bus' && inStorm(f.pos)) ? 1 : 0;
   CAM.storm = lerp(CAM.storm, inS, 1 - Math.exp(-dt * 3));
-  scene.fog.color.copy(FOG_COL).lerp(STORM_FOG, CAM.storm);
-  scene.fog.near = lerp(140, 6, CAM.storm); scene.fog.far = lerp(560, 150, CAM.storm);
-  skyMesh.material.uniforms.storm.value = CAM.storm * 0.85;
+  scene.fog.color.copy(ENVSTATE.fogCol).lerp(STORM_FOG, CAM.storm);
+  scene.fog.near = lerp(ENVSTATE.fogNear, 6, CAM.storm); scene.fog.far = lerp(ENVSTATE.fogFar, 150, CAM.storm);
+  ENVSTATE.sky.material.uniforms.uStorm.value = CAM.storm * 0.85;
+  if (WATER.mat) { WATER.mat.uniforms.uFogColor.value.copy(scene.fog.color); WATER.mat.uniforms.uFogNear.value = scene.fog.near; WATER.mat.uniforms.uFogFar.value = scene.fog.far; }
+  POST.U.storm.value = CAM.storm * 0.55;
+  const p = player;
+  if (p && GAME.state !== 'menu') {
+    POST.U.hurt.value = Math.max(0, POST.U.hurt.value - dt * 2.2);
+    POST.U.lowhp.value = lerp(POST.U.lowhp.value, p.alive && p.hp < 35 && p.mode === 'ground' ? (1 - p.hp / 35) * 0.9 + 0.1 : 0, 1 - Math.exp(-dt * 4));
+    POST.U.speed.value = lerp(POST.U.speed.value, p.alive && p.mode === 'sky' ? clamp((-p.vel.y - 30) / 22, 0, 1) * 0.9 : 0, 1 - Math.exp(-dt * 5));
+    UPLAYER.value.copy(p.pos);
+  } else { POST.U.hurt.value = 0; POST.U.lowhp.value = 0; POST.U.speed.value = 0; }
+  POST.U.flash.value = Math.max(0, POST.U.flash.value - dt * 4);
+  updateWater(cp.x, cp.z);
+  updateGrass(cp.x, cp.z);
+  RAIN.update(dt, cp.x, cp.y, cp.z);
   SFX.loop('storm', CAM.storm * 0.5);
+  SFX.loop('rain', RAIN.active ? 0.22 : 0);
   updateStaticCulling(dt, cp.x, cp.z);
   SFX.setListener(cp.x, cp.y, cp.z, CAM.yaw);
 }
@@ -261,8 +322,8 @@ function setupMatch() {
   if (!GAME.menuWorldFresh) newWorld((Math.random() * 1e9) | 0);
   GAME.menuWorldFresh = false;
   characters.length = 0; bots.length = 0; usedNames.clear();
-  FX.clear(); HUD.reset(); INPUT.clearAim();
-  player = makeCharacter(true, 'You', OUTFITS[SETTINGS.outfit % OUTFITS.length]); player.dance = false;
+  FX.clear(); VFX.clear(); HUD.reset(); INPUT.clearAim(); INPUT.clearCrouch();
+  player = makeCharacter(true, 'You', OUTFITS[SETTINGS.outfit % OUTFITS.length]); player.emote = null;
   characters.push(player);
   for (let i = 0; i < SETTINGS.bots; i++) { const b = makeBot(); bots.push(b); characters.push(b); }
   setupBus(); stormInit();
@@ -273,11 +334,12 @@ function setupMatch() {
     const t = ((b.dropTarget.x - BUS.start.x) * BUS.dir.x + (b.dropTarget.z - BUS.start.z) * BUS.dir.z) / pathLen;
     b.jumpAt = clamp(t - 0.06 + Math.random() * 0.05, 0.04, 0.95);
   }
+  const [tod, wx] = pickTimeOfDay(); applyEnvironment(tod, wx);
   Object.assign(GAME, { deathLog: [], state: 'play', time: 0, alive: characters.length, spectating: null, placement: 0, killer: null, deathKind: '', deathTime: 0, paused: false, stats: { mats: 0, builds: 0, chests: 0 } });
   player.yaw = Math.atan2(-BUS.dir.x, -BUS.dir.z) + 0.7; player.pitch = -0.28;
   CAM.dist = 3.6; CAM.storm = 0; CAM.shake = 0;
   HUD.show(true); HUD.toggleMap(false);
-  HUD.banner('Jump when ready', IS_TOUCH ? 'Tap JUMP to leave the dropship' : 'Press Space to leave the dropship', 5);
+  HUD.banner('Jump when ready', TOD[tod].name + ' · ' + WEATHER[wx].name + ' — ' + (IS_TOUCH ? 'tap JUMP to leave the dropship' : 'press Space to leave the dropship'), 5);
   STORM.mesh.visible = true;
 }
 function onPlayerDeath(src, kind) {
@@ -293,7 +355,7 @@ function checkEnd() {
   if (GAME.state === 'play' && player && player.alive && GAME.alive <= 1) {
     GAME.state = 'won'; GAME.placement = 1; SFX.victory();
     HUD.banner('Victory', 'Last one standing', 3);
-    player.dance = true; player.slot = -1; player.buildMode = null; updateHeld(player); CAM.orbit = player.yaw;
+    player.slot = -1; playEmote(player, "victory"); CAM.orbit = player.yaw;
     const cols = [0xffc62e, 0x41b8ff, 0xff5d8f, 0x5ee05a, 0xb45cff];
     for (let i = 0; i < 5; i++) setTimeout(() => FX.burst(player.pos.x + mr(-3, 3), player.pos.y + mr(4, 7), player.pos.z + mr(-3, 3), 40, cols[i], 7, 1.6, 0.35, true, -3), i * 260);
     setTimeout(() => showEnd(true), 1500);
@@ -353,15 +415,26 @@ function quitToMenu() {
 
 // ---------- settings + menu ----------
 function applyQuality() {
-  const hi = SETTINGS.quality === 'high';
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, hi ? 1.75 : 1));
-  renderer.shadowMap.enabled = hi; sun.castShadow = hi;
+  VFX.setLights(Q().lights);
+  const q = Q();
+  const sh = q.shadows > 0;
+  renderer.shadowMap.enabled = sh; sun.castShadow = sh;
+  if (sh && sun.shadow.mapSize.x !== q.shadows) {
+    sun.shadow.mapSize.set(q.shadows, q.shadows);
+    if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; }
+    const ext = q.shadows >= 4096 ? 95 : q.shadows >= 2048 ? 75 : 60, sc = sun.shadow.camera;
+    sc.left = -ext; sc.right = ext; sc.top = ext; sc.bottom = -ext; sc.updateProjectionMatrix();
+  }
   scene.traverse((o) => { if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => { m.needsUpdate = true; }); });
   for (const m of Object.values(MAT.build)) m.needsUpdate = true;
+  if (WORLD.terrainMat) WORLD.terrainMat.needsUpdate = true;
+  if (ENVSTATE.sky) { ENVSTATE.sky.material.defines.CLOUD_OCT = q.cloudOct; ENVSTATE.sky.material.needsUpdate = true; }
+  POST.dynScale = 1;
   onResize();
+  if (WORLD.heights) initGrass();
 }
 function onResize() {
-  renderer.setSize(innerWidth, innerHeight);
+  POST.resize();
   camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
   FX.setScale(pointScale());
 }
@@ -374,7 +447,7 @@ function syncSegs() {
 function syncOutfit() {
   const o = OUTFITS[SETTINGS.outfit % OUTFITS.length];
   $id('of-name').textContent = o.name;
-  $id('of-chips').innerHTML = [o.shirt, o.pants, o.acc, o.hair].map((c) => '<i style="background:' + hexCss(c) + '"></i>').join('');
+  $id('of-chips').innerHTML = [o.c1, o.c2, o.legs, o.hairC].map((c) => '<i style="background:' + hexCss(c) + '"></i>').join('');
 }
 function wireMenu() {
   document.body.classList.toggle('is-touch', IS_TOUCH);
@@ -411,7 +484,7 @@ function wireMenu() {
 // ---------- main loop ----------
 let _last = performance.now(), _fpsT = 0, _fpsN = 0;
 function frame(dt) {
-  if (GAME.state === 'menu') { menuCamera(dt); updateEnv(dt); FX.update(dt); INPUT.endFrame(); return; }
+  if (GAME.state === 'menu') { menuCamera(dt); updateEnv(dt); FX.update(dt); VFX.update(dt); INPUT.endFrame(); return; }
   if (GAME.paused) { INPUT.endFrame(); return; }
   GAME.time += dt;
   updateBus(dt);
@@ -429,7 +502,7 @@ function frame(dt) {
   updateWeak(dt);
   updateCamera(dt);
   playerActions(dt);
-  FX.update(dt);
+  FX.update(dt); VFX.update(dt);
   updateEnv(dt);
   HUD.update(dt);
   if (!$id('spec').hidden && (!GAME.spectating || !GAME.spectating.alive)) nextSpectate();
@@ -439,34 +512,40 @@ function frame(dt) {
 }
 function loop(now) {
   requestAnimationFrame(loop);
-  let dt = (now - _last) / 1000; _last = now;
+  if (GAME.freeze) { _last = now; return; }
+  let raw = now - _last, dt = raw / 1000; _last = now;
   if (!(dt > 0)) return;
   if (dt > 0.05) dt = 0.05;
   try { frame(dt); } catch (e) { console.error(e); }
-  renderer.render(scene, camera);
+  POST.render();
+  updateDynRes(raw);
   _fpsT += dt; _fpsN++;
   if (_fpsT > 1) { GAME.fps = Math.round(_fpsN / _fpsT); _fpsT = 0; _fpsN = 0; }
 }
 function init() {
-  renderer = new THREE.WebGLRenderer({ canvas: $id('c'), antialias: !IS_TOUCH, powerPreference: 'high-performance' });
+  renderer = new THREE.WebGLRenderer({ canvas: $id('c'), antialias: false, powerPreference: 'high-performance', stencil: false });
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.outputEncoding = THREE.LinearEncoding; renderer.toneMapping = THREE.NoToneMapping;
+  POST.init();
   scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(FOG_COL.getHex(), 140, 560);
-  camera = new THREE.PerspectiveCamera(62, innerWidth / innerHeight, 0.1, 900);
+  scene.fog = new THREE.Fog(0xbcd8f2, 140, 700);
+  camera = new THREE.PerspectiveCamera(62, innerWidth / innerHeight, 0.2, 1600);
   camera.rotation.order = 'YXZ';
-  hemi = new THREE.HemisphereLight(0xdcecff, 0x4d5f3c, 0.58); scene.add(hemi);
-  sun = new THREE.DirectionalLight(0xfff0d8, 0.72);
-  sun.shadow.mapSize.set(2048, 2048);
-  const sc = sun.shadow.camera; sc.left = -75; sc.right = 75; sc.top = 75; sc.bottom = -75; sc.near = 10; sc.far = 420;
-  sun.shadow.bias = -0.0006; sun.shadow.normalBias = 0.04;
+  hemi = new THREE.HemisphereLight(0xdcecff, 0x4d5f3c, 0.3); scene.add(hemi);
+  sun = new THREE.DirectionalLight(0xfff0d8, 2.6);
+  sun.shadow.mapSize.set(1, 1);
+  const sc = sun.shadow.camera; sc.near = 10; sc.far = 520;
+  sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.05;
   scene.add(sun); scene.add(sun.target);
   makeTextures(); makeMaterials(); makeEnvironment(); initBuildGeo(); makeStormMesh(); makeBusMesh();
-  FX.init(); HUD.init(); INPUT.init(); wireMenu();
+  FX.init(); VFX.init(); HUD.init(); INPUT.init(); wireMenu();
   addEventListener('resize', onResize);
+  applyEnvironment('golden', 'clear');
   newWorld((Math.random() * 1e9) | 0); GAME.menuWorldFresh = true;
   stormInit(); STORM.mesh.visible = false;
   applyQuality();
   requestAnimationFrame(loop);
-  window.STORMDROP = { renderOnce() { const t0 = performance.now(); renderer.render(scene, camera); return performance.now() - t0; }, frameOnce(dt) { const t0 = performance.now(); frame(dt); return performance.now() - t0; }, dbg: { traceShot, AIM, raycastWorld, rayCharacters, computeAim, eyeOf }, get info() { return renderer.info.render; }, step(n, dt) { for (let i = 0; i < n; i++) frame(dt || 0.05); }, GAME, get player() { return player; }, bots, characters, STORM, BUS, WORLD, startMatch, setupMatch, jumpOut, CAM, PIECES, ITEMS, CHESTS, SETTINGS };
+  if (GAME.freeze) { _last = now; return; }
+  window.STORMDROP = { grassWeight, groundH, WATER, RAIN, GRASS, sun, renderer: () => renderer, setEnv(v) { scene.environment = v ? ENVSTATE.envRT.texture : null; }, scene: () => scene, applyEnvironment, POST, ENVSTATE, renderOnce() { const t0 = performance.now(); POST.render(); return performance.now() - t0; }, frameOnce(dt) { const t0 = performance.now(); frame(dt); return performance.now() - t0; }, dbg: { traceShot, AIM, raycastWorld, rayCharacters, computeAim, eyeOf }, get info() { return renderer.info.render; }, step(n, dt) { for (let i = 0; i < n; i++) frame(dt || 0.05); }, GAME, get player() { return player; }, bots, characters, STORM, BUS, WORLD, startMatch, setupMatch, jumpOut, CAM, PIECES, ITEMS, CHESTS, SETTINGS, animateRig, updateHeld, giveItem, playEmote, makeCharacter, genOutfit, camera: () => camera, FX, VFX, placePiece, buildTarget, explode, fireWeapon, updateBuild, frame: (dt) => frame(dt), updateCamera: (dt) => updateCamera(dt), testBox(x, y, z, w, h, d) { const c = boxCollider(x - w / 2, y, z - d / 2, x + w / 2, y + h, z + d / 2, { kind: "test", hp: Infinity }); const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), MAT.build.stone); m.position.set(x, y + h / 2, z); worldGroup.add(m); return c; } };
 }
 init();
