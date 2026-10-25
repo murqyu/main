@@ -66,6 +66,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 #hitmarker::before,#hitmarker::after{content:"";position:absolute;left:50%;top:0;width:3px;height:100%;margin-left:-1.5px;
   background:linear-gradient(#fff 0 32%,transparent 32% 68%,#fff 68%);transform:rotate(45deg)}
 #hitmarker::after{transform:rotate(-45deg)}
+#hitmarker.elim{transform:scale(1.55)}#hitmarker.elim::before,#hitmarker.elim::after{background:#ff3b4a;box-shadow:0 0 8px rgba(255,40,60,.8)}
 #hitmarker.head::before,#hitmarker.head::after{background:linear-gradient(#ffd23f 0 32%,transparent 32% 68%,#ffd23f 68%)}
 #dmgdirs{position:absolute;left:50%;top:50%;width:0;height:0}
 .dd{position:absolute;left:-90px;top:-90px;width:180px;height:180px;border-radius:50%;border:7px solid transparent;border-top-color:rgba(255,50,60,.9);transition:opacity .4s;filter:drop-shadow(0 0 6px rgba(255,0,0,.5))}
@@ -207,6 +208,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 #tb-jump{width:68px;height:68px;right:calc(30px + var(--sr));bottom:calc(26px + var(--sb))}
 #tb-aim{width:54px;height:54px;right:calc(134px + var(--sr));bottom:calc(186px + var(--sb))}
 #tb-reload{width:50px;height:50px;right:calc(132px + var(--sr));bottom:calc(112px + var(--sb))}
+#tb-edit{width:54px;height:54px;right:calc(200px + var(--sr));bottom:calc(96px + var(--sb));font-size:12px;background:rgba(58,156,255,.45)}
 #tb-crouch{width:50px;height:50px;right:calc(196px + var(--sr));bottom:calc(30px + var(--sb));font-size:18px}
 #tb-build{width:60px;height:60px;right:calc(114px + var(--sr));bottom:calc(24px + var(--sb))}
 #tb-use{width:auto;min-width:96px;height:42px;border-radius:21px;padding:0 14px;left:50%;transform:translateX(-50%);top:calc(50% + 34px);background:rgba(255,198,46,.85);color:#1b1300;border-color:transparent}
@@ -303,6 +305,7 @@ body.is-touch #progress{top:calc(50% + 60px)}
   <button class="tb" id="tb-jump" aria-label="Jump">JUMP</button>
   <button class="tb" id="tb-crouch" aria-label="Crouch or slide">▼</button>
   <button class="tb" id="tb-build" aria-label="Build mode">BUILD</button>
+  <button class="tb" id="tb-edit" aria-label="Edit build" hidden>EDIT</button>
   <div id="tb-pieces" hidden></div>
   <button class="tb" id="tb-use" hidden>OPEN</button>
   <button class="tb" id="tb-map" aria-label="Map">MAP</button>

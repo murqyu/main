@@ -74,9 +74,10 @@ function charMaterial(extra) {
   m.userData.keep = true;
   return m;
 }
-let CHAR_MAT = null, CHAR_FLASH = null;
+let CHAR_MAT = null, CHAR_FLASH = null, VEH_MAT = null;
 function initCharMaterials() {
   CHAR_MAT = charMaterial();
+  VEH_MAT = charMaterial({ roughness: 0.82 });
   CHAR_FLASH = charMaterial({ emissive: new THREE.Color(1, 1, 1), emissiveIntensity: 1.4 });
 }
 
@@ -235,7 +236,7 @@ function pickaxeModel(o) {
 }
 
 // ---------- held items ----------
-const HOLD = { ar: 'rifle', smg: 'rifle', shotgun: 'rifle', sniper: 'rifle', pistol: 'pistol', rocket: 'launcher' };
+const HOLD = { ar: 'rifle', smg: 'rifle', shotgun: 'rifle', sniper: 'rifle', pistol: 'pistol', rocket: 'launcher', hand: 'pistol' };
 function holdType(c) {
   if (c.buildMode) return 'build';
   const it = curItem(c);
@@ -250,8 +251,14 @@ const HOLDS = {
   sniper: { at: [0.1, -0.07, -0.36], r: [0, -0.1, 0.14], l: [0, -0.04, -0.24], blade: -0.65, mag: [0, -0.12, 0.05] },
   pistol: { at: [0.02, -0.04, -0.48], r: [0, -0.12, 0.08], l: [-0.05, -0.15, 0.08], blade: -0.1, mag: [0, -0.2, 0.08] },
   rocket: { at: [0.24, 0.1, 0.08], r: [0, -0.16, 0.05], l: [0, -0.13, -0.28], blade: -0.35, mag: [0, 0, 0.55] },
+  burst: { at: [0.1, -0.06, -0.4], r: [0, -0.12, 0.13], l: [0, -0.06, -0.22], blade: -0.6, mag: [0, -0.2, -0.12] },
+  tac: { at: [0.1, -0.05, -0.32], r: [0, -0.06, 0.2], l: [0, -0.1, -0.06], blade: -0.6, mag: [0, -0.16, -0.06] },
+  minigun: { at: [0.16, -0.32, -0.32], r: [0, -0.18, 0.3], l: [0, 0.17, -0.02], blade: -0.25, mag: [0.14, -0.08, 0.14] },
+  hand: { at: [0.02, -0.04, -0.46], r: [0, -0.14, 0.08], l: [-0.05, -0.17, 0.08], blade: -0.1, mag: [0, -0.22, 0.08] },
+  heavy: { at: [0.1, -0.07, -0.34], r: [0, -0.1, 0.16], l: [0, -0.04, -0.28], blade: -0.65, mag: [0, -0.12, 0.05] },
+  tempest: { at: [0.1, -0.06, -0.4], r: [0, -0.12, 0.13], l: [0, -0.06, -0.2], blade: -0.6, mag: [0, -0.2, -0.08] },
 };
-const MUZZLE_Z = { ar: -0.68, smg: -0.41, shotgun: -0.61, pistol: -0.2, sniper: -0.92, rocket: -0.62 };
+const MUZZLE_Z = { ar: -0.68, smg: -0.41, shotgun: -0.61, pistol: -0.2, sniper: -0.92, rocket: -0.62, burst: -0.69, tac: -0.55, minigun: -0.95, hand: -0.37, heavy: -1.2, tempest: -0.73 };
 function updateHeld(c) {
   const R = c.rig, it = curItem(c);
   const key = c.emote ? 'emote' : c.buildMode ? 'build' : it ? (it.kind + ':' + it.id + ':' + (it.rarity || 0)) : 'pick';
@@ -305,6 +312,16 @@ function rigTargets(c, dt, A) {
     set('upperL', 2.2 + cw, 0, -0.3); set('upperR', 2.2 - cw, 0, 0.3); set('foreL', 0.6); set('foreR', 0.6); set('thighL', 0.3 - cw * 0.5); set('thighR', 0.3 + cw * 0.5); set('shinL', -0.9); set('shinR', -0.9); set('head', 1.0);
     return;
   }
+  if (c.vehicle) {
+    const st = c.vehicle.steer || 0;
+    set('thighL', 1.45, 0, -0.25); set('thighR', 1.45, 0, 0.25); set('shinL', -1.5); set('shinR', -1.5); set('upperL', 1.05 - st * 0.3, 0, 0.12); set('upperR', 1.05 + st * 0.3, 0, -0.12); set('foreL', 0.5); set('foreR', 0.5); set('chest', -0.15, -st * 0.25, 0); set('head', 0, -st * 0.2, 0); A.hipsY = -0.42;
+    return;
+  }
+  if (c.zip) {
+    const sw = Math.sin(t * 3) * 0.05;
+    set('upperL', 0.2, 0, -2.75); set('upperR', -0.2, 0, 2.75); set('foreL', 0.3); set('foreR', 0.3); set('thighL', 0.5 + sw); set('thighR', 0.2 - sw); set('shinL', -0.7); set('shinR', -0.5); A.bodyX = 0.08;
+    return;
+  }
   if (c.mantle) {
     const k = Math.min(1, c.mantle.t / c.mantle.dur);
     set('upperL', lerp(2.7, 0.6, k), 0, -0.25); set('upperR', lerp(2.7, 0.6, k), 0, 0.25); set('foreL', lerp(0.3, 1.2, k)); set('foreR', lerp(0.3, 1.2, k));
@@ -319,6 +336,7 @@ function rigTargets(c, dt, A) {
   const sp = Math.hypot(c.vel.x, c.vel.z), amp = Math.min(1, sp / 6.5);
   an.phase += dt * sp * (c.crouch ? 2.2 : 1.55) * (vf < -0.5 ? -1 : 1);
   const ph = an.phase, s1 = Math.sin(ph), c1 = Math.cos(ph);
+  const si = Math.floor(ph / Math.PI); if (si !== an.stepI) { an.stepI = si; if (c.grounded && sp > 1.2 && !c.sliding) footstep(c, sp); }
   const sprint = sp > 7.5 ? Math.min(1, (sp - 7.5) / 1.3) : 0;
   const fwdK = sp > 0.2 ? Math.abs(vf) / sp : 1, sideK = sp > 0.2 ? vs / sp : 0;
   const stride = amp * (0.75 + sprint * 0.25);
@@ -431,6 +449,7 @@ function animateRig(c, dt) {
   if (c.emote === 'spin') R.body.rotation.y = _A.bodyY; else R.body.rotation.y += (0 - R.body.rotation.y) * k;
   R.hips.position.y += (0.86 + _A.hipsY - R.hips.position.y) * Math.min(1, dt * 20);
   if (c.mode === 'sky') R.body.position.y = 1.0; else R.body.position.y += (0 - R.body.position.y) * k;
+  if (R.gunModel && R.gunModel.userData.spin) R.gunModel.userData.spin.rotation.z += (c.spin || 0) * dt * 45;
   if (R.cape) { const sp = Math.hypot(c.vel.x, c.vel.z); const tx = -0.15 - Math.min(1.1, sp * 0.1 + (c.mode !== 'ground' ? 0.8 : 0)) + Math.sin(GAME.time * 5 + c.pos.x) * 0.06; R.cape.rotation.x += (tx - R.cape.rotation.x) * Math.min(1, dt * 6); }
   R.glider.visible = c.mode === 'glide';
   if (R.glider.visible) R.glider.rotation.z = Math.sin(GAME.time * 2) * 0.05 - (c.anim.turn || 0) * 0.3;

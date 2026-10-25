@@ -55,17 +55,7 @@ function findTarget(b) {
   }
   return best;
 }
-function weaponFit(id, d) {
-  switch (id) {
-    case 'shotgun': return d < 12 ? 60 : d < 20 ? 25 : -20;
-    case 'smg': return d < 25 ? 40 : 10;
-    case 'ar': return d > 8 ? 45 : 20;
-    case 'pistol': return 15;
-    case 'sniper': return d > 45 ? 70 : -30;
-    case 'rocket': return d > 14 && d < 90 ? 42 : -40;
-  }
-  return 0;
-}
+function weaponFit(id, d) { const f = WEAPONS[id].fit; if (!f) return 0; return d >= f[0] && d <= f[1] ? f[2] : f[3]; }
 function chooseWeapon(b, d) {
   let best = -1, bs = -999, cur = -999;
   for (let i = 0; i < 5; i++) {
@@ -77,7 +67,7 @@ function chooseWeapon(b, d) {
   if (best >= 0 && best !== b.slot && bs > cur + 10) { selectSlot(b, best); b.fireCD = Math.max(b.fireCD, 0.35); }
   if (best < 0 && b.slot !== -1) selectSlot(b, -1);
 }
-function prefDist(b) { const w = curWeapon(b); if (!w) return 2; return { shotgun: 5, smg: 12, pistol: 16, ar: 24, sniper: 60, rocket: 30 }[w.id]; }
+function prefDist(b) { const w = curWeapon(b); if (!w) return 2; return WEAPONS[w.id].pref || 20; }
 function countCons(b) { let n = 0; for (const s of b.inv) if (s && s.kind === 'consumable') n += s.count; return n; }
 function botWants(b, it) {
   if (it.kind === 'mats') return true;
@@ -149,8 +139,8 @@ function pickHeal(b) {
   let best = -1, bs = 0;
   for (let i = 0; i < 5; i++) {
     const s = b.inv[i]; if (!s || s.kind !== 'consumable') continue;
-    const def = CONSUMABLES[s.id]; if (!consumableUseful(b, def)) continue;
-    const sc = def.heal ? (100 - b.hp) : (100 - b.shield) * 0.8 + 5;
+    const def = CONSUMABLES[s.id]; if (def.throwable || def.placeable || !consumableUseful(b, def)) continue;
+    const sc = def.regen ? (200 - b.hp - b.shield) * 0.6 : def.heal ? (100 - b.hp) : (100 - b.shield) * 0.8 + 5;
     if (sc > bs) { bs = sc; best = i; }
   }
   return best;
@@ -170,6 +160,16 @@ function botThink(b) {
     if (b.target !== t) { b.target = t; b.reactT = lerp(0.75, 0.25, b.skill) * D.react; b.aimSettle = 1.8; }
     b.visible = true; b.lastSeen = now; b.lastSeenPos.copy(t.pos);
   } else { b.visible = false; if (b.target && (!b.target.alive || now - b.lastSeen > 5)) b.target = null; }
+  if (b.npc) {
+    // vault crew hold their post and fight whatever comes close
+    if (b.target && b.target.alive && (b.visible || now - b.lastSeen < 3) && b.pos.distanceTo(b.post) < 55) { b.state = 'fight'; chooseWeapon(b, b.pos.distanceTo(b.target.pos)); if (!b.visible) { b.moveTarget.copy(b.lastSeenPos); b.hasMove = true; } return; }
+    if (b.hp < 60 && now > b.healCD) { const s = pickHeal(b); if (s >= 0) { selectSlot(b, s); if (!startUse(b)) b.healCD = now + 4; } }
+    if (b.using) { b.state = 'heal'; return; }
+    b.state = 'guard';
+    if (!b.hasMove || Math.hypot(b.pos.x - b.post.x, b.pos.z - b.post.z) > 7) { b.moveTarget.set(b.post.x + mr(-4, 4), 0, b.post.z + mr(-4, 4)); b.hasMove = true; b.moveKind = 'guard'; }
+    if (b.slot < 0 || !curWeapon(b)) { const k = b.inv.findIndex((s) => s && s.kind === 'weapon'); if (k >= 0) selectSlot(b, k); }
+    return;
+  }
   botPickupNearby(b);
   const S = STORM;
   const circ = (S.state === 'shrink' || (S.state === 'wait' && S.timer < 25)) ? S.to : S.cur;
@@ -260,8 +260,11 @@ function botCombat(b, dt) {
   }
   if (b.reloadT > 0) return;
   if (w.mag <= 0) { startReload(b); return; }
-  if (b.fireCD > 0) return;
-  const def = WEAPONS[w.id]; if (d > def.range * 0.92) return;
+  const def = WEAPONS[w.id];
+  if (def.spin) { b.spinning = true; if (b.spin < 1) return; }
+  if (b.burstQ > 0) { if (b.burstT > 0) return; b.burstQ--; b.burstT = def.burstGap; }
+  else if (b.fireCD > 0) return;
+  if (d > def.range * 0.92) return;
   const D = DIFF[SETTINGS.diff];
   eyeOf(b, _e1);
   const head = Math.random() < 0.15 * b.skill;
@@ -269,9 +272,10 @@ function botCombat(b, dt) {
   let err = lerp(0.085, 0.026, b.skill) * D.aim * b.aimSettle;
   err *= 1 + Math.hypot(tgt.vel.x, tgt.vel.z) * 0.035; if (!tgt.grounded) err *= 1.25;
   applySpread(_e2, err, _e3);
-  b.aiming = d > 15 && def.id !== 'shotgun';
+  b.aiming = d > 15 && def.id !== 'shotgun' && def.id !== 'tac';
   fireWeapon(b, w, _e1, _e3); w.mag--;
-  const auto = def.id === 'ar' || def.id === 'smg';
+  const auto = !!def.auto;
+  if (def.burst && !(b.burstQ > 0) && b.fireCD <= 0) { b.burstQ = def.burst - 1; b.burstT = def.burstGap; }
   b.fireCD = (1 / def.rate) * (auto ? 1.15 : 1.3) * mr(1, 1.25);
   if (auto) { b.burst++; if (b.burst >= b.burstLen) { b.burst = 0; b.burstLen = 4 + Math.floor(Math.random() * 7); b.fireCD += mr(0.3, 0.8); } }
   b.aimSettle = Math.max(1, b.aimSettle - 0.1);
@@ -366,5 +370,4 @@ function updateBot(b, dt, camX, camZ) {
   b.modelYaw = b.yaw;
   b.rig.root.visible = near;
   if (near) animateRig(b, dt);
-  if (dCam < 32 && b.grounded && Math.hypot(b.vel.x, b.vel.z) > 2) { b.stepT = (b.stepT || 0) - dt; if (b.stepT <= 0) { b.stepT = 0.34; SFX.step(b.pos); } }
 }

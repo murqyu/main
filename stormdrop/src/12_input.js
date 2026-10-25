@@ -64,6 +64,7 @@ const INPUT = (() => {
     tap('tb-crouch', () => { T.crouch = !T.crouch; $('tb-crouch').classList.toggle('on', T.crouch); if (T.crouch) pressed.add('TouchCrouch'); });
     tap('tb-reload', () => pressed.add('KeyR'));
     tap('tb-build', () => pressed.add('KeyQ'));
+    tap('tb-edit', () => pressed.add('KeyG'));
     tap('tb-use', () => pressed.add('KeyE'));
     tap('tb-map', () => pressed.add('KeyM'));
     tap('tb-pause', () => pause());
@@ -100,7 +101,8 @@ const INPUT = (() => {
       A.reload = pressed.has('KeyR');
       A.interact = pressed.has('KeyE');
       A.pickaxe = pressed.has('KeyF');
-      A.buildToggle = pressed.has('KeyQ') || pressed.has('KeyG');
+      A.buildToggle = pressed.has('KeyQ');
+      A.edit = pressed.has('KeyG');
       A.piece = (pressed.has('KeyZ') || pressed.has('F1')) ? 'wall' : (pressed.has('KeyX') || pressed.has('F2')) ? 'floor' : (pressed.has('KeyV') || pressed.has('F3')) ? 'ramp' : (pressed.has('KeyB') || pressed.has('F4')) ? 'cone' : null;
       A.slotKey = -1; for (let i = 1; i <= 5; i++) if (pressed.has('Digit' + i)) A.slotKey = i - 1;
       A.wheel = wheel;

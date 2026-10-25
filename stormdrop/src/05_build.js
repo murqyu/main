@@ -139,7 +139,7 @@ function placePiece(s, mat, owner) {
     // on uneven ground a wall reaches down to the terrain so there is no gap under it
     const gmin = terrainRange(b)[0];
     if (gmin < b[1] - 0.05 && gmin > b[1] - LVL) {
-      const bottom = gmin - 0.3; col.minY = bottom;
+      const bottom = gmin - 0.3; col.minY = bottom; piece.skirt = bottom;
       m.scale.y = (b[4] - bottom) / LVL; m.position.y = (b[4] + bottom) / 2;
     }
   }
@@ -149,7 +149,7 @@ function placePiece(s, mat, owner) {
   piece.edges = pieceEdges(s);
   for (const e of piece.edges) { let set = EDGES.get(e); if (!set) { set = new Set(); EDGES.set(e, set); } set.add(piece); }
   PIECES.set(key, piece); constructing.push(piece);
-  SFX.build(m.position);
+  SFX.build(m.position, mat);
   return piece;
 }
 function tryBuild(c, s) {
@@ -170,12 +170,14 @@ function damagePiece(p, amt) {
 function destroyPiece(p, check) {
   if (!p.alive) return;
   p.alive = false;
-  removeCollider(p.collider);
+  removeCollider(p.collider); for (const c of p.extraCols || []) removeCollider(c);
   worldGroup.remove(p.mesh);
+  if (p.mesh.geometry !== GEO_B[p.t] && p.editMask !== undefined) p.mesh.geometry.dispose();
   if (p.mesh.material !== MAT.build[p.mat]) p.mesh.material.dispose();
   const bc = p.mat === 'wood' ? 0xb07a43 : p.mat === 'stone' ? 0x8a8e94 : 0x9fb0bf;
   FX.debris(p.mesh.position, bc, 14);
   if (camera.position.distanceToSquared(p.mesh.position) < 8100) VFX.pieceBreak(p.mesh.position, bc);
+  SFX.buildBreak(p.mesh.position, p.mat);
   for (const e of p.edges) { const set = EDGES.get(e); if (set) { set.delete(p); if (!set.size) EDGES.delete(e); } }
   PIECES.delete(p.key);
   if (check) collapseCheck(p);

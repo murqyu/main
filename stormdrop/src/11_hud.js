@@ -6,12 +6,23 @@ const ICON = {
   pistol: 'M16 8h30v6H32l-2 2h-2l-2 10h-8l3-12h-5z',
   sniper: 'M1 13h11l2-2h13V7h14v4h22v3H38l-3 2h-6l-2 8h-6l2-8h-9l-3 2H1z',
   rocket: 'M4 9h48l5 3v4l-5 3H38v7h-6v-7h-6v5h-6v-5H4z',
+  burst: 'M2 11h8l2-3h26l3 2h12V8h3v2h6v4H48l-3 2h-7l-1 9h-6l1-9h-6l-4 9h-7l3-9H2zM22 6h8v2h-8z',
+  tac: 'M3 11h14l2-2h38v2h5v4H41l-2 2H28l-3 7h-7l3-7h-5l-2 3H3zM33 15h9v5h-9z',
+  minigun: 'M3 8h32v3h16v2H35v2h16v2H35v3H20l-2 6h-6l2-6H3zM14 3h10v5h-3V6h-4v2h-3z',
+  hand: 'M14 7h34v7H33l-2 2h-3l-2 10h-9l3-12h-6z',
+  heavy: 'M1 13h12l2-2h12V6h16v5h20v3H40l-3 2h-7l-2 8h-6l2-8H15l-3 2H1zM58 14h3v8h-3z',
+  tempest: 'M2 11h7l2-3h25l3 2h13V8h3v2h7v4H47l-3 2h-6l-1 9h-6l1-9h-7l-4 9h-7l3-9H2zM18 9h14l-2 2H18z',
 };
 const CONS_SVG = {
   bandage: '<rect x="17" y="6" width="30" height="16" rx="8"/><rect x="29" y="6" width="6" height="16" fill="#d94c4c"/>',
   medkit: '<rect x="18" y="4" width="28" height="20" rx="3"/><path d="M30 7h4v5h5v4h-5v5h-4v-5h-5v-4h5z" fill="#2fb35a"/>',
   shieldS: '<rect x="29" y="2" width="6" height="4" fill="#e8e8e8"/><path d="M28 6h8v4l5 6v10H23V16l5-6z" fill="#41b8ff"/>',
   shieldL: '<rect x="28" y="1" width="8" height="4" fill="#e8e8e8"/><path d="M24 5h16v4l5 4v14H19V13l5-4z" fill="#41b8ff"/>',
+  slurp: '<rect x="28" y="1" width="8" height="5" fill="#2fd06f"/><path d="M25 6h14v4l3 3v13H22V13l3-3z" fill="#9b5cff"/>',
+  grenade: '<circle cx="32" cy="16" r="9" fill="#6b7d3a"/><rect x="29" y="3" width="6" height="5" fill="#cfd4d8"/><path d="M35 5h6v3h-6z" fill="#cfd4d8"/>',
+  launchpad: '<path d="M16 22l16-6 16 6-16 5z" fill="#2f86e8"/><path d="M24 20l8-3 8 3-8 3z" fill="#ffd23f"/><path d="M32 4l5 7h-3v4h-4v-4h-3z" fill="#fff"/>',
+  portafort: '<rect x="22" y="6" width="20" height="18" rx="2" fill="#93a6b8"/><rect x="22" y="12" width="20" height="4" fill="#ffc62e"/>',
+  campfire: '<path d="M20 24l24-6M20 18l24 6" stroke="#8a5a3a" stroke-width="4"/><path d="M32 4c5 6 6 10 0 15-6-5-5-9 0-15z" fill="#ff8a2a"/>',
 };
 const PICK_SVG = '<svg viewBox="0 0 32 32"><path d="M8 27L22 11" stroke="#fff" stroke-width="3.2" stroke-linecap="round" fill="none"/><path d="M11 7c7-3 14-1 18 6l-3 1.5c-3-4-8-6-14-4.5z"/></svg>';
 const MAT_SVG = {
@@ -40,7 +51,7 @@ const HUD = (() => {
     for (let h = 0; h < 360; h += 15) { const el = document.createElement('div'); el.className = 'cm' + (labels[h] ? '' : ' minor'); el.textContent = labels[h] || h; E['compass-strip'].appendChild(el); compassMarks.push({ el, h }); }
     for (let i = 0; i < 4; i++) { const d = document.createElement('div'); d.className = 'dd'; d.style.opacity = '0'; E.dmgdirs.appendChild(d); dds.push({ el: d, t: 0, src: null, x: 0, z: 0 }); }
     E.buildbar.innerHTML = ['wall', 'floor', 'ramp', 'cone'].map((p) => '<div class="bp" data-p="' + p + '"><span class="k">' + PIECE_KEYS[p] + '</span>' + PIECE_SVG[p] + '</div>').join('');
-    E.buildhint.innerHTML = '<span class="key">Q</span>build &nbsp;<span class="key">R-Click</span>material<br><span class="key">R</span>rotate ramp &nbsp;<span class="key">E</span>open / pick up';
+    E.buildhint.innerHTML = '<span class="key">Q</span>build &nbsp;<span class="key">G</span>edit &nbsp;<span class="key">R-Click</span>material<br><span class="key">R</span>rotate ramp &nbsp;<span class="key">E</span>open / pick up';
     E['tb-pieces'].innerHTML = ['wall', 'floor', 'ramp', 'cone'].map((p) => '<button class="tb" data-p="' + p + '" aria-label="' + p + '">' + PIECE_SVG[p] + '</button>').join('') + '<button class="tb" data-p="mat" aria-label="Switch material" style="font-size:12px">MAT</button>';
     if (IS_TOUCH) E.buildhint.hidden = true;
   }
@@ -142,7 +153,8 @@ const HUD = (() => {
     },
     banner(t, s, dur, cls) { E.banner.querySelector('.t').textContent = t; E.banner.querySelector('.s').textContent = s || ''; E.banner.className = cls || ''; E.banner.style.opacity = '1'; bannerT = dur || 2.5; },
     elimToast(name, n) { E.elimtoast.querySelector('.t').innerHTML = 'Eliminated <span></span>'; E.elimtoast.querySelector('.t span').textContent = name; E.elimtoast.querySelector('.s').textContent = n + (n === 1 ? ' elimination' : ' eliminations'); E.elimtoast.style.opacity = '1'; toastT = 2.2; },
-    hitmarker(head) { E.hitmarker.className = head ? 'head' : ''; E.hitmarker.style.opacity = '1'; hitT = 0.14; },
+    hitmarker(head) { if (hitT > 0.2) return; E.hitmarker.className = head ? 'head' : ''; E.hitmarker.style.opacity = '1'; hitT = 0.14; },
+    elimMark() { E.hitmarker.className = 'elim'; E.hitmarker.style.opacity = '1'; hitT = 0.5; },
     hurt(src) {
       flashT = 0.35; E.flash.style.opacity = '1';
       if (!src || src === player) return;

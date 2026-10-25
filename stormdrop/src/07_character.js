@@ -177,7 +177,7 @@ function landed(c) {
     const dmg = Math.round((-vy - 19.5) * 6);
     if (dmg > 0) applyDamage(c, dmg, null, 'fall', false, 'fall');
   }
-  if (c.isPlayer && vy < -8) SFX.land(c.pos);
+  if (c.isPlayer && vy < -8) SFX.land(c.pos, surfaceOf(c));
   if (c.anim && vy < -6) c.anim.land = clamp((-vy - 4) / 16, 0.15, 1);
   if (vy < -9 && c.rig.root.visible && camera.position.distanceToSquared(c.pos) < 2500) VFX.landDust(c, clamp((-vy - 9) / 14, 0, 1));
   if (c.isPlayer && vy < -12) CAM.shake = Math.min(1, CAM.shake + clamp((-vy - 12) / 20, 0, 0.5));
@@ -220,7 +220,7 @@ function giveItem(c, it) {
 function invToItem(s) { return s.kind === 'weapon' ? { kind: 'weapon', id: s.id, rarity: s.rarity, mag: s.mag } : { kind: 'consumable', id: s.id, count: s.count }; }
 function pickupItem(c, it) {
   if (!it.alive) return false;
-  if (giveItem(c, it)) { removeItem(it); if (c.isPlayer) { SFX.pickup(); afterPickup(c); } return true; }
+  if (giveItem(c, it)) { removeItem(it); if (c.isPlayer) { SFX.pickup(it.rarity || 0); afterPickup(c); } return true; }
   if (it.kind === 'consumable' || it.kind === 'weapon') {
     let s = c.slot;
     if (!c.isPlayer || s < 0) s = worstSlot(c);
@@ -234,7 +234,7 @@ function pickupItem(c, it) {
   return false;
 }
 function afterPickup(c) { if (c.slot === -1 && !c.buildMode) { const k = c.inv.findIndex((s) => s && s.kind === 'weapon'); if (k >= 0) selectSlot(c, k); } updateHeld(c); }
-function weaponScore(id, r) { const base = { ar: 50, smg: 40, shotgun: 48, pistol: 22, sniper: 44, rocket: 46 }[id]; return base + r * 8; }
+function weaponScore(id, r) { return (WEAPONS[id].score || 40) + r * 8; }
 function worstSlot(c) {
   let best = -1, bs = Infinity;
   for (let i = 0; i < 5; i++) { const s = c.inv[i]; if (!s) return i; const sc = s.kind === 'weapon' ? weaponScore(s.id, s.rarity) : 30; if (sc < bs) { bs = sc; best = i; } }
@@ -245,7 +245,7 @@ function startReload(c) {
   const def = WEAPONS[w.id]; if (w.mag >= def.mag) return false;
   if (c.isPlayer && c.ammo[def.ammo] <= 0) return false;
   c.reloadTotal = def.reloadPer || def.reload[w.rarity]; c.reloadT = c.reloadTotal; c.using = null;
-  if (c.isPlayer) SFX.reload();
+  if (c.isPlayer) SFX.reload(w.id, c.reloadTotal);
   return true;
 }
 function finishReload(c) {
@@ -260,14 +260,18 @@ function finishReload(c) {
   }
 }
 function consumableUseful(c, def) {
+  if (def.throwable || def.placeable) return true;
+  if (def.regen) return c.hp < 100 || c.shield < 100;
   if (def.heal) return c.hp < def.cap;
   return c.shield < def.cap;
 }
 function startUse(c) {
   const it = curItem(c); if (!it || it.kind !== 'consumable' || c.using) return false;
   const def = CONSUMABLES[it.id];
+  if (def.throwable || def.placeable) return false;
   if (!consumableUseful(c, def)) { if (c.isPlayer) HUD.banner(def.heal ? 'Health is full' : 'Shields are full', '', 1.2); return false; }
   c.using = it; c.useT = 0; c.useTotal = def.time;
+  if (c.isPlayer) SFX.useStart(it.id);
   return true;
 }
 function finishUse(c) {
@@ -276,11 +280,17 @@ function finishUse(c) {
   const def = CONSUMABLES[it.id];
   if (def.heal) c.hp = Math.min(def.cap, Math.max(c.hp, Math.min(100, c.hp + def.heal)));
   if (def.shield) c.shield = Math.min(def.cap, Math.max(c.shield, Math.min(100, c.shield + def.shield)));
+  if (def.regen) c.regen = (c.regen || 0) + def.regen;
   it.count--;
   if (it.count <= 0) { const k = c.inv.indexOf(it); if (k >= 0) c.inv[k] = null; if (c.slot === k) { c.slot = -1; updateHeld(c); } }
-  if (c.isPlayer) SFX.heal();
+  if (c.isPlayer) SFX.heal(!!def.shield);
 }
 function tickTimers(c, dt) {
+  if (c.regen > 0) { const k = Math.min(c.regen, dt * 5); c.regen -= k; if (c.hp < 100) c.hp = Math.min(100, c.hp + k); else c.shield = Math.min(100, c.shield + k); }
+  if (c.burstQ > 0) c.burstT -= dt;
+  if (c.spinning) c.spin = Math.min(1, (c.spin || 0) + dt / 0.65); else c.spin = Math.max(0, (c.spin || 0) - dt * 1.4);
+  c.spinning = false;
+  if (c.throwT > 0) c.throwT -= dt;
   if (c.fireCD > 0) c.fireCD -= dt;
   if (c.swingT > 0) c.swingT -= dt;
   c.bloom = Math.max(0, c.bloom - dt * 0.12);
@@ -289,6 +299,18 @@ function tickTimers(c, dt) {
   if (c.using) { c.useT += dt; if (c.useT >= c.useTotal) finishUse(c); }
 }
 function eyeOf(c, out) { return out.set(c.pos.x, c.pos.y + (c.eyeH || 1.6), c.pos.z); }
+function surfaceOf(c) {
+  if (c.pos.y < 0.12) return 'water';
+  if (c.groundC) { const k = colMatKind(c.groundC); return k === 'dirt' ? 'stone' : k; }
+  const bw = biomeAt(c.pos.x, c.pos.z, c.pos.y); if (bw.snow > 0.5) return 'snow'; if (bw.desert > 0.5) return 'sand';
+  if (grassWeight(c.pos.x, c.pos.z) > 0.45) return 'grass';
+  return c.pos.y < 1.8 ? 'sand' : 'dirt';
+}
+function footstep(c, sp) {
+  if (camera.position.distanceToSquared(c.pos) > 2025) return;
+  _tmpV.set(c.pos.x, c.pos.y + 0.1, c.pos.z);
+  SFX.step(_tmpV, surfaceOf(c), c.crouch ? 0.35 : sp > 7.5 ? 1.25 : 0.85);
+}
 function tickEye(c, dt) { c.eyeH += (c.height * 0.8 - c.eyeH) * Math.min(1, dt * 14); }
 function muzzleOf(c, out) {
   const R = c.rig;

@@ -73,7 +73,7 @@ function hexCss(hex) { return '#' + hex.toString(16).padStart(6, '0'); }
 const _tmpV = new V3(), _tmpV2 = new V3(), _tmpV3 = new V3(), _tmpV4 = new V3();
 const UP = new V3(0, 1, 0);
 
-let SETTINGS = { bots: 29, diff: 'normal', quality: IS_TOUCH ? 'low' : 'high', sens: 1, vol: 0.8, outfit: 0, autoRes: true, tod: 'random', weather: 'random', autoSprint: true };
+let SETTINGS = { bots: 29, diff: 'normal', quality: IS_TOUCH ? 'low' : 'high', sens: 1, vol: 0.8, outfit: 0, autoRes: true, tod: 'random', weather: 'random', autoSprint: true, music: 0.55, announcer: true };
 try { const s = JSON.parse(localStorage.getItem('stormdrop.settings') || 'null'); if (s) SETTINGS = Object.assign(SETTINGS, s); } catch (e) { /* storage unavailable */ }
 if (!['low', 'medium', 'high', 'ultra'].includes(SETTINGS.quality)) SETTINGS.quality = IS_TOUCH ? 'low' : 'high';
 function saveSettings() { try { localStorage.setItem('stormdrop.settings', JSON.stringify(SETTINGS)); } catch (e) { /* ignore */ } }

@@ -184,13 +184,14 @@ function raycastWorld(ox, oy, oz, dx, dy, dz, maxT, skipInside, ignoreC) {
 }
 
 // ---------- terrain generation ----------
-const POI_NAMES = { city: ['Neon Heights'], town: ['Maple Row', 'Cedar Court', 'Brookside'], farm: ['Haystack Farm'], docks: ['Port Brine'], quarry: ['Gravel Pit'], cabins: ['Pine Hollow'] };
+const POI_NAMES = { city: ['Neon Heights'], town: ['Maple Row', 'Cedar Court', 'Brookside'], farm: ['Haystack Farm'], docks: ['Port Brine'], quarry: ['Gravel Pit'], cabins: ['Pine Hollow'], lighthouse: ['Gull Point'], vault: ['The Vault'], factory: ['Ironworks'] };
 function genTerrain(seed) {
   const rng = mulberry32(seed * 7 + 3);
   const P = makePerlin(rng), P2 = makePerlin(rng);
   WORLD.perlin = P;
   WORLD.mountains = [];
-  for (let i = 0; i < 2; i++) { const a = rng() * TAU, d = 110 + rng() * 150; WORLD.mountains.push({ x: Math.cos(a) * d, z: Math.sin(a) * d, r: 70 + rng() * 35, h: 20 + rng() * 14 }); }
+  for (let i = 0; i < 3; i++) { const a = rng() * TAU, d = 110 + rng() * 160; if (WORLD.mountains.some((M) => Math.hypot(M.x - Math.cos(a) * d, M.z - Math.sin(a) * d) < 150)) { i--; continue; } WORLD.mountains.push({ x: Math.cos(a) * d, z: Math.sin(a) * d, r: 64 + rng() * 34, h: 22 + rng() * 14 }); }
+  setupBiomes(rng);
   const raw = (x, z) => {
     const d = Math.sqrt(x * x + z * z), ang = Math.atan2(z, x);
     const coast = WORLD.islandR + P(Math.cos(ang) * 1.3 + 7.1, Math.sin(ang) * 1.3 + 3.3) * 95 + P(x * 0.012 + 40, z * 0.012) * 26;
@@ -213,28 +214,31 @@ function finalH(x, z) {
   return h;
 }
 function pickPOIs(rng, raw) {
-  const types = ['city', 'docks', 'town', 'farm', 'quarry', 'town', 'cabins', 'town'];
+  pickBiomePOIs(rng, raw);
+  const types = ['city', 'docks', 'lighthouse', 'vault', 'factory', 'town', 'farm', 'quarry', 'town', 'cabins', 'town'];
   const used = {};
   for (const type of types) {
-    const r = type === 'city' ? 56 : type === 'docks' ? 38 : 44;
+    const r = type === 'city' ? 56 : type === 'docks' ? 38 : type === 'lighthouse' ? 26 : type === 'vault' ? 30 : type === 'factory' ? 46 : 44;
+    const coastal = type === 'docks' || type === 'lighthouse';
     for (let tries = 0; tries < 500; tries++) {
       let x, z, sea = 0;
-      if (type === 'docks') {
+      if (coastal) {
         sea = rng() * TAU; let d = 470;
         for (; d > 100; d -= 4) if (raw(Math.cos(sea) * d, Math.sin(sea) * d) > 1.8) break;
         d -= 20; x = Math.cos(sea) * d; z = Math.sin(sea) * d;
       } else { const a = rng() * TAU, d = Math.sqrt(rng()) * 290; x = Math.cos(a) * d; z = Math.sin(a) * d; }
       const h = raw(x, z);
       if (h < 1.9 || h > 13) continue;
+      const bw = biomeAt(x, z); if ((type === 'farm' || type === 'town') && (bw.desert > 0.4 || bw.snow > 0.5)) continue;
       let ok = true;
       for (const p of WORLD.pois) if (Math.hypot(p.x - x, p.z - z) < p.r + r + 50) { ok = false; break; }
       if (ok) for (const M of WORLD.mountains) if (Math.hypot(M.x - x, M.z - z) < M.r * 0.75 + r) { ok = false; break; }
       if (!ok) continue;
       let mn = 99, mx = -99;
       for (let k = 0; k < 8; k++) { const a2 = k / 8 * TAU; const hh = raw(x + Math.cos(a2) * r * 0.85, z + Math.sin(a2) * r * 0.85); mn = Math.min(mn, hh); mx = Math.max(mx, hh); }
-      if (type !== 'docks' && mn < 1.4) continue;
+      if (!coastal && mn < 1.4) continue;
       const names = POI_NAMES[type]; const idx = used[type] || 0; used[type] = idx + 1;
-      WORLD.pois.push({ type, name: names[idx % names.length], x, z, r, sea, h: type === 'docks' ? 2.4 : Math.max(2.4, (h * 2 + mn + mx) / 4) });
+      WORLD.pois.push({ type, name: names[idx % names.length], x, z, r, sea, h: coastal ? 2.4 : Math.max(2.4, (h * 2 + mn + mx) / 4) });
       break;
     }
   }
@@ -251,9 +255,21 @@ function terrainColor(x, z, h, ny) {
     const dry = smoothstep(0.62, 0.84, n2) * 0.7; r = lerp(r, 0.72, dry); g = lerp(g, 0.75, dry); b = lerp(b, 0.34, dry);
     sdirt = dry * 0.6; sg = 1 - sdirt;
   }
+  const bio = biomeAt(x, z, h);
+  if (bio.desert > 0 && h >= 0.4) {
+    const dune = P(x * 0.03 + 5, z * 0.012) * 0.5 + 0.5, k = bio.desert;
+    r = lerp(r, lerp(0.88, 0.8, dune), k); g = lerp(g, lerp(0.72, 0.6, dune), k); b = lerp(b, lerp(0.5, 0.4, dune), k);
+    ssand = lerp(ssand, 1, k); sg *= 1 - k; sdirt *= 1 - k;
+  }
+  if (bio.snow > 0 && h >= 0.4) {
+    const k = bio.snow, sp = n2 * 0.04;
+    r = lerp(r, 0.9 + sp, k); g = lerp(g, 0.93 + sp, k); b = lerp(b, 0.98, k);
+    ssand = lerp(ssand, 0.8, k); sg *= 1 - k; sdirt *= 1 - k;
+  }
   const rock = smoothstep(0.86, 0.72, ny);
   if (rock > 0) { r = lerp(r, 0.57, rock); g = lerp(g, 0.57, rock); b = lerp(b, 0.56, rock); sg *= 1 - rock; sdirt *= 1 - rock; ssand *= 1 - rock; srock = rock; }
   for (const p of WORLD.pois) {
+    if (p.type === 'lighthouse') continue;
     const d = Math.hypot(x - p.x, z - p.z); const w = 1 - smoothstep(p.r - 6, p.r + 4, d); if (w <= 0) continue;
     let pr, pg, pb, pgr = 0, pd = 1;
     if (p.type === 'city') {
@@ -264,6 +280,9 @@ function terrainColor(x, z, h, ny) {
     else if (p.type === 'docks') { pr = 0.62; pg = 0.63; pb = 0.64; }
     else if (p.type === 'quarry') { pr = 0.68; pg = 0.62; pb = 0.53; }
     else if (p.type === 'town') { pr = lerp(0.52, 0.42, n); pg = lerp(0.74, 0.63, n); pb = 0.33; pgr = 1; pd = 0; }
+    else if (p.type === 'lodge') { pr = 0.9; pg = 0.92; pb = 0.96; pgr = 0; pd = 0.3; }
+    else if (p.type === 'outpost') { pr = 0.82; pg = 0.66; pb = 0.45; pgr = 0; pd = 1; }
+    else if (p.type === 'factory' || p.type === 'vault') { pr = 0.46; pg = 0.46; pb = 0.47; pgr = 0; pd = 1; }
     else { pr = 0.40; pg = 0.58; pb = 0.27; pgr = 1; pd = 0; }
     r = lerp(r, pr, w); g = lerp(g, pg, w); b = lerp(b, pb, w);
     sg = lerp(sg, pgr, w); sdirt = lerp(sdirt, pd, w); ssand *= 1 - w; srock *= 1 - w * 0.8;
@@ -308,7 +327,7 @@ function buildTerrainMesh() {
 // ---------- sky, water, clouds (built once) ----------
 function makeEnvironment() {
   WORLD.sunDir = new V3(0.45, 0.8, 0.3).normalize();
-  makeSkyAndEnv(); makeWater(); RAIN.init();
+  makeSkyAndEnv(); makeWater(); RAIN.init(); SNOWFALL.init();
   cloudGroup = new THREE.Group();
   const cg = new THREE.IcosahedronGeometry(1, 1), cm = ENVSTATE.cloudMat;
   for (let i = 0; i < 26; i++) {
@@ -323,6 +342,15 @@ function makeEnvironment() {
   VEG.blob = keepGeo(new THREE.IcosahedronGeometry(1, 0));
   VEG.rock = keepGeo(new THREE.DodecahedronGeometry(1, 0));
   VEG.bush = keepGeo(new THREE.IcosahedronGeometry(1, 0));
+  // cactus: trunk + two arms merged into one geometry
+  const parts = [];
+  const cyl = (r, h, x, y, z, rz) => { const g = new THREE.CylinderGeometry(r, r * 1.05, h, 7).toNonIndexed(); g.rotateZ(rz || 0); g.translate(x, y, z); parts.push(g); };
+  cyl(0.32, 3.2, 0, 1.6, 0); cyl(0.2, 0.9, 0.5, 1.3, 0, Math.PI / 2); cyl(0.2, 1.1, 0.85, 1.85, 0); cyl(0.18, 0.7, -0.42, 1.9, 0, Math.PI / 2); cyl(0.18, 0.8, -0.7, 2.25, 0);
+  let n = 0; for (const g of parts) n += g.attributes.position.count;
+  const P = new Float32Array(n * 3), N = new Float32Array(n * 3); let o = 0;
+  for (const g of parts) { P.set(g.attributes.position.array, o * 3); N.set(g.attributes.normal.array, o * 3); o += g.attributes.position.count; g.dispose(); }
+  VEG.cactus = new THREE.BufferGeometry(); VEG.cactus.setAttribute('position', new THREE.BufferAttribute(P, 3)); VEG.cactus.setAttribute('normal', new THREE.BufferAttribute(N, 3)); keepGeo(VEG.cactus);
+  MAT.cactus = addWind(new THREE.MeshStandardMaterial({ color: 0xffffff, flatShading: true, roughness: 0.8 }), 0.03, 3); MAT.cactus.userData.keep = true;
 }
 
 // ---------- structures ----------
@@ -334,6 +362,9 @@ const STYLE = {
   warehouse: { fh: 6, win: 0, hp: 380, harvest: 'metal', roof: 'flat' },
   shack: { fh: 4, win: 0.35, hp: 150, harvest: 'wood', roof: 'gable' },
   store: { fh: 4.5, win: 0.5, hp: 240, harvest: 'stone', roof: 'flat' },
+  lodge: { fh: 4.2, win: 0.45, hp: 200, harvest: 'wood', roof: 'gable', roofHex: 0xeef3f8, wall: (h) => woodMat(h) },
+  saloon: { fh: 4.4, win: 0.4, hp: 180, harvest: 'wood', roof: 'flat', wall: (h) => woodMat(h) },
+  bunker: { fh: 5, win: 0, hp: 900, harvest: 'stone', roof: 'flat', wall: (h) => concreteMat(h) },
 };
 function overlapsFootprint(x0, z0, x1, z1, pad) { for (const f of WORLD.footprints) if (x0 - pad < f[2] && x1 + pad > f[0] && z0 - pad < f[3] && z1 + pad > f[1]) return true; return false; }
 function addFootprint(x0, z0, x1, z1, map) { WORLD.footprints.push([x0, z0, x1, z1]); if (map) WORLD.mapRects.push([x0, z0, x1, z1]); }
@@ -438,7 +469,7 @@ function makeBuilding(cx, cz, wc, dc, floors, style, door, colorHex) {
   addFootprint(x0, z0, x1, z1, true);
   beginAsm();
   const base = gmax + 0.25, FH = S.fh;
-  const wallMat = style === 'tower' ? (rand() < 0.5 ? concreteMat(colorHex) : brickMat(colorHex)) : style === 'warehouse' ? metalMat(colorHex) : style === 'store' ? concreteMat(colorHex) : sidingMat(colorHex);
+  const wallMat = S.wall ? S.wall(colorHex) : style === 'tower' ? (rand() < 0.5 ? concreteMat(colorHex) : brickMat(colorHex)) : style === 'warehouse' ? metalMat(colorHex) : style === 'store' ? concreteMat(colorHex) : sidingMat(colorHex);
   addBlock(x0 - 0.3, gmin - 2.5, z0 - 0.3, x1 + 0.3, base, z1 + 0.3, concreteMat(0xb9b4aa), { kind: 'static' });
   const t = 0.3;
   const sideBox = (s, a, b, ya, yb, hpMul) => {
@@ -477,7 +508,7 @@ function makeBuilding(cx, cz, wc, dc, floors, style, door, colorHex) {
   if (S.roof === 'flat') {
     addBlock(x0 - 0.2, top - 0.3, z0 - 0.2, x1 + 0.2, top + 0.2, z1 + 0.2, concreteMat(style === 'warehouse' ? 0x8d949c : 0xa9a49a), { hp: 400, maxHp: 400, harvest: S.harvest, kind: 'static' });
     if (style === 'tower') for (const r of [[x0, z0, x1, z0 + 0.3], [x0, z1 - 0.3, x1, z1], [x0, z0, x0 + 0.3, z1], [x1 - 0.3, z0, x1, z1]]) addBlock(r[0], top + 0.2, r[1], r[2], top + 1.1, r[3], wallMat, { hp: 150, maxHp: 150, harvest: 'stone', kind: 'static' });
-  } else makeGableRoof(x0, z0, x1, z1, top, style === 'barn' ? 0x6e2a22 : pick([0x8c3b2e, 0x3b5a8c, 0x4a6b3a, 0x5a4a6a, 0x7a5a2a]), colorHex, style === 'barn' ? 0.8 : 0.6);
+  } else makeGableRoof(x0, z0, x1, z1, top, S.roofHex || (style === 'barn' ? 0x6e2a22 : null) || pick([0x8c3b2e, 0x3b5a8c, 0x4a6b3a, 0x5a4a6a, 0x7a5a2a]), colorHex, style === 'barn' ? 0.8 : 0.6);
   for (let f = 0; f < floors; f++) {
     const y = base + f * FH;
     if (rand() < (style === 'tower' ? 0.5 : 0.62)) { const s = interiorSpot(x0, z0, wc, dc); WORLD.lootSpots.push({ kind: 'chest', x: s[0], y, z: s[1], rot: s[2] }); }
@@ -587,7 +618,7 @@ function genStructures() {
   for (const p of WORLD.pois) {
     beginAsm();
     if (p.type === 'city') genCity(p); else if (p.type === 'town') genTown(p); else if (p.type === 'farm') genFarm(p);
-    else if (p.type === 'docks') genDocks(p); else if (p.type === 'quarry') genQuarry(p); else genCabins(p);
+    else if (p.type === 'docks') genDocks(p); else if (p.type === 'quarry') genQuarry(p); else if (POI_GEN_EXTRA[p.type]) POI_GEN_EXTRA[p.type](p); else genCabins(p);
     endAsm();
   }
   let made = 0;
@@ -597,6 +628,7 @@ function genStructures() {
     if (makeBuilding(x, z, ri(2, 3), 2, rand() < 0.5 ? 2 : 1, rand() < 0.7 ? 'house' : 'shack', ri(0, 3), pick(HOUSE_COLORS))) made++;
   }
   for (const s of WORLD.lootSpots) if (s.y === null) s.y = groundH(s.x, s.z);
+  genZiplines();
 }
 
 // ---------- vegetation (instanced) ----------
@@ -612,7 +644,7 @@ function finishInst(mesh, shadow) {
   mesh.castShadow = shadow; mesh.receiveShadow = true; mesh.frustumCulled = false; worldGroup.add(mesh);
 }
 function genVegetation() {
-  const P = WORLD.perlin; const pines = [], rounds = [], rocks = [], bushes = [];
+  const P = WORLD.perlin; const pines = [], rounds = [], rocks = [], bushes = [], cacti = [];
   for (let i = 0; i < 3200 && pines.length + rounds.length < 540; i++) {
     const a = rand() * TAU, d = Math.sqrt(rand()) * 420, x = Math.cos(a) * d, z = Math.sin(a) * d;
     const h = groundH(x, z); if (h < 2.3) continue;
@@ -620,7 +652,9 @@ function genVegetation() {
     if (nearPOI(x, z, 2, 'cabins')) continue;
     if (overlapsFootprint(x - 1, z - 1, x + 1, z + 1, 1.5)) continue;
     if (Math.abs(groundH(x + 1.5, z) - groundH(x - 1.5, z)) > 2.2) continue;
-    (rand() < 0.6 ? pines : rounds).push({ x, z, y: h, s: rr(0.8, 1.45) });
+    const bw = biomeAt(x, z, h);
+    if (bw.desert > 0.5) { if (rand() < 0.45) cacti.push({ x, z, y: h, s: rr(0.8, 1.5) }); continue; }
+    (bw.snow > 0.5 || rand() < 0.6 ? pines : rounds).push({ x, z, y: h, s: rr(0.8, 1.45), snow: bw.snow });
   }
   const nT = pines.length + rounds.length;
   const trunks = new THREE.InstancedMesh(VEG.trunk, MAT.trunk, Math.max(1, nT));
@@ -633,16 +667,18 @@ function genVegetation() {
     WORLD.trees.push(tree);
   };
   for (const t of pines) {
-    const th = 2.2 * t.s; t.tree = { x: t.x, y: t.y, z: t.z, s: t.s, parts: [], shakeT: 0, alive: true };
+    const th = 2.2 * t.s; t.tree = { kind: 'pine', x: t.x, y: t.y, z: t.z, s: t.s, parts: [], shakeT: 0, alive: true };
     _q4.setFromAxisAngle(UP, rand() * TAU);
     addPart(t.tree, trunks, ti++, _p4.set(t.x, t.y - 0.3, t.z), _q4, _s4.set(t.s, th + 0.3, t.s), null);
-    _c4.setHSL(0.31 + rr(-0.03, 0.03), rr(0.42, 0.58), rr(0.25, 0.33)).convertSRGBToLinear();
+    _c4.setHSL(0.31 + rr(-0.03, 0.03), rr(0.42, 0.58), rr(0.25, 0.33));
+    if (t.snow > 0.3) _c4.lerp(_tmpCol.setRGB(0.86, 0.92, 0.96), Math.min(0.75, t.snow * 0.8));
+    _c4.convertSRGBToLinear();
     addPart(t.tree, pineM, pi++, _p4.set(t.x, t.y + th * 0.7, t.z), _q4, _s4.set(2.4 * t.s, 4.2 * t.s, 2.4 * t.s), _c4);
     addPart(t.tree, pineM, pi++, _p4.set(t.x, t.y + th * 0.7 + 2.5 * t.s, t.z), _q4, _s4.set(1.7 * t.s, 3.3 * t.s, 1.7 * t.s), _c4);
     mkTree(t, th + 5.6 * t.s);
   }
   for (const t of rounds) {
-    const th = 2.6 * t.s; t.tree = { x: t.x, y: t.y, z: t.z, s: t.s, parts: [], shakeT: 0, alive: true };
+    const th = 2.6 * t.s; t.tree = { kind: 'round', x: t.x, y: t.y, z: t.z, s: t.s, parts: [], shakeT: 0, alive: true };
     _q4.setFromAxisAngle(UP, rand() * TAU);
     addPart(t.tree, trunks, ti++, _p4.set(t.x, t.y - 0.3, t.z), _q4, _s4.set(t.s, th + 0.3, t.s), null);
     _c4.setHSL(0.26 + rr(-0.04, 0.05), rr(0.45, 0.6), rr(0.3, 0.4)).convertSRGBToLinear();
@@ -650,22 +686,37 @@ function genVegetation() {
     mkTree(t, th + 3.4 * t.s);
   }
   finishInst(trunks, true); finishInst(pineM, true); finishInst(roundM, true);
+  // desert cacti
+  if (cacti.length) {
+    const cm = new THREE.InstancedMesh(VEG.cactus, MAT.cactus, cacti.length);
+    cacti.forEach((t, i) => {
+      t.tree = { kind: 'cactus', x: t.x, y: t.y, z: t.z, s: t.s, parts: [], shakeT: 0, alive: true };
+      _q4.setFromAxisAngle(UP, rand() * TAU); _c4.setHSL(0.3 + rr(-0.03, 0.03), rr(0.35, 0.5), rr(0.28, 0.36)).convertSRGBToLinear();
+      addPart(t.tree, cm, i, _p4.set(t.x, t.y - 0.2, t.z), _q4, _s4.set(t.s, t.s, t.s), _c4);
+      t.tree.collider = boxCollider(t.x - 0.4 * t.s, t.y - 0.4, t.z - 0.4 * t.s, t.x + 0.4 * t.s, t.y + 3.4 * t.s, t.z + 0.4 * t.s, { kind: 'tree', harvest: 'wood', hp: 80, maxHp: 80, tree: t.tree });
+      WORLD.trees.push(t.tree);
+    });
+    finishInst(cm, true);
+  }
 
   for (let i = 0; i < 2400 && rocks.length < 190; i++) {
     const a = rand() * TAU, d = Math.sqrt(rand()) * 420, x = Math.cos(a) * d, z = Math.sin(a) * d;
     const h = groundH(x, z); if (h < 1.2) continue;
     let quarry = false; for (const p of WORLD.pois) if (p.type === 'quarry' && Math.hypot(x - p.x, z - p.z) < p.r + 10) quarry = true;
     if (!quarry && (nearPOI(x, z, 2) || rand() < 0.4)) continue;
-    const s = quarry ? rr(1.8, 4.2) : rr(0.7, 2.0);
+    const bw = biomeAt(x, z, h), mesa = bw.desert > 0.6 && rand() < 0.22;
+    const s = mesa ? rr(4, 7) : quarry ? rr(1.8, 4.2) : rr(0.7, 2.0);
     if (overlapsFootprint(x - s, z - s, x + s, z + s, 1)) continue;
     addFootprint(x - s * 0.8, z - s * 0.8, x + s * 0.8, z + s * 0.8);
-    rocks.push({ x, z, y: h, s, sy: s * rr(0.55, 0.95) });
+    rocks.push({ x, z, y: h, s, sy: mesa ? s * rr(1.6, 2.4) : s * rr(0.55, 0.95), desert: bw.desert, snow: bw.snow });
   }
   const rockM = new THREE.InstancedMesh(VEG.rock, MAT.rock, Math.max(1, rocks.length));
   rocks.forEach((r, i) => {
     const obj = { parts: [], alive: true, shakeT: 0 };
     _q4.setFromEuler(new THREE.Euler(rr(-0.4, 0.4), rand() * TAU, rr(-0.4, 0.4)));
-    const g = rr(0.5, 0.66); _c4.setRGB(g, g * rr(0.97, 1.02), g * rr(0.98, 1.06)).convertSRGBToLinear();
+    const g = rr(0.5, 0.66); _c4.setRGB(g, g * rr(0.97, 1.02), g * rr(0.98, 1.06));
+    if (r.desert > 0.4) _c4.setRGB(rr(0.72, 0.82), rr(0.42, 0.5), rr(0.3, 0.36)); else if (r.snow > 0.5) _c4.lerp(_tmpCol.setRGB(0.85, 0.88, 0.92), 0.5);
+    _c4.convertSRGBToLinear();
     addPart(obj, rockM, i, _p4.set(r.x, r.y + r.sy * 0.3, r.z), _q4, _s4.set(r.s * rr(0.95, 1.3), r.sy, r.s * rr(0.95, 1.3)), _c4);
     boxCollider(r.x - r.s * 0.8, r.y - 0.5, r.z - r.s * 0.8, r.x + r.s * 0.8, r.y + r.sy * 1.15, r.z + r.s * 0.8, { kind: 'rock', harvest: 'stone', hp: 100 + r.s * 90, maxHp: 100 + r.s * 90, tree: obj });
   });
@@ -674,11 +725,13 @@ function genVegetation() {
   for (let i = 0; i < 1500 && bushes.length < 240; i++) {
     const a = rand() * TAU, d = Math.sqrt(rand()) * 410, x = Math.cos(a) * d, z = Math.sin(a) * d;
     const h = groundH(x, z); if (h < 2 || overlapsFootprint(x - 1, z - 1, x + 1, z + 1, 0.5)) continue;
-    bushes.push({ x, z, y: h, s: rr(0.6, 1.3) });
+    const bw = biomeAt(x, z, h); bushes.push({ x, z, y: h, s: rr(0.6, 1.3), desert: bw.desert, snow: bw.snow });
   }
   const bushM = new THREE.InstancedMesh(VEG.bush, MAT.bush, Math.max(1, bushes.length));
   bushes.forEach((b, i) => {
-    _q4.setFromAxisAngle(UP, rand() * TAU); _c4.setHSL(0.28 + rr(-0.04, 0.04), 0.5, rr(0.28, 0.36)).convertSRGBToLinear();
+    _q4.setFromAxisAngle(UP, rand() * TAU); _c4.setHSL(0.28 + rr(-0.04, 0.04), 0.5, rr(0.28, 0.36));
+    if (b.desert > 0.5) _c4.setHSL(0.09, 0.35, rr(0.32, 0.42)); else if (b.snow > 0.5) _c4.setRGB(0.88, 0.92, 0.96);
+    _c4.convertSRGBToLinear();
     _m4.compose(_p4.set(b.x, b.y + b.s * 0.4, b.z), _q4, _s4.set(b.s * 1.3, b.s, b.s * 1.3)); bushM.setMatrixAt(i, _m4); bushM.setColorAt(i, _c4);
   });
   finishInst(bushM, false);
@@ -732,8 +785,8 @@ function newWorld(seed) {
   disposeWorld();
   rand = mulberry32(seed);
   worldGroup = new THREE.Group(); scene.add(worldGroup);
-  gridInit(); resetBuild(); resetItems(); SHAKING.clear(); ASM.length = 0;
-  WORLD.footprints = []; WORLD.mapRects = []; WORLD.lootSpots = []; WORLD.trees = []; WORLD.statics = [];
+  gridInit(); resetBuild(); resetItems(); resetGadgets(); VEHICLES.length = 0; SHAKING.clear(); ASM.length = 0;
+  WORLD.footprints = []; WORLD.mapRects = []; WORLD.lootSpots = []; WORLD.trees = []; WORLD.statics = []; WORLD.smoke = []; WORLD.beam = null; WORLD.vault = null; WORLD.lodge = null;
   WORLD.seed = seed | 0;
   genTerrain(seed);
   buildTerrainMesh();
@@ -741,6 +794,7 @@ function newWorld(seed) {
   genStructures();
   genVegetation();
   spawnLoot();
+  spawnForage();
   buildMapCanvas();
   buildBlockedGrid();
   rand = Math.random;

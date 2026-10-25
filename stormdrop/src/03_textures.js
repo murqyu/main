@@ -89,6 +89,7 @@ function makeMaterials() {
   MAT.ghostBad = new THREE.MeshBasicMaterial({ color: 0xff3a3a, transparent: true, opacity: 0.28, depthWrite: false });
   MAT.gunDark = lam(0x24282e, { roughness: 0.45, metalness: 0.6 }); MAT.gunMid = lam(0x4a505a, { roughness: 0.5, metalness: 0.45 }); MAT.gunWood = lam(0x7a4a26, { roughness: 0.7 });
   MAT.rarity = [0x9aa3ad, 0x4fcf4a, 0x3aa0ff, 0xb45cff, 0xff9e2c, 0xffd23f].map((c) => lam(c, { emissive: c, emissiveIntensity: 0.55, roughness: 0.35, metalness: 0.3 }));
+  MAT.tempestGlow = lam(0x7fe8ff, { emissive: 0x7fe8ff, emissiveIntensity: 2.2, roughness: 0.3 });
   MAT.chestGold = lam(0xf2b632, { emissive: 0x8a5a00, emissiveIntensity: 0.35, roughness: 0.32, metalness: 0.75 });
   MAT.chestDark = lam(0x5a3412, { roughness: 0.7 });
   MAT.trunk = lam(0x6e4a2e, { roughness: 0.95 });

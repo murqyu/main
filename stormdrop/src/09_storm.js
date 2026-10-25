@@ -47,7 +47,7 @@ function updateStorm(dt) {
     if (S.timer <= 0) {
       const ph = STORM_PHASES[S.idx];
       S.state = 'shrink'; S.timer = ph[1]; S.total = ph[1]; S.from = { x: S.cur.x, z: S.cur.z, r: S.cur.r }; S.dmg = ph[3];
-      HUD.banner('The storm is closing in', 'Get inside the white circle', 3, 'storm');
+      HUD.banner('The storm is closing in', 'Get inside the white circle', 3, 'storm'); SFX.announce('The storm is closing');
       if (S.idx === 1 || S.idx === 3) setTimeout(() => { if (GAME.state !== 'menu') spawnSupply(); }, 4000);
     }
   } else if (S.state === 'shrink') {

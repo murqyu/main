@@ -5,27 +5,41 @@ const RARITY = [
   { name: 'Rare', css: '#3aa0ff', hex: 0x3aa0ff },
   { name: 'Epic', css: '#b45cff', hex: 0xb45cff },
   { name: 'Legendary', css: '#ff9e2c', hex: 0xff9e2c },
+  { name: 'Mythic', css: '#ffd23f', hex: 0xffd23f },
 ];
 const WEAPONS = {
-  ar: { id: 'ar', name: 'Assault Rifle', ammo: 'medium', mag: 30, rate: 5.5, dmg: [30, 31, 33, 35, 36], head: 1.5, spread: 0.04, ads: 0.012, bloom: 0.01, range: 230, falloff: 60, minFall: 0.75, reload: [2.6, 2.5, 2.3, 2.2, 2.0], zoom: 1.4, recoil: 0.006, sound: 'ar', minR: 0 },
-  smg: { id: 'smg', name: 'SMG', ammo: 'light', mag: 30, rate: 12, dmg: [15, 16, 17, 18, 19], head: 1.6, spread: 0.055, ads: 0.032, bloom: 0.004, range: 120, falloff: 25, minFall: 0.6, reload: [2.2, 2.1, 2.0, 1.9, 1.8], zoom: 1.2, recoil: 0.003, sound: 'smg', minR: 0 },
-  shotgun: { id: 'shotgun', name: 'Pump Shotgun', ammo: 'shells', mag: 5, rate: 1.1, dmg: [9, 9.5, 10, 10.6, 11.2], pellets: 10, head: 2, spread: 0.085, ads: 0.07, bloom: 0, range: 48, falloff: 9, minFall: 0.35, reloadPer: 0.55, zoom: 1.1, recoil: 0.03, sound: 'shotgun', minR: 0 },
-  pistol: { id: 'pistol', name: 'Pistol', ammo: 'light', mag: 16, rate: 6.5, dmg: [24, 25, 26, 27, 28], head: 2, spread: 0.035, ads: 0.015, bloom: 0.01, range: 120, falloff: 30, minFall: 0.65, reload: [1.5, 1.45, 1.4, 1.35, 1.3], zoom: 1.25, recoil: 0.008, sound: 'pistol', minR: 0 },
-  sniper: { id: 'sniper', name: 'Bolt Sniper', ammo: 'heavy', mag: 1, rate: 0.4, dmg: [0, 0, 105, 110, 116], head: 2.5, spread: 0.12, ads: 0, bloom: 0, range: 520, falloff: 400, minFall: 0.9, reload: [0, 0, 3.0, 2.85, 2.7], zoom: 4.5, scope: true, recoil: 0.05, sound: 'sniper', minR: 2 },
-  rocket: { id: 'rocket', name: 'Rocket Launcher', ammo: 'rockets', mag: 1, rate: 0.8, dmg: [0, 0, 0, 105, 116], radius: 7, buildDmg: 450, projectile: true, speed: 70, spread: 0.02, ads: 0.004, bloom: 0, range: 320, falloff: 999, minFall: 1, reload: [0, 0, 0, 3.0, 2.8], zoom: 1.3, recoil: 0.04, sound: 'rocket', minR: 3 },
+  ar: { id: 'ar', name: 'Assault Rifle', ammo: 'medium', mag: 30, rate: 5.5, dmg: [30, 31, 33, 35, 36], head: 1.5, spread: 0.04, ads: 0.012, bloom: 0.01, range: 230, falloff: 60, minFall: 0.75, reload: [2.6, 2.5, 2.3, 2.2, 2.0], zoom: 1.4, recoil: 0.006, sound: 'ar', minR: 0 , auto: true, score: 50, pref: 24, fit: [8, 140, 45, 20] },
+  smg: { id: 'smg', name: 'SMG', ammo: 'light', mag: 30, rate: 12, dmg: [15, 16, 17, 18, 19], head: 1.6, spread: 0.055, ads: 0.032, bloom: 0.004, range: 120, falloff: 25, minFall: 0.6, reload: [2.2, 2.1, 2.0, 1.9, 1.8], zoom: 1.2, recoil: 0.003, sound: 'smg', minR: 0 , auto: true, score: 40, pref: 12, fit: [0, 25, 40, 10] },
+  shotgun: { id: 'shotgun', name: 'Pump Shotgun', ammo: 'shells', mag: 5, rate: 1.1, dmg: [9, 9.5, 10, 10.6, 11.2], pellets: 10, head: 2, spread: 0.085, ads: 0.07, bloom: 0, range: 48, falloff: 9, minFall: 0.35, reloadPer: 0.55, zoom: 1.1, recoil: 0.03, sound: 'shotgun', minR: 0 , score: 48, pref: 5, fit: [0, 12, 60, -20] },
+  pistol: { id: 'pistol', name: 'Pistol', ammo: 'light', mag: 16, rate: 6.5, dmg: [24, 25, 26, 27, 28], head: 2, spread: 0.035, ads: 0.015, bloom: 0.01, range: 120, falloff: 30, minFall: 0.65, reload: [1.5, 1.45, 1.4, 1.35, 1.3], zoom: 1.25, recoil: 0.008, sound: 'pistol', minR: 0 , score: 22, pref: 16, fit: [0, 60, 15, 5] },
+  sniper: { id: 'sniper', name: 'Bolt Sniper', ammo: 'heavy', mag: 1, rate: 0.4, dmg: [0, 0, 105, 110, 116], head: 2.5, spread: 0.12, ads: 0, bloom: 0, range: 520, falloff: 400, minFall: 0.9, reload: [0, 0, 3.0, 2.85, 2.7], zoom: 4.5, scope: true, recoil: 0.05, sound: 'sniper', minR: 2 , score: 44, pref: 60, fit: [45, 600, 70, -30], buildMult: 1.5 },
+  rocket: { id: 'rocket', name: 'Rocket Launcher', ammo: 'rockets', mag: 1, rate: 0.8, dmg: [0, 0, 0, 105, 116], radius: 7, buildDmg: 450, projectile: true, speed: 70, spread: 0.02, ads: 0.004, bloom: 0, range: 320, falloff: 999, minFall: 1, reload: [0, 0, 0, 3.0, 2.8], zoom: 1.3, recoil: 0.04, sound: 'rocket', minR: 3 , score: 46, pref: 30, fit: [14, 90, 42, -40] },
 };
+Object.assign(WEAPONS, {
+  burst: { id: 'burst', name: 'Burst Rifle', ammo: 'medium', mag: 27, rate: 2.7, burst: 3, burstGap: 0.07, dmg: [27, 28, 30, 31, 33], head: 1.5, spread: 0.03, ads: 0.007, bloom: 0.008, range: 230, falloff: 60, minFall: 0.75, reload: [2.7, 2.6, 2.4, 2.3, 2.1], zoom: 1.5, recoil: 0.008, sound: 'ar', minR: 0, score: 49, pref: 26, fit: [10, 160, 46, 18] },
+  tac: { id: 'tac', name: 'Tactical Shotgun', ammo: 'shells', mag: 8, rate: 1.55, dmg: [7.4, 7.8, 8.2, 8.6, 9.0], pellets: 10, head: 2, spread: 0.1, ads: 0.085, bloom: 0, range: 40, falloff: 8, minFall: 0.3, reload: [5.6, 5.4, 5.2, 5.0, 4.8], zoom: 1.1, recoil: 0.02, sound: 'shotgun', minR: 0, score: 45, pref: 5, fit: [0, 11, 56, -18] },
+  minigun: { id: 'minigun', name: 'Minigun', ammo: 'light', mag: 120, rate: 16, spin: 0.65, auto: true, dmg: [0, 0, 0, 15, 16], head: 1.5, spread: 0.065, ads: 0.05, bloom: 0.002, range: 140, falloff: 40, minFall: 0.6, reload: [0, 0, 0, 4.8, 4.5], zoom: 1.15, recoil: 0.002, sound: 'smg', minR: 3, buildMult: 1.7, kick: 0.15, score: 52, pref: 16, fit: [0, 40, 52, 12] },
+  hand: { id: 'hand', name: 'Hand Cannon', ammo: 'heavy', mag: 7, rate: 1.35, dmg: [0, 0, 0, 72, 76], head: 2, spread: 0.032, ads: 0.008, bloom: 0, range: 150, falloff: 45, minFall: 0.7, reload: [0, 0, 0, 2.2, 2.0], zoom: 1.3, recoil: 0.045, sound: 'hand', hold: 'pistol', minR: 3, score: 47, pref: 20, fit: [0, 80, 44, 20], kick: 0.9 },
+  heavy: { id: 'heavy', name: 'Heavy Sniper', ammo: 'heavy', mag: 1, rate: 0.33, dmg: [0, 0, 0, 145, 152], head: 2.5, spread: 0.14, ads: 0, bloom: 0, range: 600, falloff: 450, minFall: 0.9, reload: [0, 0, 0, 3.4, 3.2], zoom: 5, scope: true, recoil: 0.07, sound: 'sniper', minR: 3, buildMult: 4, score: 50, pref: 70, fit: [40, 650, 74, -30] },
+  tempest: { id: 'tempest', name: 'Tempest Rifle', ammo: 'medium', mag: 32, rate: 6.5, auto: true, dmg: [0, 0, 0, 0, 0, 40], head: 1.6, spread: 0.028, ads: 0.006, bloom: 0.006, range: 260, falloff: 80, minFall: 0.8, reload: [0, 0, 0, 0, 0, 1.8], zoom: 1.5, recoil: 0.005, sound: 'ar', minR: 5, score: 70, pref: 24, fit: [0, 160, 60, 40] },
+});
 const CONSUMABLES = {
   bandage: { id: 'bandage', name: 'Bandages', stack: 15, time: 2.4, heal: 15, cap: 75, rarity: 0, give: 5 },
   medkit: { id: 'medkit', name: 'Med Kit', stack: 3, time: 5, heal: 100, cap: 100, rarity: 1, give: 1 },
   shieldS: { id: 'shieldS', name: 'Shield Cell', stack: 6, time: 2, shield: 25, cap: 50, rarity: 1, give: 3 },
   shieldL: { id: 'shieldL', name: 'Shield Battery', stack: 3, time: 4.5, shield: 50, cap: 100, rarity: 2, give: 1 },
+  slurp: { id: 'slurp', name: 'Fizz Juice', stack: 2, time: 2, regen: 75, cap: 100, rarity: 3, give: 1 },
+  grenade: { id: 'grenade', name: 'Grenade', stack: 6, rarity: 1, give: 3, throwable: true },
+  launchpad: { id: 'launchpad', name: 'Launch Pad', stack: 1, rarity: 3, give: 1, placeable: true },
+  portafort: { id: 'portafort', name: 'Pop-Up Fort', stack: 2, rarity: 3, give: 1, throwable: true },
+  campfire: { id: 'campfire', name: 'Campfire', stack: 1, rarity: 2, give: 1, placeable: true },
 };
 const AMMO = { light: { name: 'Light Ammo', give: 30, color: 0xc9d4e6 }, medium: { name: 'Medium Ammo', give: 30, color: 0x58c470 }, shells: { name: 'Shells', give: 8, color: 0xe0503a }, heavy: { name: 'Heavy Ammo', give: 6, color: 0x4a7bd8 }, rockets: { name: 'Rockets', give: 3, color: 0xe0a030 } };
 const MATNAME = { wood: 'Wood', stone: 'Stone', metal: 'Metal' };
 const RW_CHEST = [[0, 22], [1, 36], [2, 26], [3, 12], [4, 4]];
 const RW_FLOOR = [[0, 42], [1, 34], [2, 17], [3, 6], [4, 1]];
-const WEAPON_W = [['ar', 30], ['smg', 18], ['shotgun', 26], ['pistol', 14], ['sniper', 7], ['rocket', 3]];
-const CONS_W = [['bandage', 30], ['medkit', 12], ['shieldS', 34], ['shieldL', 14]];
+const WEAPON_W = [['ar', 26], ['burst', 13], ['smg', 16], ['shotgun', 22], ['tac', 12], ['pistol', 12], ['sniper', 7], ['rocket', 3], ['minigun', 2], ['hand', 3], ['heavy', 2]];
+const CONS_W = [['bandage', 28], ['medkit', 11], ['shieldS', 30], ['shieldL', 13], ['slurp', 5], ['grenade', 12], ['launchpad', 3], ['portafort', 3], ['campfire', 4]];
 
 function rollWeapon(rw) { const id = weighted(WEAPON_W); const def = WEAPONS[id]; const r = Math.max(def.minR, weighted(rw)); return { kind: 'weapon', id, rarity: r, mag: def.mag }; }
 function rollCons() { const id = weighted(CONS_W); return { kind: 'consumable', id, count: CONSUMABLES[id].give }; }
@@ -67,6 +81,18 @@ function gunModel(id, rarity) {
     case 'pistol': B(0.08, 0.1, 0.3, 0, 0, -0.04, M); B(0.07, 0.2, 0.08, 0, -0.13, 0.08, A); B(0.084, 0.03, 0.26, 0, 0.055, -0.04, D); break;
     case 'sniper': B(0.09, 0.12, 0.7, 0, 0, 0.05, M); B(0.04, 0.04, 0.62, 0, 0.02, -0.6, D); B(0.08, 0.08, 0.34, 0, 0.13, -0.05, D); B(0.094, 0.04, 0.4, 0, 0.065, 0.1, A); B(0.08, 0.15, 0.3, 0, -0.03, 0.5, MAT.gunWood); B(0.06, 0.14, 0.06, 0, -0.12, 0.14, D); break;
     case 'rocket': { const tube = new THREE.Mesh(keepCyl(0.13, 1.1), A); tube.rotation.x = Math.PI / 2; g.add(tube); B(0.2, 0.2, 0.12, 0, 0, -0.56, D); B(0.06, 0.18, 0.08, 0, -0.18, 0.05, D); B(0.08, 0.1, 0.18, 0, 0.16, -0.1, D); break; }
+    case 'burst': B(0.1, 0.15, 0.66, 0, 0, 0, D); B(0.05, 0.05, 0.36, 0, 0.02, -0.5, M); B(0.08, 0.2, 0.12, 0, -0.16, -0.12, A); B(0.08, 0.14, 0.3, 0, -0.01, 0.44, M); B(0.06, 0.16, 0.07, 0, -0.13, 0.13, D); B(0.104, 0.05, 0.42, 0, 0.07, -0.08, A); B(0.05, 0.08, 0.16, 0, 0.14, 0.02, D); break;
+    case 'tac': B(0.09, 0.09, 0.64, 0, 0.03, -0.22, D); B(0.12, 0.12, 0.3, 0, -0.04, 0.08, A); B(0.09, 0.18, 0.12, 0, -0.16, -0.06, M); B(0.08, 0.13, 0.32, 0, -0.02, 0.42, D); B(0.11, 0.06, 0.2, 0, -0.06, -0.36, M); break;
+    case 'minigun': {
+      const spin = new THREE.Group(); spin.position.set(0, 0, -0.35); g.add(spin);
+      for (let i = 0; i < 6; i++) { const a = i / 6 * TAU, br = new THREE.Mesh(keepCyl(0.025, 0.8), D); br.rotation.x = Math.PI / 2; br.position.set(Math.cos(a) * 0.07, Math.sin(a) * 0.07, -0.15); br.castShadow = true; spin.add(br); }
+      const hub = new THREE.Mesh(keepCyl(0.1, 0.1), A); hub.rotation.x = Math.PI / 2; spin.add(hub);
+      B(0.22, 0.24, 0.42, 0, 0, 0.12, M); B(0.05, 0.05, 0.22, 0, 0.17, -0.02, D); B(0.05, 0.12, 0.05, 0, 0.12, 0.1, D); B(0.06, 0.18, 0.08, 0, -0.18, 0.3, D); B(0.18, 0.2, 0.2, 0.14, -0.08, 0.14, A);
+      g.userData.spin = spin; break;
+    }
+    case 'hand': B(0.1, 0.13, 0.4, 0, 0, -0.08, M); B(0.09, 0.22, 0.1, 0, -0.15, 0.08, A); B(0.104, 0.04, 0.36, 0, 0.075, -0.08, D); B(0.06, 0.06, 0.1, 0, 0.01, -0.32, D); break;
+    case 'heavy': B(0.11, 0.15, 0.8, 0, 0, 0.05, D); B(0.06, 0.06, 0.8, 0, 0.02, -0.74, M); B(0.1, 0.1, 0.42, 0, 0.16, -0.06, D); B(0.114, 0.05, 0.46, 0, 0.07, 0.1, A); B(0.09, 0.17, 0.32, 0, -0.03, 0.55, M); B(0.07, 0.16, 0.07, 0, -0.13, 0.16, D); B(0.12, 0.08, 0.12, 0, 0.02, -1.15, D); break;
+    case 'tempest': B(0.11, 0.15, 0.66, 0, 0, 0, A); B(0.05, 0.05, 0.4, 0, 0.02, -0.52, D); B(0.08, 0.22, 0.1, 0, -0.16, -0.08, D); B(0.08, 0.13, 0.28, 0, -0.02, 0.44, A); B(0.06, 0.16, 0.07, 0, -0.13, 0.13, D); B(0.116, 0.04, 0.5, 0, 0.07, -0.1, MAT.tempestGlow || A); B(0.06, 0.09, 0.2, 0, 0.13, -0.02, D); break;
   }
   return g;
 }
@@ -77,6 +103,11 @@ function consModel(id) {
   if (id === 'bandage') { const m = new THREE.Mesh(keepCyl(0.14, 0.22), lam(0xf2ede0)); m.rotation.z = Math.PI / 2; g.add(m); const s = new THREE.Mesh(boxGeo(0.23, 0.29, 0.06), lam(0xd94c4c)); g.add(s); }
   else if (id === 'medkit') { g.add(new THREE.Mesh(boxGeo(0.46, 0.28, 0.32), lam(0xf4f4f4))); const a = new THREE.Mesh(boxGeo(0.06, 0.2, 0.33), lam(0x2fb35a)); g.add(a); const b = new THREE.Mesh(boxGeo(0.2, 0.06, 0.33), lam(0x2fb35a)); g.add(b); }
   else if (id === 'shieldS') { const m = new THREE.Mesh(keepCyl(0.11, 0.3), lam(0x41b8ff, { emissive: 0x1a5f99 })); g.add(m); const c = new THREE.Mesh(keepCyl(0.06, 0.08), lam(0xe8e8e8)); c.position.y = 0.19; g.add(c); }
+  else if (id === 'slurp') { const m = new THREE.Mesh(keepCyl(0.16, 0.4), lam(0x9b5cff, { emissive: 0x3a1a77 })); g.add(m); const c = new THREE.Mesh(keepCyl(0.07, 0.12), lam(0x2fd06f)); c.position.y = 0.26; g.add(c); }
+  else if (id === 'grenade') { const m = new THREE.Mesh(keepGeo(new THREE.SphereGeometry(0.13, 10, 8)), lam(0x4a5a2e, { roughness: 0.6 })); g.add(m); const c = new THREE.Mesh(boxGeo(0.06, 0.1, 0.06), lam(0x9aa0a6, { metalness: 0.6 })); c.position.y = 0.15; g.add(c); }
+  else if (id === 'launchpad') { const m = new THREE.Mesh(boxGeo(0.5, 0.1, 0.5), lam(0x2f86e8)); g.add(m); const c = new THREE.Mesh(boxGeo(0.3, 0.12, 0.3), lam(0xffd23f, { emissive: 0x664400 })); c.position.y = 0.04; g.add(c); }
+  else if (id === 'portafort') { const m = new THREE.Mesh(boxGeo(0.3, 0.3, 0.3), lam(0x93a6b8, { metalness: 0.5 })); g.add(m); const c = new THREE.Mesh(boxGeo(0.32, 0.06, 0.32), lam(0xffc62e)); g.add(c); }
+  else if (id === 'campfire') { for (let i = 0; i < 4; i++) { const l = new THREE.Mesh(boxGeo(0.08, 0.08, 0.45), lam(0x6b4a2a)); l.rotation.y = i * Math.PI / 4; g.add(l); } const f = new THREE.Mesh(keepGeo(new THREE.ConeGeometry(0.12, 0.25, 6)), lam(0xff8a2a, { emissive: 0xff5a00 })); f.position.y = 0.12; g.add(f); }
   else { const m = new THREE.Mesh(keepCyl(0.2, 0.42), lam(0x41b8ff, { emissive: 0x1a5f99 })); g.add(m); const c = new THREE.Mesh(keepCyl(0.08, 0.1), lam(0xe8e8e8)); c.position.y = 0.26; g.add(c); }
   return g;
 }
@@ -116,7 +147,7 @@ function spawnSupply() {
   g.position.set(x, 165, z); worldGroup.add(g);
   SUPPLY.push({ x, z, y: 165, mesh: g, landed: false, chest: null });
   HUD.banner('Supply drop incoming', 'Epic and Legendary loot. Look for the blue square on your map.', 3.5);
-  SFX.alert();
+  SFX.alert(); SFX.announce('Supply drop incoming');
 }
 function updateSupply(dt) {
   for (const s of SUPPLY) {

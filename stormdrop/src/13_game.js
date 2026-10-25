@@ -44,7 +44,7 @@ function jumpOut(c) {
   c.pos.set(BUS.pos.x + mr(-2, 2), BUS.pos.y - 11, BUS.pos.z + mr(-2, 2));
   c.vel.set(BUS.dir.x * 10, -6, BUS.dir.z * 10);
   c.rig.root.visible = true;
-  if (c.isPlayer) { SFX.deploy(); HUD.banner('Skydiving', IS_TOUCH ? 'Steer with the left stick. Look down to dive faster.' : 'Steer with WASD. Look down to dive faster. Space opens the glider.', 3); }
+  if (c.isPlayer) { SFX.jump(); HUD.banner('Skydiving', IS_TOUCH ? 'Steer with the left stick. Look down to dive faster.' : 'Steer with WASD. Look down to dive faster. Space opens the glider.', 3); }
   else c.yaw = Math.atan2(-BUS.dir.x, -BUS.dir.z);
 }
 function rescueFromWater(c) {
@@ -58,7 +58,7 @@ function rescueFromWater(c) {
 function enterBuild(p, piece) { p.buildMode = piece; p.lastPiece = piece; p.using = null; p.reloadT = 0; p.aiming = false; INPUT.clearAim(); updateHeld(p); }
 function exitBuild(p) { p.buildMode = null; showGhost(null); updateHeld(p); }
 function updatePlayer(dt) {
-  const p = player, A = INPUT.actions();
+  const p = player, A = GAME.forceA ? Object.assign({ mx: 0, my: 0, slotKey: -1 }, GAME.forceA) : INPUT.actions();
   GAME.pendingA = A;
   if (A.map) HUD.toggleMap();
   if (!p.alive) return;
@@ -71,7 +71,6 @@ function updatePlayer(dt) {
   if (p.mode === 'sky' || p.mode === 'glide') {
     skyPhysics(p, dt, clamp(A.mx, -1, 1), clamp(A.my, -1, 1), A.jump);
     if (p.mode === 'ground') rescueFromWater(p);
-    SFX.loop('wind', p.mode === 'sky' ? 0.35 : p.mode === 'glide' ? 0.14 : 0);
     animateRig(p, dt);
     return;
   }
@@ -92,6 +91,8 @@ function updatePlayer(dt) {
   }
   if (A.emote && p.grounded && !p.sliding && !p.mantle) { const ids = Object.keys(EMOTES); playEmote(p, ids[(ids.indexOf(p.emote) + 1) % ids.length]); HUD.banner(EMOTES[p.emote].name, '', 0.9); }
   if (p.mantle) { updateMantle(p, dt); tickEye(p, dt); p.modelYaw = p.yaw; return; }
+  if (p.zip) { updateZip(p, dt, A.jump); tickEye(p, dt); return; }
+  if (p.vehicle) { updateVehicle(p.vehicle, dt, { mx, my, jump: A.jump }); if (A.interact) exitVehicle(p); tickEye(p, dt); return; }
   const fx = -Math.sin(p.yaw), fz = -Math.cos(p.yaw), rx = Math.cos(p.yaw), rz = -Math.sin(p.yaw);
   let wx = fx * my + rx * mx, wz = fz * my + rz * mx; const wl = Math.hypot(wx, wz); if (wl > 1) { wx /= wl; wz /= wl; }
   p.aiming = A.aim && !p.buildMode && !!curWeapon(p) && !p.emote;
@@ -138,23 +139,35 @@ function computeAim(p) {
   const L = AIM.dir.length();
   if (L < 0.6) AIM.dir.copy(_tmpV); else AIM.dir.multiplyScalar(1 / L);
 }
-function playerCombat(p, A) {
+function playerCombat(p, A, dt) {
   const it = curItem(p);
   if (!it) { if (A.fire && p.swingT <= 0) meleeSwing(p, AIM.origin.x, AIM.origin.y, AIM.origin.z, AIM.dir, 3.3); return; }
-  if (it.kind === 'consumable') { if (A.firePressed && !p.using) startUse(p); return; }
+  if (it.kind === 'consumable') {
+    const cd = CONSUMABLES[it.id];
+    if (cd.throwable || cd.placeable) { if (A.firePressed && p.throwT <= 0) useGadget(p, it, AIM.origin, AIM.dir); return; }
+    if (A.firePressed && !p.using) startUse(p); return;
+  }
   const def = WEAPONS[it.id];
+  // queued burst rounds keep firing along the current aim
+  if (p.burstQ > 0) { if (p.burstT <= 0 && it.mag > 0) { shootOnce(p, it, def); p.burstQ--; p.burstT = def.burstGap; } return; }
   if (A.reload) startReload(p);
   if (!A.fire) return;
   if (p.reloadT > 0) { if (def.reloadPer && it.mag > 0) p.reloadT = 0; else return; }
   p.using = null;
+  if (def.spin) { p.spinning = true; if (p.spin < 1) return; }
   if (p.fireCD > 0) return;
   if (it.mag <= 0) { if (A.firePressed && !startReload(p)) { SFX.dry(); if (p.ammo[def.ammo] <= 0) HUD.banner('Out of ' + AMMO[def.ammo].name.toLowerCase(), 'Find ammo in chests or on the ground', 1.4); } return; }
+  shootOnce(p, it, def);
+  p.fireCD = 1 / def.rate;
+  if (def.burst) { p.burstQ = def.burst - 1; p.burstT = def.burstGap; }
+}
+function shootOnce(p, it, def) {
   fireWeapon(p, it, AIM.origin, AIM.dir);
-  it.mag--; p.fireCD = 1 / def.rate;
+  it.mag--;
   const rk = def.recoil * (p.aiming ? 0.55 : 1) * (p.crouch ? 0.8 : 1);
   p.pitch = Math.min(1.45, p.pitch + rk * 0.45); CAM.kick += rk * 0.85; CAM.kickYaw += mr(-1, 1) * rk * 0.3;
-  CAM.shake = Math.min(1, CAM.shake + (def.id === 'sniper' || def.id === 'shotgun' || def.id === 'rocket' ? 0.32 : 0.1));
-  if (it.mag === 0 && p.ammo[def.ammo] > 0) p.autoReload = 0.3;
+  CAM.shake = Math.min(1, CAM.shake + (def.id === 'sniper' || def.id === 'heavy' || def.id === 'shotgun' || def.id === 'tac' || def.id === 'rocket' || def.id === 'hand' ? 0.32 : 0.1));
+  if (it.mag === 0) { p.burstQ = 0; if (p.ammo[def.ammo] > 0) p.autoReload = 0.3; }
 }
 function playerBuild(p, A, dt) {
   if (A.aimPressed) { p.buildMat = MAT_ORDER[(MAT_ORDER.indexOf(p.buildMat) + 1) % 3]; SFX.click(); }
@@ -172,8 +185,14 @@ function playerInteract(p, A) {
   const ch = nearestChest(p, 2.6);
   let target = ch, label = ch ? 'Open chest' : '', rar = 4;
   if (!ch) { const it = nearestItem(p, 2.3); if (it && it.kind !== 'ammo' && it.kind !== 'mats') { target = it; label = 'Pick up ' + itemLabel(it); rar = itemRarity(it); } }
+  let car = null;
+  if (!target) { car = nearestVehicle(p, 3); if (car) { target = car; label = 'Drive quad'; rar = 2; } }
+  let zipT = null;
+  if (!target && !p.zip) { zipT = nearestZip(p, 2.6); if (zipT) { target = zipT; label = 'Ride zipline'; rar = 2; } }
+  let food = null;
+  if (!target) { food = nearestForage(p, 1.8); if (food) { target = food; label = food.type === 'apple' ? 'Eat apple (+5 health)' : 'Eat mushroom (+5 shield)'; rar = 1; } }
   HUD.prompt(target ? label : null, rar);
-  if (A.interact && target) { if (ch) openChest(ch, p); else pickupItem(p, target); }
+  if (A.interact && target) { if (ch) openChest(ch, p); else if (car) enterVehicle(p, car); else if (zipT) startZip(p, zipT); else if (food) eatForage(p, food); else pickupItem(p, target); }
   for (let i = ITEMS.length - 1; i >= 0; i--) {
     const it = ITEMS[i]; if (it.kind !== 'ammo' && it.kind !== 'mats') continue; if (it.age < 0.6) continue;
     const dx = it.pos.x - p.pos.x, dz = it.pos.z - p.pos.z;
@@ -183,9 +202,14 @@ function playerInteract(p, A) {
 function playerActions(dt) {
   const p = player, A = GAME.pendingA;
   if (!A || !p.alive || p.mode !== 'ground' || GAME.state === 'won') { if (ghostMesh) ghostMesh.visible = false; HUD.prompt(null); return; }
+  if (p.zip) { HUD.prompt(IS_TOUCH ? 'Tap JUMP to let go' : 'Space to let go', 2); tickTimers(p, dt); animateRig(p, dt); return; }
+  if (p.vehicle) { HUD.prompt(null); showGhost(null); tickTimers(p, dt); animateRig(p, dt); return; }
   computeAim(p);
-  if (p.buildMode) playerBuild(p, A, dt); else { showGhost(null); playerCombat(p, A); }
-  playerInteract(p, A);
+  if (p.editing) { showGhost(null); updateEdit(p, A); }
+  else if (A.edit && editTarget(p)) startEdit(p, editTarget(p));
+  else if (p.buildMode) playerBuild(p, A, dt); else { showGhost(null); playerCombat(p, A, dt); }
+  if (IS_TOUCH) { GAME.editT = (GAME.editT || 0) - dt; if (GAME.editT <= 0) { GAME.editT = 0.25; GAME.canEdit = !p.buildMode && !!editTarget(p); } $id('tb-edit').hidden = !(p.editing || GAME.canEdit); }
+  if (!p.editing) playerInteract(p, A);
   tickTimers(p, dt);
   animateRig(p, dt);
 }
@@ -221,9 +245,9 @@ function updateCamera(dt) {
   const w = f === player && player.aiming ? curWeapon(player) : null;
   const scoped = !!(w && WEAPONS[w.id].scope);
   const emo = f === player && player.emote;
-  const tDist = f.mode === 'sky' ? 7.5 : f.mode === 'glide' ? 6.5 : emo ? 4.6 : scoped ? 0 : w ? 1.9 : (f === player && player.buildMode) ? 4.3 : f === player ? 3.6 : 4.6;
+  const tDist = f.vehicle ? 7 : f.mode === 'sky' ? 7.5 : f.mode === 'glide' ? 6.5 : emo ? 4.6 : scoped ? 0 : w ? 1.9 : (f === player && player.buildMode) ? 4.3 : f === player ? 3.6 : 4.6;
   CAM.dist = lerp(CAM.dist, tDist, 1 - Math.exp(-dt * (emo ? 5 : 14)));
-  CAM.shoulder = lerp(CAM.shoulder, scoped || emo ? 0 : w ? 0.62 : 0.85, 1 - Math.exp(-dt * 14));
+  CAM.shoulder = lerp(CAM.shoulder, scoped || emo || f.vehicle ? 0 : w ? 0.62 : 0.85, 1 - Math.exp(-dt * 14));
   const an = f.anim || { land: 0, phase: 0 }, fsp = Math.hypot(f.vel.x, f.vel.z);
   const bob = f.mode === 'ground' && f.grounded && !f.sliding ? Math.sin(an.phase * 2) * 0.03 * Math.min(1, fsp / 7) : 0;
   const px = f.pos.x, py = f.pos.y + (f.mode === 'ground' ? (f.eyeH || 1.6) + 0.02 - an.land * 0.2 + bob : 1.2), pz = f.pos.z;
@@ -284,10 +308,30 @@ function updateEnv(dt) {
   updateWater(cp.x, cp.z);
   updateGrass(cp.x, cp.z);
   RAIN.update(dt, cp.x, cp.y, cp.z);
-  SFX.loop('storm', CAM.storm * 0.5);
-  SFX.loop('rain', RAIN.active ? 0.22 : 0);
+  SNOWFALL.update(dt, cp.x, cp.y, cp.z);
+  updateWorldFx(dt);
   updateStaticCulling(dt, cp.x, cp.z);
-  SFX.setListener(cp.x, cp.y, cp.z, CAM.yaw);
+  SFX.setListener(camera);
+}
+// ---------- audio direction: loops, music state + intensity, heartbeat ----------
+function updateAudio(dt) {
+  if (!SFX.ready) return;
+  const p = player, inMatch = GAME.state !== 'menu', tod = ENVSTATE.tod;
+  SFX.ambience(dt, { day: tod !== 'dusk', dusk: tod === 'dusk', rain: RAIN.active, storm: CAM.storm > 0.3, menu: !inMatch });
+  SFX.loop('storm', CAM.storm * 0.5);
+  if (!inMatch || !p) { SFX.MUSIC.setState('menu'); for (const n of ['bus', 'wind', 'glide', 'slide']) SFX.loop(n, 0); return; }
+  const mode = p.alive ? p.mode : 'dead';
+  SFX.loop('bus', mode === 'bus' ? 0.2 : 0);
+  const fall = mode === 'sky' ? clamp(-p.vel.y / 50, 0.3, 1) : 0;
+  SFX.loop('wind', mode === 'sky' ? 0.16 + fall * 0.3 : 0, 600 + fall * 1500);
+  SFX.loop('glide', mode === 'glide' ? 0.11 : 0);
+  SFX.loop('slide', p.alive && p.sliding && p.grounded ? 0.15 : 0);
+  if (GAME.state === 'play' && p.alive) {
+    const st = mode === 'bus' ? 'bus' : (GAME.alive <= 6 || STORM.idx >= 4) ? 'end' : 'match';
+    SFX.MUSIC.setState(st);
+    SFX.MUSIC.setIntensity(clamp(1.15 - (GAME.time - (GAME.combatT === undefined ? -99 : GAME.combatT)) / 10, 0, 1) + (st === 'end' ? 0.25 : 0));
+  }
+  if (p.alive && p.mode === 'ground' && p.hp < 30) { GAME.hbT = (GAME.hbT || 0) - dt; if (GAME.hbT <= 0) { GAME.hbT = 0.55 + p.hp / 60; SFX.heartbeat(); } }
 }
 function menuCamera(dt) {
   CAM.orbit += dt * 0.03;
@@ -318,6 +362,24 @@ function startMatch() {
     $id('loading').hidden = true;
   }, 50);
 }
+// the vault's boss and two guards: on the ground from the start, not counted as players
+function spawnVaultCrew() {
+  const V = WORLD.vault; if (!V) return;
+  const mk = (name, weapon, rar, outfit, boss) => {
+    const b = makeBot(); b.name = name; b.npc = true; b.boss = boss; b.skill = boss ? 0.95 : 0.7;
+    if (outfit) { b.rig.root.parent.remove(b.rig.root); b.outfit = outfit; b.rig = buildRig(outfit); b.rig.root.visible = false; worldGroup.add(b.rig.root); }
+    b.mode = 'ground'; b.state = 'guard'; b.post = new V3(V.x + mr(-3, 3), V.y, V.z + mr(-3, 3)); b.pos.copy(b.post); b.grounded = true;
+    b.shield = boss ? 100 : 50; b.armor = boss ? 0.45 : 0;
+    giveItem(b, { kind: 'weapon', id: weapon, rarity: rar, mag: WEAPONS[weapon].mag }); b.slot = 0;
+    b.ammo[WEAPONS[weapon].ammo] = 400; giveItem(b, { kind: 'consumable', id: 'medkit', count: 2 });
+    updateHeld(b); bots.push(b); characters.push(b);
+    return b;
+  };
+  const gold = Object.assign(genOutfit(), { name: 'Vault Warden', top: 'armor', c1: 0x1d2026, c2: 0xffc62e, legs: 0x1d2026, head: 'helmet', headC: 0xffc62e, eyes: 'focused', back: 'cape', backC: 0xffc62e, gloves: 0xffc62e, shoes: 0x1d2026 });
+  mk('Vault Warden', 'tempest', 5, gold, true);
+  const guard = () => Object.assign(genOutfit(), { top: 'armor', c1: 0x34495e, c2: 0xe0482f, legs: 0x262626, head: 'helmet', headC: 0x34495e, back: 'backpack', backC: 0x262626 });
+  mk('Vault Guard', 'burst', 3, guard(), false); mk('Vault Guard', 'tac', 3, guard(), false);
+}
 function setupMatch() {
   if (!GAME.menuWorldFresh) newWorld((Math.random() * 1e9) | 0);
   GAME.menuWorldFresh = false;
@@ -327,6 +389,8 @@ function setupMatch() {
   characters.push(player);
   for (let i = 0; i < SETTINGS.bots; i++) { const b = makeBot(); bots.push(b); characters.push(b); }
   setupBus(); stormInit();
+  spawnVaultCrew();
+  spawnVehicles(7);
   // bots pick a landing spot and leave the dropship when it passes closest to it
   const pathLen = BUS.start.distanceTo(BUS.end);
   for (const b of bots) {
@@ -335,7 +399,7 @@ function setupMatch() {
     b.jumpAt = clamp(t - 0.06 + Math.random() * 0.05, 0.04, 0.95);
   }
   const [tod, wx] = pickTimeOfDay(); applyEnvironment(tod, wx);
-  Object.assign(GAME, { deathLog: [], state: 'play', time: 0, alive: characters.length, spectating: null, placement: 0, killer: null, deathKind: '', deathTime: 0, paused: false, stats: { mats: 0, builds: 0, chests: 0 } });
+  Object.assign(GAME, { combatT: -99, hbT: 0, deathLog: [], state: 'play', time: 0, alive: characters.filter((c) => !c.npc).length, spectating: null, placement: 0, killer: null, deathKind: '', deathTime: 0, paused: false, stats: { mats: 0, builds: 0, chests: 0 } });
   player.yaw = Math.atan2(-BUS.dir.x, -BUS.dir.z) + 0.7; player.pitch = -0.28;
   CAM.dist = 3.6; CAM.storm = 0; CAM.shake = 0;
   HUD.show(true); HUD.toggleMap(false);
@@ -348,7 +412,7 @@ function onPlayerDeath(src, kind) {
   GAME.killer = src && src !== player ? src : null;
   GAME.spectating = GAME.killer && GAME.killer.alive ? GAME.killer : null;
   CAM.specYaw = player.yaw;
-  showGhost(null); HUD.prompt(null); SFX.loop('wind', 0);
+  showGhost(null); HUD.prompt(null); SFX.loop('wind', 0); SFX.loop('slide', 0); SFX.defeat(); endEdit(player, false);
   setTimeout(() => { if (GAME.state === 'dead') showEnd(false); }, 1700);
 }
 function checkEnd() {
@@ -398,7 +462,7 @@ function backToResults() { $id('spec').hidden = true; showEnd(GAME.state === 'wo
 function pause() {
   if (GAME.state === 'menu' || GAME.paused || !$id('endscreen').hidden) return;
   GAME.paused = true; $id('pause').hidden = false; releaseLock();
-  SFX.loop('wind', 0); SFX.loop('hum', 0); SFX.loop('storm', 0);
+  for (const n of ['wind', 'hum', 'storm', 'glide', 'slide', 'bus']) SFX.loop(n, 0);
 }
 function resume() { GAME.paused = false; $id('pause').hidden = true; requestLock(); SFX.init(); }
 function quitToMenu() {
@@ -408,8 +472,8 @@ function quitToMenu() {
   $id('menu').hidden = false;
   HUD.show(false); HUD.toggleMap(false);
   for (const c of characters) c.rig.root.visible = false;
-  BUS.mesh.visible = false; showGhost(null); STORM.mesh.visible = false;
-  for (const n of ['wind', 'hum', 'storm']) SFX.loop(n, 0);
+  BUS.mesh.visible = false; showGhost(null); STORM.mesh.visible = false; if (player) endEdit(player, false);
+  for (const n of ['wind', 'hum', 'storm', 'glide', 'slide', 'bus']) SFX.loop(n, 0);
   CAM.storm = 0;
 }
 
@@ -478,13 +542,15 @@ function wireMenu() {
   $id('spectate').addEventListener('click', startSpectate);
   $id('spec-next').addEventListener('click', nextSpectate);
   $id('spec-back').addEventListener('click', backToResults);
+  for (const ev of ['pointerdown', 'keydown']) addEventListener(ev, () => SFX.init(), { once: true });
+  document.querySelectorAll('.play, .seg button, .outfit button').forEach((b) => b.addEventListener('mouseenter', () => SFX.hover()));
   syncSegs(); syncOutfit();
 }
 
 // ---------- main loop ----------
 let _last = performance.now(), _fpsT = 0, _fpsN = 0;
 function frame(dt) {
-  if (GAME.state === 'menu') { menuCamera(dt); updateEnv(dt); FX.update(dt); VFX.update(dt); INPUT.endFrame(); return; }
+  if (GAME.state === 'menu') { menuCamera(dt); updateEnv(dt); updateAudio(dt); FX.update(dt); VFX.update(dt); INPUT.endFrame(); return; }
   if (GAME.paused) { INPUT.endFrame(); return; }
   GAME.time += dt;
   updateBus(dt);
@@ -495,6 +561,8 @@ function frame(dt) {
   updateItems(dt, cp.x, cp.z);
   updateChests(dt, cp.x, cp.z);
   updateRockets(dt);
+  updateGadgets(dt);
+  updateVehicles(dt);
   updateSupply(dt);
   updateBuild(dt);
   updateShaking(dt);
@@ -504,6 +572,7 @@ function frame(dt) {
   playerActions(dt);
   FX.update(dt); VFX.update(dt);
   updateEnv(dt);
+  updateAudio(dt);
   HUD.update(dt);
   if (!$id('spec').hidden && (!GAME.spectating || !GAME.spectating.alive)) nextSpectate();
   $id('clickplay').hidden = IS_TOUCH || INPUT.locked || GAME.state !== 'play' || !player.alive;
@@ -546,6 +615,6 @@ function init() {
   applyQuality();
   requestAnimationFrame(loop);
   if (GAME.freeze) { _last = now; return; }
-  window.STORMDROP = { grassWeight, groundH, WATER, RAIN, GRASS, sun, renderer: () => renderer, setEnv(v) { scene.environment = v ? ENVSTATE.envRT.texture : null; }, scene: () => scene, applyEnvironment, POST, ENVSTATE, renderOnce() { const t0 = performance.now(); POST.render(); return performance.now() - t0; }, frameOnce(dt) { const t0 = performance.now(); frame(dt); return performance.now() - t0; }, dbg: { traceShot, AIM, raycastWorld, rayCharacters, computeAim, eyeOf }, get info() { return renderer.info.render; }, step(n, dt) { for (let i = 0; i < n; i++) frame(dt || 0.05); }, GAME, get player() { return player; }, bots, characters, STORM, BUS, WORLD, startMatch, setupMatch, jumpOut, CAM, PIECES, ITEMS, CHESTS, SETTINGS, animateRig, updateHeld, giveItem, playEmote, makeCharacter, genOutfit, camera: () => camera, FX, VFX, placePiece, buildTarget, explode, fireWeapon, updateBuild, frame: (dt) => frame(dt), updateCamera: (dt) => updateCamera(dt), testBox(x, y, z, w, h, d) { const c = boxCollider(x - w / 2, y, z - d / 2, x + w / 2, y + h, z + d / 2, { kind: "test", hp: Infinity }); const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), MAT.build.stone); m.position.set(x, y + h / 2, z); worldGroup.add(m); return c; } };
+  window.STORMDROP = { grassWeight, groundH, WATER, RAIN, GRASS, sun, renderer: () => renderer, setEnv(v) { scene.environment = v ? ENVSTATE.envRT.texture : null; }, scene: () => scene, applyEnvironment, POST, ENVSTATE, renderOnce() { const t0 = performance.now(); POST.render(); return performance.now() - t0; }, frameOnce(dt) { const t0 = performance.now(); frame(dt); return performance.now() - t0; }, dbg: { traceShot, AIM, raycastWorld, rayCharacters, computeAim, eyeOf }, get info() { return renderer.info.render; }, step(n, dt) { for (let i = 0; i < n; i++) frame(dt || 0.05); }, GAME, get player() { return player; }, bots, characters, STORM, BUS, WORLD, startMatch, setupMatch, jumpOut, CAM, PIECES, ITEMS, CHESTS, SETTINGS, animateRig, updateHeld, giveItem, playEmote, makeCharacter, genOutfit, camera: () => camera, SFX, FX, VFX, placePiece, buildTarget, explode, fireWeapon, updateBuild, frame: (dt) => frame(dt), updateCamera: (dt) => updateCamera(dt), WEAPONS, CONSUMABLES, GADGETS, useGadget, AIM, ZIPS, biomeAt, VEHICLES, enterVehicle, startEdit, endEdit, editTarget, applyWallEdit, PIECES_: () => PIECES, testBox(x, y, z, w, h, d) { const c = boxCollider(x - w / 2, y, z - d / 2, x + w / 2, y + h, z + d / 2, { kind: "test", hp: Infinity }); const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), MAT.build.stone); m.position.set(x, y + h / 2, z); worldGroup.add(m); return c; } };
 }
 init();

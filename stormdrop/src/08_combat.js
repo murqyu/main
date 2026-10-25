@@ -67,7 +67,8 @@ function fireWeapon(c, w, origin, aim) {
   let spread = (c.aiming ? def.ads : def.spread) * (moving ? 1.25 : 1) * (c.grounded ? 1 : 1.6) + c.bloom;
   spread *= c.crouch ? 0.72 : c.sliding ? 1.3 : 1;
   if (def.id === 'sniper' && c.aiming) spread = moving ? 0.01 : 0;
-  SFX.shot(def.sound, c.pos);
+  SFX.shot(def.sound, c.pos, c.isPlayer);
+  if (c.isPlayer) GAME.combatT = GAME.time;
   muzzleOf(c, _mz);
   const big = def.id === 'shotgun' || def.id === 'sniper' || def.id === 'rocket';
   VFX.muzzle(c, _mz.x, _mz.y, _mz.z, big);
@@ -83,14 +84,24 @@ function fireWeapon(c, w, origin, aim) {
       const fall = h.t <= def.falloff ? 1 : lerp(1, def.minFall, clamp((h.t - def.falloff) / Math.max(1, def.range - def.falloff), 0, 1));
       const dmg = def.dmg[r] * fall;
       if (h.char) { applyDamage(h.char, dmg * (h.head ? def.head : 1), c, def.name, h.head); FX.burst(ex, ey, ez, 5, h.head ? 0xffe066 : 0xffffff, 3, 0.18, 0.18, true, -5); }
-      else if (h.col) { VFX.bulletHole(h, ex, ey, ez); damageCollider(h.col, dmg, c, ex, ey, ez); const k = colMatKind(h.col); FX.burst(ex + h.nx * 0.05, ey + h.ny * 0.05, ez + h.nz * 0.05, 4, IMPACT_COL[k], 3.5, 0.3, 0.16, false, -12); if (p === 0) SFX.impact({ x: ex, y: ey, z: ez }, k); }
+      else if (h.col) { VFX.bulletHole(h, ex, ey, ez); damageCollider(h.col, dmg * (def.buildMult || 1), c, ex, ey, ez); const k = colMatKind(h.col); FX.burst(ex + h.nx * 0.05, ey + h.ny * 0.05, ez + h.nz * 0.05, 4, IMPACT_COL[k], 3.5, 0.3, 0.16, false, -12); if (p === 0) SFX.impact({ x: ex, y: ey, z: ez }, k); }
       else if (h.terrain) { VFX.bulletHole(h, ex, ey, ez); FX.burst(ex, ey + 0.05, ez, 5, IMPACT_COL.dirt, 3, 0.45, 0.24, false, -8); FX.emitN(ex, ey + 0.1, ez, 0, 0.6, 0, 0.7, 0.3, 0.9, 0.7, 0.62, 0.5, 0.5, 0, 1); }
+      if (p === 0 && !c.isPlayer && player && player.alive) nearMiss(origin, _fd, h.t, def);
       if (p < 4) FX.tracer(_mz.x, _mz.y, _mz.z, ex, ey, ez, c.isPlayer ? 0xfff2b0 : 0xffd27a, def.id === 'sniper' ? 2.4 : 1);
       if (def.id === 'sniper') VFX.smokeTrail(_mz.x, _mz.y, _mz.z, ex, ey, ez);
     }
   }
   c.bloom = Math.min(c.bloom + def.bloom, 0.07);
   if (c.anim) c.anim.recoil = Math.min(1.2, c.anim.recoil + (def.kick || (def.id === 'sniper' || def.id === 'rocket' ? 1 : def.id === 'shotgun' ? 0.85 : 0.35)));
+}
+// bullets passing close to the player's head whiz (and crack for fast rounds)
+const _nm = new V3();
+function nearMiss(o, d, t, def) {
+  const ex = player.pos.x - o.x, ey = player.pos.y + 1.6 - o.y, ez = player.pos.z - o.z, k = ex * d.x + ey * d.y + ez * d.z;
+  if (k < 2 || k > t + 1) return;
+  _nm.set(o.x + d.x * k, o.y + d.y * k, o.z + d.z * k);
+  const miss = Math.hypot(_nm.x - player.pos.x, _nm.y - player.pos.y - 1.6, _nm.z - player.pos.z);
+  if (miss < 3.2 && miss > 0.35) { SFX.whiz(_nm, def.id === 'sniper' || def.id === 'ar'); GAME.combatT = GAME.time; }
 }
 function damageMult(src, target) {
   if (src && !src.isPlayer && target && target.isPlayer) return DIFF[SETTINGS.diff].dmg;
@@ -108,13 +119,14 @@ function applyDamage(t, amt, src, wname, head, kind) {
       if (src && src.isPlayer) src.damageDealt += s;
     }
   }
+  if (t.armor) amt *= 1 - t.armor;
   amt = Math.round(amt * 10) / 10;
   if (amt > 0) {
     t.hp -= amt;
     if (src && src.isPlayer && src !== t) { FX.number(t.pos.x, t.pos.y + 2.1, t.pos.z, amt, head ? 'head' : '', t); src.damageDealt += amt; }
   }
   if (src && src.isPlayer && src !== t) { SFX.hit(head, t.shield > 0); HUD.hitmarker(head); }
-  if (t.isPlayer) { if (kind !== 'storm') { HUD.hurt(src); SFX.hurt(); } }
+  if (t.isPlayer) { if (kind !== 'storm') { HUD.hurt(src); SFX.hurt(); GAME.combatT = GAME.time; CAM.shake = Math.min(1, CAM.shake + 0.12 + Math.min(0.3, amt / 140)); } }
   else if (src && src !== t) onBotDamaged(t, src);
   t.lastHurt = GAME.time;
   if (kind !== 'storm') rigHitFlash(t);
@@ -123,6 +135,8 @@ function applyDamage(t, amt, src, wname, head, kind) {
 function nm(c) { return c.isPlayer ? '<b class="me">You</b>' : '<b>' + c.name + '</b>'; }
 function eliminate(t, src, wname, kind) {
   if (!t.alive) return;
+  if (t.vehicle) exitVehicle(t);
+  t.zip = null; t.mantle = null;
   t.alive = false; t.hp = 0; t.deathT = 0.0001; t.using = null; t.reloadT = 0; t.emote = null;
   if (t.rig.root.visible) startDissolve(t);
   GAME.deathLog.push({ t: GAME.time, kind: kind || '', w: wname || '', bySelf: src === t, since: GAME.time - (t.landedAt || 0), y: t.pos.y });
@@ -133,9 +147,10 @@ function eliminate(t, src, wname, kind) {
   else if (src && src !== t) msg = nm(src) + ' eliminated ' + nm(t) + (wname ? ' with the ' + wname : '');
   else msg = nm(t) + ' was eliminated';
   HUD.feed(msg);
-  if (src && src !== t && src.alive) { src.kills++; if (src.isPlayer) { HUD.elimToast(t.name, src.kills); SFX.elim(); } }
+  if (src && src !== t && src.alive) { src.kills++; if (src.isPlayer) { HUD.elimToast(t.name, src.kills); SFX.elim(); HUD.elimMark(); src.streak = (GAME.time - (src.lastElimT || -99) < 5) ? (src.streak || 1) + 1 : 1; src.lastElimT = GAME.time; if (src.streak >= 2) SFX.announce(['', '', 'Double elimination', 'Triple elimination', 'Quad elimination', 'Unstoppable'][Math.min(5, src.streak)], true); } }
   FX.elim(t.pos);
-  GAME.alive = characters.reduce((n, c) => n + (c.alive ? 1 : 0), 0);
+  GAME.alive = characters.reduce((n, c) => n + (c.alive && !c.npc ? 1 : 0), 0);
+  if (player && player.alive && [25, 10, 5, 3, 2].includes(GAME.alive) && GAME.state === 'play') SFX.announce(GAME.alive === 2 ? 'Final two' : GAME.alive + ' players remain');
   if (t.isPlayer) onPlayerDeath(src, kind);
   else if (GAME.spectating === t) GAME.spectating = src && src.alive ? src : null;
   checkEnd();
@@ -151,6 +166,7 @@ function dropAll(c) {
 function damageCollider(col, amt, src, x, y, z) {
   if (!col.alive) return;
   if (col.piece) { damagePiece(col.piece, amt); if (src && src.isPlayer) FX.number(x, y, z, amt, 'bld', col); return; }
+  if (col.vehicle) { damageVehicle(col.vehicle, amt, src); if (src && src.isPlayer) FX.number(x, y, z, amt, 'bld', col); return; }
   if (col.hp === Infinity) return;
   col.hp -= amt;
   if (col.tree) { col.tree.shakeT = 0.35; SHAKING.add(col.tree); }
@@ -176,13 +192,13 @@ function meleeSwing(c, ox, oy, oz, d, reach) {
   const h = traceShot(c, ox, oy, oz, d.x, d.y, d.z, reach, true);
   if (h.t >= reach) return;
   const ex = ox + d.x * h.t, ey = oy + d.y * h.t, ez = oz + d.z * h.t;
-  if (h.char) { applyDamage(h.char, 20, c, 'Pickaxe', false); SFX.pickaxe(h.char.pos, false); return; }
+  if (h.char) { applyDamage(h.char, 20, c, 'Pickaxe', false); SFX.pickaxe(h.char.pos, false, 'flesh'); return; }
   if (!h.col) return;
   const col = h.col;
   let crit = false;
   if (c.isPlayer && WEAK.col === col && Math.hypot(ex - WEAK.x, ey - WEAK.y, ez - WEAK.z) < 0.75) crit = true;
   const dmg = col.piece ? 50 : crit ? 100 : 50;
-  SFX.pickaxe({ x: ex, y: ey, z: ez }, crit);
+  SFX.pickaxe({ x: ex, y: ey, z: ez }, crit, colMatKind(col));
   FX.burst(ex, ey, ez, crit ? 14 : 6, crit ? 0x7fe0ff : IMPACT_COL[colMatKind(col)], 3.5, 0.35, 0.2, crit, -10);
   if (col.harvest && !col.piece) {
     const mat = col.harvest, amt = Math.round((col.kind === 'tree' ? 7 : col.kind === 'rock' ? 8 : 6) * (crit ? 2 : 1) * mr(0.85, 1.25));
@@ -251,7 +267,7 @@ function explode(x, y, z, R) {
   for (const c of characters) {
     if (!c.alive || c.mode === 'bus') continue;
     const d = Math.hypot(c.pos.x - x, c.pos.y + 1 - y, c.pos.z - z);
-    if (d < rad) applyDamage(c, R.dmg * (1 - (d / rad) * 0.65), R.owner, 'Rocket Launcher', false);
+    if (d < rad) applyDamage(c, R.dmg * (1 - (d / rad) * 0.65), R.owner, R.name || 'Rocket Launcher', false);
   }
   queryBox(x - rad, z - rad, x + rad, z + rad, _eq);
   for (const col of _eq.slice()) {
