@@ -25,8 +25,9 @@ function makeBusMesh() {
 }
 function setupBus() {
   const a = Math.random() * TAU, off = mr(-130, 130), px = -Math.sin(a), pz = Math.cos(a);
-  BUS.start.set(Math.cos(a) * 560 + px * off, BUS.alt, Math.sin(a) * 560 + pz * off);
-  BUS.end.set(-Math.cos(a) * 560 + px * off, BUS.alt, -Math.sin(a) * 560 + pz * off);
+  const R = WORLD.islandR + 200;
+  BUS.start.set(Math.cos(a) * R + px * off, BUS.alt, Math.sin(a) * R + pz * off);
+  BUS.end.set(-Math.cos(a) * R + px * off, BUS.alt, -Math.sin(a) * R + pz * off);
   BUS.dir.subVectors(BUS.end, BUS.start).normalize();
   BUS.t = 0; BUS.pos.copy(BUS.start);
   BUS.mesh.visible = true; BUS.mesh.position.copy(BUS.start); BUS.mesh.lookAt(BUS.end);
@@ -335,7 +336,7 @@ function updateAudio(dt) {
 }
 function menuCamera(dt) {
   CAM.orbit += dt * 0.03;
-  const a = CAM.orbit, r = 360;
+  const a = CAM.orbit, r = WORLD.islandR;
   camera.position.set(Math.cos(a) * r, 120, Math.sin(a) * r);
   camera.lookAt(Math.cos(a + 1.2) * 60, 10, Math.sin(a + 1.2) * 60);
   if (Math.abs(camera.fov - 62) > 0.01) { camera.fov = 62; camera.updateProjectionMatrix(); FX.setScale(pointScale()); }
@@ -381,9 +382,9 @@ function spawnVaultCrew() {
   mk('Vault Guard', 'burst', 3, guard(), false); mk('Vault Guard', 'tac', 3, guard(), false);
 }
 function setupMatch() {
-  if (!GAME.menuWorldFresh) newWorld((Math.random() * 1e9) | 0);
+  if (!GAME.menuWorldFresh || WORLD.scale !== islandScaleFor(SETTINGS.bots)) newWorld((Math.random() * 1e9) | 0);
   GAME.menuWorldFresh = false;
-  characters.length = 0; bots.length = 0; usedNames.clear();
+  characters.length = 0; bots.length = 0; usedNames.clear(); NOISE.length = 0; PATHQ.length = 0; DROPS.clear();
   FX.clear(); VFX.clear(); HUD.reset(); INPUT.clearAim(); INPUT.clearCrouch();
   player = makeCharacter(true, 'You', OUTFITS[SETTINGS.outfit % OUTFITS.length]); player.emote = null;
   characters.push(player);
@@ -556,6 +557,7 @@ function frame(dt) {
   updateBus(dt);
   updatePlayer(dt);
   const cp = camera.position;
+  processPaths(4);
   for (const b of bots) updateBot(b, dt, cp.x, cp.z);
   if (!player.alive) deathAnim(player, dt);
   updateItems(dt, cp.x, cp.z);

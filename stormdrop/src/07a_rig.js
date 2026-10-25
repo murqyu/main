@@ -336,7 +336,7 @@ function rigTargets(c, dt, A) {
   const sp = Math.hypot(c.vel.x, c.vel.z), amp = Math.min(1, sp / 6.5);
   an.phase += dt * sp * (c.crouch ? 2.2 : 1.55) * (vf < -0.5 ? -1 : 1);
   const ph = an.phase, s1 = Math.sin(ph), c1 = Math.cos(ph);
-  const si = Math.floor(ph / Math.PI); if (si !== an.stepI) { an.stepI = si; if (c.grounded && sp > 1.2 && !c.sliding) footstep(c, sp); }
+  const si = Math.floor(ph / Math.PI); if (si !== an.stepI) { an.stepI = si; if (c.grounded && sp > 1.2 && !c.sliding) { footstep(c, sp); if (c.isPlayer) stepNoise(c, sp); } }
   const sprint = sp > 7.5 ? Math.min(1, (sp - 7.5) / 1.3) : 0;
   const fwdK = sp > 0.2 ? Math.abs(vf) / sp : 1, sideK = sp > 0.2 ? vs / sp : 0;
   const stride = amp * (0.75 + sprint * 0.25);

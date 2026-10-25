@@ -331,7 +331,7 @@ body.is-touch #progress{top:calc(50% + 60px)}
       </ul>
     </div>
     <div class="panel">
-      <div class="opt"><label>Opponents</label><div class="seg" data-opt="bots"><button data-v="14">14</button><button data-v="29">29</button><button data-v="49">49</button></div></div>
+      <div class="opt"><label>Opponents</label><div class="seg" data-opt="bots"><button data-v="14">14</button><button data-v="29">29</button><button data-v="49">49</button><button data-v="74">74</button><button data-v="99">99</button></div></div>
       <div class="opt"><label>Bot skill</label><div class="seg" data-opt="diff"><button data-v="casual">Casual</button><button data-v="normal">Normal</button><button data-v="sweaty">Sweaty</button></div></div>
       <div class="opt"><label>Graphics</label><div class="seg" data-opt="quality"><button data-v="low">Low</button><button data-v="medium">Med</button><button data-v="high">High</button><button data-v="ultra">Ultra</button></div></div>
       <div class="opt"><label>Outfit</label><div class="outfit"><button id="of-prev" aria-label="Previous outfit">‹</button><div class="sw"><div class="chips" id="of-chips"></div><div class="nm" id="of-name"></div></div><button id="of-next" aria-label="Next outfit">›</button></div></div>
@@ -1307,7 +1307,7 @@ function makeWater() {
     uniforms: { uTime: UTIME, uWet: UWET, uDeep: { value: LIN(0x0b3f72) }, uShallow: { value: LIN(0x2fb6c8) }, uSkyH: { value: new THREE.Color() }, uSkyZ: { value: new THREE.Color() }, uSunDir: { value: new V3() }, uSunColor: { value: new THREE.Color() },
       uFogColor: { value: new THREE.Color() }, uFogNear: { value: 100 }, uFogFar: { value: 600 }, uHeight: { value: null }, uRect: { value: new THREE.Vector4(-500, -500, 1000, 0) } },
   });
-  const geo = new THREE.PlaneGeometry(1800, 1800, 220, 220); geo.rotateX(-Math.PI / 2);
+  const geo = new THREE.PlaneGeometry(3000, 3000, 300, 300); geo.rotateX(-Math.PI / 2);
   WATER.mesh = new THREE.Mesh(geo, WATER.mat); WATER.mesh.frustumCulled = false; WATER.mesh.renderOrder = 1;
   scene.add(WATER.mesh);
 }
@@ -1542,6 +1542,12 @@ const GRID = { cs: 8, min: -520, n: 130, cells: null };
 let qstamp = 1, rstamp = 1;
 const VEG = {};
 
+function islandScaleFor(n) { return n <= 29 ? 1 : n <= 49 ? 1.15 : n <= 74 ? 1.3 : 1.45; }
+function setWorldScale(s) {
+  WORLD.scale = s; WORLD.islandR = 360 * s; WORLD.half = Math.round((WORLD.islandR + 140) / 50) * 50;
+  WORLD.N = Math.round(WORLD.half * 2 / WORLD.step) + 1; WORLD.seg = WORLD.N - 1;
+  GRID.min = -(WORLD.half + 20); GRID.n = Math.ceil((WORLD.half * 2 + 40) / GRID.cs);
+}
 function gridInit() {
   GRID.cells = new Array(GRID.n * GRID.n);
   for (let i = 0; i < GRID.cells.length; i++) GRID.cells[i] = [];
@@ -1725,7 +1731,8 @@ function genTerrain(seed) {
   const P = makePerlin(rng), P2 = makePerlin(rng);
   WORLD.perlin = P;
   WORLD.mountains = [];
-  for (let i = 0; i < 3; i++) { const a = rng() * TAU, d = 110 + rng() * 160; if (WORLD.mountains.some((M) => Math.hypot(M.x - Math.cos(a) * d, M.z - Math.sin(a) * d) < 150)) { i--; continue; } WORLD.mountains.push({ x: Math.cos(a) * d, z: Math.sin(a) * d, r: 64 + rng() * 34, h: 22 + rng() * 14 }); }
+  const sc = WORLD.scale || 1;
+  for (let i = 0; i < (sc > 1.2 ? 4 : 3); i++) { const a = rng() * TAU, d = (110 + rng() * 160) * sc; if (WORLD.mountains.some((M) => Math.hypot(M.x - Math.cos(a) * d, M.z - Math.sin(a) * d) < 150)) { i--; continue; } WORLD.mountains.push({ x: Math.cos(a) * d, z: Math.sin(a) * d, r: 64 + rng() * 34, h: 22 + rng() * 14 }); }
   setupBiomes(rng);
   const raw = (x, z) => {
     const d = Math.sqrt(x * x + z * z), ang = Math.atan2(z, x);
@@ -1751,6 +1758,9 @@ function finalH(x, z) {
 function pickPOIs(rng, raw) {
   pickBiomePOIs(rng, raw);
   const types = ['city', 'docks', 'lighthouse', 'vault', 'factory', 'town', 'farm', 'quarry', 'town', 'cabins', 'town'];
+  if (WORLD.scale >= 1.15) types.push('town', 'cabins');
+  if (WORLD.scale >= 1.3) types.push('farm', 'quarry', 'docks');
+  if (WORLD.scale >= 1.45) types.push('factory', 'town', 'cabins');
   const used = {};
   for (const type of types) {
     const r = type === 'city' ? 56 : type === 'docks' ? 38 : type === 'lighthouse' ? 26 : type === 'vault' ? 30 : type === 'factory' ? 46 : 44;
@@ -1758,10 +1768,10 @@ function pickPOIs(rng, raw) {
     for (let tries = 0; tries < 500; tries++) {
       let x, z, sea = 0;
       if (coastal) {
-        sea = rng() * TAU; let d = 470;
+        sea = rng() * TAU; let d = WORLD.islandR + 110;
         for (; d > 100; d -= 4) if (raw(Math.cos(sea) * d, Math.sin(sea) * d) > 1.8) break;
         d -= 20; x = Math.cos(sea) * d; z = Math.sin(sea) * d;
-      } else { const a = rng() * TAU, d = Math.sqrt(rng()) * 290; x = Math.cos(a) * d; z = Math.sin(a) * d; }
+      } else { const a = rng() * TAU, d = Math.sqrt(rng()) * WORLD.islandR * 0.8; x = Math.cos(a) * d; z = Math.sin(a) * d; }
       const h = raw(x, z);
       if (h < 1.9 || h > 13) continue;
       const bw = biomeAt(x, z); if ((type === 'farm' || type === 'town') && (bw.desert > 0.4 || bw.snow > 0.5)) continue;
@@ -2157,8 +2167,9 @@ function genStructures() {
     endAsm();
   }
   let made = 0;
-  for (let i = 0; i < 300 && made < 12; i++) {
-    const a = rand() * TAU, d = Math.sqrt(rand()) * 330, x = Math.cos(a) * d, z = Math.sin(a) * d;
+  const nHouse = Math.round(12 * WORLD.scale * WORLD.scale);
+  for (let i = 0; i < 300 * WORLD.scale && made < nHouse; i++) {
+    const a = rand() * TAU, d = Math.sqrt(rand()) * WORLD.islandR * 0.92, x = Math.cos(a) * d, z = Math.sin(a) * d;
     if (groundH(x, z) < 2.5 || nearPOI(x, z, 30)) continue;
     if (makeBuilding(x, z, ri(2, 3), 2, rand() < 0.5 ? 2 : 1, rand() < 0.7 ? 'house' : 'shack', ri(0, 3), pick(HOUSE_COLORS))) made++;
   }
@@ -2180,8 +2191,9 @@ function finishInst(mesh, shadow) {
 }
 function genVegetation() {
   const P = WORLD.perlin; const pines = [], rounds = [], rocks = [], bushes = [], cacti = [];
-  for (let i = 0; i < 3200 && pines.length + rounds.length < 540; i++) {
-    const a = rand() * TAU, d = Math.sqrt(rand()) * 420, x = Math.cos(a) * d, z = Math.sin(a) * d;
+  const s2 = WORLD.scale * WORLD.scale, vegR = WORLD.islandR + 60;
+  for (let i = 0; i < 3200 * s2 && pines.length + rounds.length < 540 * s2; i++) {
+    const a = rand() * TAU, d = Math.sqrt(rand()) * vegR, x = Math.cos(a) * d, z = Math.sin(a) * d;
     const h = groundH(x, z); if (h < 2.3) continue;
     if (P(x * 0.008 + 50, z * 0.008) < -0.05 && rand() > 0.12) continue;
     if (nearPOI(x, z, 2, 'cabins')) continue;
@@ -2234,8 +2246,8 @@ function genVegetation() {
     finishInst(cm, true);
   }
 
-  for (let i = 0; i < 2400 && rocks.length < 190; i++) {
-    const a = rand() * TAU, d = Math.sqrt(rand()) * 420, x = Math.cos(a) * d, z = Math.sin(a) * d;
+  for (let i = 0; i < 2400 * s2 && rocks.length < 190 * s2; i++) {
+    const a = rand() * TAU, d = Math.sqrt(rand()) * vegR, x = Math.cos(a) * d, z = Math.sin(a) * d;
     const h = groundH(x, z); if (h < 1.2) continue;
     let quarry = false; for (const p of WORLD.pois) if (p.type === 'quarry' && Math.hypot(x - p.x, z - p.z) < p.r + 10) quarry = true;
     if (!quarry && (nearPOI(x, z, 2) || rand() < 0.4)) continue;
@@ -2257,8 +2269,8 @@ function genVegetation() {
   });
   finishInst(rockM, true);
 
-  for (let i = 0; i < 1500 && bushes.length < 240; i++) {
-    const a = rand() * TAU, d = Math.sqrt(rand()) * 410, x = Math.cos(a) * d, z = Math.sin(a) * d;
+  for (let i = 0; i < 1500 * s2 && bushes.length < 240 * s2; i++) {
+    const a = rand() * TAU, d = Math.sqrt(rand()) * (vegR - 10), x = Math.cos(a) * d, z = Math.sin(a) * d;
     const h = groundH(x, z); if (h < 2 || overlapsFootprint(x - 1, z - 1, x + 1, z + 1, 0.5)) continue;
     const bw = biomeAt(x, z, h); bushes.push({ x, z, y: h, s: rr(0.6, 1.3), desert: bw.desert, snow: bw.snow });
   }
@@ -2292,7 +2304,7 @@ function buildMapCanvas() {
   const S = 512, c = document.createElement('canvas'); c.width = c.height = S;
   const g = c.getContext('2d'), img = g.createImageData(S, S), d = img.data;
   for (let py = 0; py < S; py++) for (let px = 0; px < S; px++) {
-    const x = (px + 0.5) / S * 1000 - 500, z = (py + 0.5) / S * 1000 - 500, h = groundH(x, z);
+    const SPAN = WORLD.half * 2, x = (px + 0.5) / S * SPAN - WORLD.half, z = (py + 0.5) / S * SPAN - WORLD.half, h = groundH(x, z);
     let r, gg, b;
     if (h < 0) { const t = clamp(-h / 7, 0, 1); r = lerp(80, 24, t); gg = lerp(178, 96, t); b = lerp(220, 166, t); }
     else {
@@ -2303,7 +2315,8 @@ function buildMapCanvas() {
   }
   g.putImageData(img, 0, 0);
   g.fillStyle = 'rgba(246,240,228,.95)'; g.strokeStyle = 'rgba(50,40,30,.55)'; g.lineWidth = 1;
-  for (const f of WORLD.mapRects) { const x0 = (f[0] + 500) / 1000 * S, y0 = (f[1] + 500) / 1000 * S, w = (f[2] - f[0]) / 1000 * S, h = (f[3] - f[1]) / 1000 * S; g.fillRect(x0, y0, w, h); g.strokeRect(x0 + 0.5, y0 + 0.5, w, h); }
+  const SP = WORLD.half * 2;
+  for (const f of WORLD.mapRects) { const x0 = (f[0] + WORLD.half) / SP * S, y0 = (f[1] + WORLD.half) / SP * S, w = (f[2] - f[0]) / SP * S, h = (f[3] - f[1]) / SP * S; g.fillRect(x0, y0, w, h); g.strokeRect(x0 + 0.5, y0 + 0.5, w, h); }
   WORLD.mapCanvas = c;
 }
 
@@ -2316,8 +2329,9 @@ function disposeWorld() {
   });
   scene.remove(worldGroup); worldGroup = null;
 }
-function newWorld(seed) {
+function newWorld(seed, scale) {
   disposeWorld();
+  setWorldScale(scale || islandScaleFor(SETTINGS.bots));
   rand = mulberry32(seed);
   worldGroup = new THREE.Group(); scene.add(worldGroup);
   gridInit(); resetBuild(); resetItems(); resetGadgets(); VEHICLES.length = 0; SHAKING.clear(); ASM.length = 0;
@@ -2330,6 +2344,7 @@ function newWorld(seed) {
   genVegetation();
   spawnLoot();
   spawnForage();
+  NAV.build();
   buildMapCanvas();
   buildBlockedGrid();
   rand = Math.random;
@@ -2384,7 +2399,7 @@ function setupBiomes(rng) {
 function biomeSpot(rng, raw, which, r) {
   const B = WORLD.biome, ang = which === 'snow' ? B.snowA : B.desertA;
   for (let t = 0; t < 400; t++) {
-    const a = ang + (rng() - 0.5) * 1.3, d = 150 + rng() * 140, x = Math.cos(a) * d, z = Math.sin(a) * d;
+    const a = ang + (rng() - 0.5) * 1.3, d = (150 + rng() * 140) * WORLD.scale, x = Math.cos(a) * d, z = Math.sin(a) * d;
     const h = raw(x, z); if (h < 2 || h > 14) continue;
     const bw = biomeAt(x, z); if ((which === 'snow' ? bw.snow : bw.desert) < 0.75) continue;
     let ok = true; for (const p of WORLD.pois) if (Math.hypot(p.x - x, p.z - z) < p.r + r + 45) { ok = false; break; }
@@ -2565,6 +2580,107 @@ function updateWorldFx(dt) {
 }
 const _tmpCol = new THREE.Color();
 
+// ==== 04c_nav.js ====
+// ---------- navigation: 1 m walkability grid + A* with path smoothing ----------
+const NAV = (() => {
+  const S = 1; let MIN = -480, N = 960, NN = N * N;
+  let grid = null, g = null, par = null, stamp = null, gen = 1;
+  let heapI = null, heapF = null, hn = 0;
+  const idx = (x, z) => { const i = Math.floor((x - MIN) / S), j = Math.floor((z - MIN) / S); return i < 0 || j < 0 || i >= N || j >= N ? -1 : j * N + i; };
+  function build() {
+    const want = Math.round((WORLD.half - 20) * 2);
+    if (grid && want !== N) grid = null;
+    MIN = -(WORLD.half - 20); N = want; NN = N * N;
+    if (!grid) { grid = new Uint8Array(NN); g = new Float32Array(NN); par = new Int32Array(NN); stamp = new Uint32Array(NN); heapI = new Int32Array(1 << 17); heapF = new Float32Array(1 << 17); }
+    grid.fill(0);
+    // deep water is not walkable
+    for (let j = 0; j < N; j += 1) for (let i = 0; i < N; i += 1) if (groundH(MIN + (i + 0.5) * S, MIN + (j + 0.5) * S) < -2) grid[j * N + i] = 1;
+    // anything solid between knee and head height blocks, inflated by a body radius
+    const R = 0.4;
+    for (const c of colliders) {
+      if (c.shape !== 'box' || c.piece || c.vehicle || c.kind === 'gadget') continue;
+      const gy = groundH((c.minX + c.maxX) / 2, (c.minZ + c.maxZ) / 2);
+      if (c.maxY < gy + 0.65 || c.minY > gy + 1.9) continue;
+      const i0 = Math.max(0, Math.floor((c.minX - R - MIN) / S)), i1 = Math.min(N - 1, Math.floor((c.maxX + R - MIN) / S));
+      const j0 = Math.max(0, Math.floor((c.minZ - R - MIN) / S)), j1 = Math.min(N - 1, Math.floor((c.maxZ + R - MIN) / S));
+      for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) grid[j * N + i] = 1;
+    }
+  }
+  const free = (k) => k >= 0 && grid[k] === 0;
+  function nearestFree(k, r) {
+    if (free(k)) return k;
+    const i0 = k % N, j0 = (k / N) | 0;
+    for (let d = 1; d <= r; d++) for (let dj = -d; dj <= d; dj++) for (let di = -d; di <= d; di++) {
+      if (Math.abs(di) !== d && Math.abs(dj) !== d) continue;
+      const i = i0 + di, j = j0 + dj; if (i < 0 || j < 0 || i >= N || j >= N) continue;
+      const q = j * N + i; if (grid[q] === 0) return q;
+    }
+    return -1;
+  }
+  function push(k, f) { let i = hn++; while (i > 0) { const p = (i - 1) >> 1; if (heapF[p] <= f) break; heapI[i] = heapI[p]; heapF[i] = heapF[p]; i = p; } heapI[i] = k; heapF[i] = f; }
+  function pop() {
+    const top = heapI[0], k = heapI[--hn], f = heapF[hn]; let i = 0;
+    for (;;) { let c = i * 2 + 1; if (c >= hn) break; if (c + 1 < hn && heapF[c + 1] < heapF[c]) c++; if (heapF[c] >= f) break; heapI[i] = heapI[c]; heapF[i] = heapF[c]; i = c; }
+    heapI[i] = k; heapF[i] = f; return top;
+  }
+  // straight walkable line between two cells (supercover-ish stepping)
+  function lineFree(a, b) {
+    let x0 = a % N, y0 = (a / N) | 0; const x1 = b % N, y1 = (b / N) | 0;
+    const dx = Math.abs(x1 - x0), dy = Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1; let err = dx - dy;
+    for (let n = 0; n < 2000; n++) {
+      if (grid[y0 * N + x0]) return false;
+      if (x0 === x1 && y0 === y1) return true;
+      const e2 = 2 * err;
+      if (e2 > -dy) { err -= dy; x0 += sx; }
+      if (e2 < dx) { err += dx; y0 += sy; }
+      if (grid[y0 * N + x0 - sx] && grid[(y0 - sy) * N + x0]) return false;
+    }
+    return false;
+  }
+  const DI = [1, -1, 0, 0, 1, 1, -1, -1], DJ = [0, 0, 1, -1, 1, -1, 1, -1];
+  function find(sx, sz, tx, tz, maxExp) {
+    if (!grid) return null;
+    let s = nearestFree(idx(sx, sz), 3), t = nearestFree(idx(tx, tz), 6);
+    if (s < 0 || t < 0) return null;
+    if (lineFree(s, t)) return [[tx, tz]];
+    gen++; if (gen > 4e9) { stamp.fill(0); gen = 1; }
+    hn = 0; const ti = t % N, tj = (t / N) | 0;
+    g[s] = 0; par[s] = -1; stamp[s] = gen; push(s, 0);
+    let exp = 0, found = false;
+    maxExp = maxExp || 25000;
+    while (hn > 0 && exp < maxExp) {
+      const k = pop(); exp++;
+      if (k === t) { found = true; break; }
+      const ki = k % N, kj = (k / N) | 0, gk = g[k];
+      for (let d = 0; d < 8; d++) {
+        const i = ki + DI[d], j = kj + DJ[d]; if (i < 0 || j < 0 || i >= N || j >= N) continue;
+        const q = j * N + i; if (grid[q]) continue;
+        if (d >= 4 && (grid[kj * N + i] || grid[j * N + ki])) continue;   // no corner cutting
+        const ng = gk + (d < 4 ? 1 : 1.4142);
+        if (stamp[q] === gen && ng >= g[q]) continue;
+        stamp[q] = gen; g[q] = ng; par[q] = k;
+        const di = Math.abs(i - ti), dj = Math.abs(j - tj);
+        if (hn < heapI.length - 1) push(q, ng + (di + dj) + (1.4142 - 2) * Math.min(di, dj));
+      }
+    }
+    if (!found) return null;
+    const cells = []; for (let k = t; k >= 0; k = par[k]) cells.push(k);
+    cells.reverse();
+    // string-pull: keep only the turns we cannot see past
+    const out = []; let a = 0;
+    while (a < cells.length - 1) {
+      let b = a + 1;
+      for (let k = a + 2; k < cells.length; k += 2) { if (lineFree(cells[a], cells[k])) b = k; else break; }
+      if (b < cells.length - 1 && lineFree(cells[a], cells[cells.length - 1])) b = cells.length - 1;
+      out.push([MIN + ((cells[b] % N) + 0.5) * S, MIN + (((cells[b] / N) | 0) + 0.5) * S]);
+      a = b;
+    }
+    if (out.length) out[out.length - 1] = [tx, tz];
+    return out;
+  }
+  return { build, find, blocked: (x, z) => { const k = idx(x, z); return k < 0 || grid[k] === 1; }, get ready() { return !!grid; } };
+})();
+
 // ==== 05_build.js ====
 // ---------- building: walls, floors, ramps, cones on a 5-unit grid ----------
 const BMAT = { wood: { hp: 150, time: 1.0, name: 'Wood' }, stone: { hp: 300, time: 1.8, name: 'Stone' }, metal: { hp: 500, time: 2.6, name: 'Metal' } };
@@ -2672,7 +2788,7 @@ function buildTarget(type, c, yaw, pitch, rot) {
 function canPlace(s) {
   if (!s || s.L < -2 || s.L > 55) return false;
   if (PIECES.has(keyOf(s))) return false;
-  if (Math.abs(s.ix * CELL) > 480 || Math.abs(s.iz * CELL) > 480) return false;
+  if (Math.abs(s.ix * CELL) > WORLD.half - 20 || Math.abs(s.iz * CELL) > WORLD.half - 20) return false;
   if (computeGrounded(pieceBounds(s), s.t)) return true;
   for (const e of pieceEdges(s)) { const set = EDGES.get(e); if (set && set.size) return true; }
   return false;
@@ -3101,8 +3217,9 @@ function spawnLoot() {
     else if (rand() < 0.72) spawnFloorLoot(s.x, s.y, s.z);
   }
   let made = 0;
-  for (let i = 0; i < 400 && made < 26; i++) {
-    const a = rand() * TAU, d = Math.sqrt(rand()) * 360, x = Math.cos(a) * d, z = Math.sin(a) * d;
+  const nLoose = Math.round(26 * WORLD.scale * WORLD.scale);
+  for (let i = 0; i < 400 * WORLD.scale && made < nLoose; i++) {
+    const a = rand() * TAU, d = Math.sqrt(rand()) * WORLD.islandR, x = Math.cos(a) * d, z = Math.sin(a) * d;
     const h = groundH(x, z); if (h < 2 || overlapsFootprint(x - 1, z - 1, x + 1, z + 1, 0.5)) continue;
     if (rand() < 0.3) makeChest(x, h, z, rand() * TAU); else spawnFloorLoot(x, h, z);
     made++;
@@ -3161,6 +3278,7 @@ function openChest(ch, who) {
   if (ch.opened) return;
   ch.opened = true; ch.openT = 0;
   SFX.chestOpen(ch.pos);
+  makeNoise(ch.pos.x, ch.pos.y, ch.pos.z, 22, who || null);
   const fx = -Math.sin(ch.rot), fz = -Math.cos(ch.rot);
   (ch.supply ? supplyLoot() : chestLoot()).forEach((d, i) => {
     const a = (i - 1.5) * 0.45;
@@ -3334,8 +3452,8 @@ function spawnForage() {
   for (const t of WORLD.trees) {
     if (t.s && t.kind !== 'pine' && t.kind !== 'cactus' && Math.random() < 0.18) { const a = Math.random() * TAU, r = mr(1.2, 2.2); apples.push({ type: 'apple', x: t.x + Math.cos(a) * r, z: t.z + Math.sin(a) * r }); }
   }
-  for (let i = 0; i < 500 && shrooms.length < 60; i++) {
-    const a = Math.random() * TAU, d = mr(150, 460), x = Math.cos(a) * d, z = Math.sin(a) * d, h = groundH(x, z);
+  for (let i = 0; i < 500 && shrooms.length < 60 * WORLD.scale; i++) {
+    const a = Math.random() * TAU, d = mr(0.4, 1.3) * WORLD.islandR, x = Math.cos(a) * d, z = Math.sin(a) * d, h = groundH(x, z);
     if (h > 1.7 && h < 2.6 && !overlapsFootprint(x - 0.5, z - 0.5, x + 0.5, z + 0.5, 0)) for (let k = 0; k < 3; k++) shrooms.push({ type: 'shroom', x: x + mr(-1.2, 1.2), z: z + mr(-1.2, 1.2) });
   }
   const mk = (list, geo, mat, sy) => {
@@ -3454,7 +3572,7 @@ function updateVehicle(v, dt, input) {
   // integrate + resolve against the world
   const px = v.pos.x, pz = v.pos.z;
   v.pos.x += v.vel.x * dt; v.pos.z += v.vel.z * dt;
-  const lim = 480; v.pos.x = clamp(v.pos.x, -lim, lim); v.pos.z = clamp(v.pos.z, -lim, lim);
+  const lim = WORLD.half - 20; v.pos.x = clamp(v.pos.x, -lim, lim); v.pos.z = clamp(v.pos.z, -lim, lim);
   const R = 1.15;
   queryBox(v.pos.x - R - 0.5, v.pos.z - R - 0.5, v.pos.x + R + 0.5, v.pos.z + R + 0.5, _vq);
   const sp = Math.hypot(v.vel.x, v.vel.z);
@@ -3631,7 +3749,7 @@ function charPhysics(c, dt) {
     const px = c.pos.x, pz = c.pos.z;
     c.pos.x += c.vel.x * sdt; c.pos.z += c.vel.z * sdt;
     if (c.mode === 'ground' && groundH(c.pos.x, c.pos.z) < -2.5 && groundH(px, pz) >= -2.5) { c.pos.x = px; c.pos.z = pz; c.vel.x = 0; c.vel.z = 0; c.blocked = true; }
-    const lim = 485;
+    const lim = WORLD.half - 15;
     if (c.pos.x > lim) c.pos.x = lim; if (c.pos.x < -lim) c.pos.x = -lim; if (c.pos.z > lim) c.pos.z = lim; if (c.pos.z < -lim) c.pos.z = -lim;
     const r = c.radius + 0.6;
     queryBox(c.pos.x - r, c.pos.z - r, c.pos.x + r, c.pos.z + r, _cq);
@@ -3849,6 +3967,9 @@ function footstep(c, sp) {
   if (camera.position.distanceToSquared(c.pos) > 2025) return;
   _tmpV.set(c.pos.x, c.pos.y + 0.1, c.pos.z);
   SFX.step(_tmpV, surfaceOf(c), c.crouch ? 0.35 : sp > 7.5 ? 1.25 : 0.85);
+}
+function stepNoise(c, sp) {
+  if (!c.crouch) makeNoise(c.pos.x, c.pos.y, c.pos.z, sp > 7.5 ? 16 : 9, c);
 }
 function tickEye(c, dt) { c.eyeH += (c.height * 0.8 - c.eyeH) * Math.min(1, dt * 14); }
 function muzzleOf(c, out) {
@@ -4197,7 +4318,7 @@ function rigTargets(c, dt, A) {
   const sp = Math.hypot(c.vel.x, c.vel.z), amp = Math.min(1, sp / 6.5);
   an.phase += dt * sp * (c.crouch ? 2.2 : 1.55) * (vf < -0.5 ? -1 : 1);
   const ph = an.phase, s1 = Math.sin(ph), c1 = Math.cos(ph);
-  const si = Math.floor(ph / Math.PI); if (si !== an.stepI) { an.stepI = si; if (c.grounded && sp > 1.2 && !c.sliding) footstep(c, sp); }
+  const si = Math.floor(ph / Math.PI); if (si !== an.stepI) { an.stepI = si; if (c.grounded && sp > 1.2 && !c.sliding) { footstep(c, sp); if (c.isPlayer) stepNoise(c, sp); } }
   const sprint = sp > 7.5 ? Math.min(1, (sp - 7.5) / 1.3) : 0;
   const fwdK = sp > 0.2 ? Math.abs(vf) / sp : 1, sideK = sp > 0.2 ? vs / sp : 0;
   const stride = amp * (0.75 + sprint * 0.25);
@@ -4420,6 +4541,7 @@ function fireWeapon(c, w, origin, aim) {
   spread *= c.crouch ? 0.72 : c.sliding ? 1.3 : 1;
   if (def.id === 'sniper' && c.aiming) spread = moving ? 0.01 : 0;
   SFX.shot(def.sound, c.pos, c.isPlayer);
+  makeNoise(c.pos.x, c.pos.y, c.pos.z, def.id === 'sniper' || def.id === 'heavy' ? 150 : def.id === 'shotgun' || def.id === 'tac' || def.id === 'hand' ? 95 : 80, c);
   if (c.isPlayer) GAME.combatT = GAME.time;
   muzzleOf(c, _mz);
   const big = def.id === 'shotgun' || def.id === 'sniper' || def.id === 'rocket';
@@ -4457,6 +4579,7 @@ function nearMiss(o, d, t, def) {
 }
 function damageMult(src, target) {
   if (src && !src.isPlayer && target && target.isPlayer) return DIFF[SETTINGS.diff].dmg;
+  if (src && !src.isPlayer && target && !target.isPlayer) return 0.6;   // bots trade slower among themselves so matches breathe
   return 1;
 }
 function applyDamage(t, amt, src, wname, head, kind) {
@@ -4499,6 +4622,7 @@ function eliminate(t, src, wname, kind) {
   else if (src && src !== t) msg = nm(src) + ' eliminated ' + nm(t) + (wname ? ' with the ' + wname : '');
   else msg = nm(t) + ' was eliminated';
   HUD.feed(msg);
+  if (src && src !== t && src.alive && !src.isPlayer) src.killEmoteT = GAME.time + mr(0.8, 1.6);
   if (src && src !== t && src.alive) { src.kills++; if (src.isPlayer) { HUD.elimToast(t.name, src.kills); SFX.elim(); HUD.elimMark(); src.streak = (GAME.time - (src.lastElimT || -99) < 5) ? (src.streak || 1) + 1 : 1; src.lastElimT = GAME.time; if (src.streak >= 2) SFX.announce(['', '', 'Double elimination', 'Triple elimination', 'Quad elimination', 'Unstoppable'][Math.min(5, src.streak)], true); } }
   FX.elim(t.pos);
   GAME.alive = characters.reduce((n, c) => n + (c.alive && !c.npc ? 1 : 0), 0);
@@ -4614,6 +4738,7 @@ function updateRockets(dt) {
 const _eq = [];
 function explode(x, y, z, R) {
   SFX.explode({ x, y, z });
+  makeNoise(x, y, z, 160, R.owner || null);
   VFX.explosion(x, y, z, R.radius);
   const rad = R.radius;
   for (const c of characters) {
@@ -5084,6 +5209,8 @@ const VFX = (() => {
 // ---------- the storm ----------
 // [wait seconds, shrink seconds, end radius, damage per second]
 const STORM_PHASES = [[80, 45, 280, 1], [45, 40, 170, 1], [35, 35, 105, 2], [30, 30, 62, 5], [25, 25, 34, 8], [20, 22, 15, 10], [15, 25, 0, 12]];
+// early phases stretch with the island; the endgame circles stay the same size
+function phaseAt(i) { const P = STORM_PHASES[i], sc = WORLD.scale || 1, k = i < 3 ? 0.6 + 0.4 * sc : 1, rs = i < 3 ? sc : i === 3 ? Math.sqrt(sc) : 1; return [Math.round(P[0] * k), Math.round(P[1] * k), P[2] * rs, P[3]]; }
 const STORM = { idx: 0, state: 'wait', timer: 0, total: 1, cur: { x: 0, z: 0, r: 720 }, from: { x: 0, z: 0, r: 720 }, to: { x: 0, z: 0, r: 280 }, dmg: 1, tick: 1, warned: false, mesh: null, mat: null };
 function makeStormMesh() {
   STORM.mat = new THREE.ShaderMaterial({
@@ -5110,16 +5237,16 @@ function makeStormMesh() {
 }
 function nextCircle(prev, r, first) {
   for (let i = 0; i < 40; i++) {
-    const a = Math.random() * TAU, d = Math.random() * (first ? 110 : Math.max(0, prev.r - r));
+    const a = Math.random() * TAU, d = Math.random() * (first ? 110 * WORLD.scale : Math.max(0, prev.r - r));
     const x = (first ? 0 : prev.x) + Math.cos(a) * d, z = (first ? 0 : prev.z) + Math.sin(a) * d;
     if (groundH(x, z) > 1.2 || i === 39) return { x, z, r };
   }
 }
 function stormInit() {
   const S = STORM;
-  S.idx = 0; S.state = 'wait'; S.timer = STORM_PHASES[0][0]; S.total = S.timer; S.dmg = 1; S.tick = 1; S.warned = false;
-  S.cur = { x: 0, z: 0, r: 720 }; S.from = { x: 0, z: 0, r: 720 };
-  S.to = nextCircle(S.cur, STORM_PHASES[0][2], true);
+  S.idx = 0; S.state = 'wait'; S.timer = phaseAt(0)[0]; S.total = S.timer; S.dmg = 1; S.tick = 1; S.warned = false;
+  S.cur = { x: 0, z: 0, r: 720 * WORLD.scale }; S.from = { x: 0, z: 0, r: 720 * WORLD.scale };
+  S.to = nextCircle(S.cur, phaseAt(0)[2], true);
   S.mat.uniforms.t.value = 0;
 }
 function updateStorm(dt) {
@@ -5128,7 +5255,7 @@ function updateStorm(dt) {
   if (S.state === 'wait') {
     if (!S.warned && S.timer < 10 && GAME.time > 15) { S.warned = true; HUD.banner('Storm closing in 10 seconds', '', 2.2, 'storm'); SFX.alert(); }
     if (S.timer <= 0) {
-      const ph = STORM_PHASES[S.idx];
+      const ph = phaseAt(S.idx);
       S.state = 'shrink'; S.timer = ph[1]; S.total = ph[1]; S.from = { x: S.cur.x, z: S.cur.z, r: S.cur.r }; S.dmg = ph[3];
       HUD.banner('The storm is closing in', 'Get inside the white circle', 3, 'storm'); SFX.announce('The storm is closing');
       if (S.idx === 1 || S.idx === 3) setTimeout(() => { if (GAME.state !== 'menu') spawnSupply(); }, 4000);
@@ -5139,7 +5266,7 @@ function updateStorm(dt) {
     if (S.timer <= 0) {
       S.idx++;
       if (S.idx >= STORM_PHASES.length) { S.state = 'done'; S.timer = 0; S.dmg = 14; }
-      else { const ph = STORM_PHASES[S.idx]; S.state = 'wait'; S.timer = ph[0]; S.total = ph[0]; S.to = nextCircle(S.cur, ph[2]); S.warned = false; HUD.banner('New safe zone marked', 'The storm moves again in ' + ph[0] + ' seconds', 3, 'storm'); }
+      else { const ph = phaseAt(S.idx); S.state = 'wait'; S.timer = ph[0]; S.total = ph[0]; S.to = nextCircle(S.cur, ph[2]); S.warned = false; HUD.banner('New safe zone marked', 'The storm moves again in ' + ph[0] + ' seconds', 3, 'storm'); }
     }
   }
   S.tick -= dt;
@@ -5158,7 +5285,7 @@ function updateStorm(dt) {
 function inStorm(p) { return Math.hypot(p.x - STORM.cur.x, p.z - STORM.cur.z) > STORM.cur.r; }
 
 // ==== 10_bots.js ====
-// ---------- bots ----------
+// ---------- bots 2.0: personalities, sight + hearing, A* movement, cover, build fights, grenades, gadgets, AI LOD ----------
 const DIFF = {
   casual: { aim: 1.6, react: 1.5, build: 0.45, dmg: 0.55 },
   normal: { aim: 1.0, react: 1.0, build: 1.0, dmg: 0.8 },
@@ -5175,66 +5302,106 @@ function botName() {
   }
   return 'Bot' + Math.floor(Math.random() * 9999);
 }
+// how a bot likes to play: where it lands, how far it fights from, how much it builds, how it reacts to noise
+const PERSONAS = {
+  rusher:  { w: 3, drop: 'hot',  range: 1.0, pref: 0.75, build: 1.25, aggro: 0.9, camp: 0,   cover: 0.4 },
+  builder: { w: 2, drop: 'mid',  range: 1.0, pref: 0.9,  build: 1.9,  aggro: 0.6, camp: 0.1, cover: 0.5 },
+  sniper:  { w: 2, drop: 'edge', range: 1.6, pref: 1.6,  build: 0.8,  aggro: 0.25, camp: 0.6, cover: 0.8 },
+  camper:  { w: 2, drop: 'edge', range: 1.1, pref: 1.1,  build: 1.0,  aggro: 0.15, camp: 0.9, cover: 0.9 },
+  looter:  { w: 3, drop: 'mid',  range: 1.0, pref: 1.0,  build: 1.0,  aggro: 0.4, camp: 0.25, cover: 0.6 },
+};
+const PERSONA_W = Object.keys(PERSONAS).map((k) => [k, PERSONAS[k].w]);
 const bots = [];
 function makeBot() {
   const b = makeCharacter(false, botName(), randomOutfit());
+  const persona = weighted(PERSONA_W);
   Object.assign(b, {
+    persona, P: PERSONAS[persona], team: 0,
     skill: mr(0.25, 1), state: 'bus', think: Math.random() * 0.3, target: null, lastSeen: -99, lastSeenPos: new V3(), visible: false,
     moveTarget: new V3(), hasMove: false, moveKind: '', strafe: 1, strafeT: 0, reactT: 0, burst: 0, burstLen: 6,
     stuckT: 0, stuckCount: 0, lastPos: new V3(), harvestC: null, lootTarget: null, buildCD: 0, jumpAt: mr(0.05, 0.9),
     dropTarget: new V3(), aimSettle: 1, wantJump: false, healCD: 0, lootBan: new Set(), lootSince: 0,
+    alert: null, path: null, pathI: 0, pathT: -99, pathTo: null, pathQueued: false, cover: null, coverT: 0, rush: 0, rushT: 0, nadeCD: 0, gadgetCD: 0, killEmoteT: 0, emoteEnd: 0, lodAcc: 0, campSpot: null, wantSprint: false,
   });
   return b;
 }
+// each POI only takes so many landers; the rest spread out over the island
+const DROPS = new Map();
 function chooseDrop(b) {
   let x, z;
-  if (Math.random() < 0.7 && WORLD.pois.length) { const p = WORLD.pois[Math.floor(Math.random() * WORLD.pois.length)]; const a = Math.random() * TAU, d = Math.random() * p.r * 0.8; x = p.x + Math.cos(a) * d; z = p.z + Math.sin(a) * d; }
-  else { for (let i = 0; i < 30; i++) { const a = Math.random() * TAU, d = Math.sqrt(Math.random()) * 330; x = Math.cos(a) * d; z = Math.sin(a) * d; if (groundH(x, z) > 2) break; } }
+  const cap = (p) => Math.max(3, Math.round(p.r / 6));
+  const open = (p) => (DROPS.get(p) || 0) < cap(p);
+  const pois = WORLD.pois.filter((p) => p.type !== 'vault' && open(p));
+  const hot = pois.filter((p) => p.type === 'city' || p.type === 'factory' || p.type === 'lodge' || p.type === 'docks');
+  const mode = b.P.drop, r = Math.random();
+  if (mode === 'hot' && hot.length && r < 0.55) { const p = pick(hot); DROPS.set(p, (DROPS.get(p) || 0) + 1); const a = Math.random() * TAU, d = Math.random() * p.r * 0.8; x = p.x + Math.cos(a) * d; z = p.z + Math.sin(a) * d; }
+  else if (mode !== 'edge' && pois.length && r < 0.6) { const p = pick(pois); DROPS.set(p, (DROPS.get(p) || 0) + 1); const a = Math.random() * TAU, d = Math.random() * p.r * 0.8; x = p.x + Math.cos(a) * d; z = p.z + Math.sin(a) * d; }
+  else { for (let i = 0; i < 30; i++) { const a = Math.random() * TAU, d = Math.sqrt(Math.random()) * WORLD.islandR * 0.92; x = Math.cos(a) * d; z = Math.sin(a) * d; if (groundH(x, z) > 2) break; } }
   b.dropTarget.set(x, 0, z);
 }
+// ---------- perception ----------
+const NOISE = [];
+function makeNoise(x, y, z, r, src) { NOISE.push({ x, y, z, r, src, t: GAME.time }); if (NOISE.length > 96) NOISE.shift(); }
+function sameTeam(a, b) { return !!(a && b && a.team && a.team === b.team); }
 const _e1 = new V3(), _e2 = new V3(), _e3 = new V3();
 function hasLOS(a, b) {
   eyeOf(a, _e1);
-  let dx = b.pos.x - _e1.x, dy = b.pos.y + 1.2 - _e1.y, dz = b.pos.z - _e1.z;
+  let dx = b.pos.x - _e1.x, dy = b.pos.y + (b.height || 2) * 0.6 - _e1.y, dz = b.pos.z - _e1.z;
   const d = Math.sqrt(dx * dx + dy * dy + dz * dz); if (d < 0.5) return true;
   dx /= d; dy /= d; dz /= d;
   return raycastWorld(_e1.x, _e1.y, _e1.z, dx, dy, dz, d, true).t >= d - 0.4;
 }
 function hasWeapon(c) { for (const s of c.inv) if (s && s.kind === 'weapon') return true; return false; }
 function findTarget(b) {
-  const range = b.inv.some((s) => s && s.id === 'sniper') ? 150 : 90;
+  const longGun = b.inv.some((s) => s && (s.id === 'sniper' || s.id === 'heavy'));
+  const range = (longGun ? 160 : 95) * b.P.range;
   let best = null, bd = range * range;
   for (const c of characters) {
-    if (c === b || !c.alive || c.mode === 'bus') continue;
+    if (c === b || !c.alive || c.mode === 'bus' || sameTeam(b, c)) continue;
+    if (b.npc && c.npc) continue;
     const dx = c.pos.x - b.pos.x, dy = c.pos.y - b.pos.y, dz = c.pos.z - b.pos.z, d2 = dx * dx + dy * dy + dz * dz;
     if (d2 >= bd) continue;
     if (c.mode !== 'ground' && d2 > 900) continue;
-    if (c !== b.lastAttacker && d2 > 64 && Math.abs(angleDiff(b.yaw, Math.atan2(-dx, -dz))) > 1.9) continue;
+    // field of view, unless they shot us or we heard them
+    const heard = b.alert && b.alert.src === c && GAME.time - b.alert.t < 3;
+    if (c !== b.lastAttacker && !heard && d2 > 64 && Math.abs(angleDiff(b.yaw, Math.atan2(-dx, -dz))) > 1.9) continue;
+    if (c.crouch && d2 > 900 && Math.random() < 0.5) continue;
     if (!hasLOS(b, c)) continue;
     best = c; bd = d2;
   }
   return best;
 }
+function hear(b) {
+  for (let i = NOISE.length - 1; i >= 0; i--) {
+    const n = NOISE[i]; if (GAME.time - n.t > 1.5) break;
+    if (n.src === b || sameTeam(n.src, b) || (b.npc && n.src && n.src.npc)) continue;
+    const dx = n.x - b.pos.x, dz = n.z - b.pos.z;
+    if (dx * dx + dz * dz < n.r * n.r) { b.alert = { x: n.x, z: n.z, t: GAME.time, src: n.src }; return true; }
+  }
+  return false;
+}
+// ---------- weapons + loot ----------
 function weaponFit(id, d) { const f = WEAPONS[id].fit; if (!f) return 0; return d >= f[0] && d <= f[1] ? f[2] : f[3]; }
 function chooseWeapon(b, d) {
   let best = -1, bs = -999, cur = -999;
   for (let i = 0; i < 5; i++) {
     const s = b.inv[i]; if (!s || s.kind !== 'weapon') continue;
-    const sc = weaponFit(s.id, d) + s.rarity * 4 - (s.mag <= 0 ? 15 : 0);
+    const sc = weaponFit(s.id, d) + s.rarity * 4 - (s.mag <= 0 ? 15 : 0) + (b.persona === 'sniper' && (s.id === 'sniper' || s.id === 'heavy') ? 15 : 0);
     if (i === b.slot) cur = sc;
     if (sc > bs) { bs = sc; best = i; }
   }
   if (best >= 0 && best !== b.slot && bs > cur + 10) { selectSlot(b, best); b.fireCD = Math.max(b.fireCD, 0.35); }
   if (best < 0 && b.slot !== -1) selectSlot(b, -1);
 }
-function prefDist(b) { const w = curWeapon(b); if (!w) return 2; return WEAPONS[w.id].pref || 20; }
+function prefDist(b) { const w = curWeapon(b); if (!w) return 2; return (WEAPONS[w.id].pref || 20) * b.P.pref; }
 function countCons(b) { let n = 0; for (const s of b.inv) if (s && s.kind === 'consumable') n += s.count; return n; }
+function invCount(b, id) { let n = 0; for (const s of b.inv) if (s && s.kind === 'consumable' && s.id === id) n += s.count; return n; }
 function botWants(b, it) {
   if (it.kind === 'mats') return true;
   if (it.kind === 'ammo') return false;
   if (it.kind === 'consumable') {
     if (b.inv.some((s) => s && s.kind === 'consumable' && s.id === it.id && s.count < CONSUMABLES[it.id].stack)) return true;
-    return countCons(b) < 4 && freeSlot(b) >= 0;
+    return countCons(b) < 5 && freeSlot(b) >= 0;
   }
   if (b.inv.some((s) => s && s.kind === 'weapon' && s.id === it.id && s.rarity >= it.rarity)) return false;
   let nW = 0, worst = Infinity;
@@ -5264,11 +5431,11 @@ function botPickupNearby(b) {
 }
 function needsLoot(b) {
   let nW = 0; for (const s of b.inv) if (s && s.kind === 'weapon') nW++;
-  return nW < 2 || countCons(b) < 1;
+  return nW < 2 || countCons(b) < 1 + (b.persona === 'looter' ? 2 : 0);
 }
 function lootValid(t) { return t.opened === undefined ? t.alive : !t.opened; }
 function findLoot(b) {
-  let best = null, bd = 70 * 70;
+  let best = null, bd = 75 * 75;
   for (const ch of CHESTS) {
     if (ch.opened || b.lootBan.has(ch)) continue;
     const dy = ch.pos.y - b.pos.y; if (dy > 2.5 || dy < -6) continue;
@@ -5309,64 +5476,51 @@ function pickRoam(b, circ) {
   for (let i = 0; i < 8; i++) {
     const a = Math.random() * TAU, r = Math.sqrt(Math.random()) * circ.r * 0.75;
     const x = circ.x + Math.cos(a) * r, z = circ.z + Math.sin(a) * r;
-    if (groundH(x, z) > 1) { b.moveTarget.set(x, 0, z); b.hasMove = true; b.moveKind = 'roam'; return; }
+    if (groundH(x, z) > 1 && !NAV.blocked(x, z)) { setMove(b, x, z, 'roam'); return; }
   }
-  b.moveTarget.set(circ.x, 0, circ.z); b.hasMove = true; b.moveKind = 'roam';
+  setMove(b, circ.x, circ.z, 'roam');
 }
-function botThink(b) {
-  const now = GAME.time, D = DIFF[SETTINGS.diff];
-  const t = findTarget(b);
-  if (t) {
-    if (b.target !== t) { b.target = t; b.reactT = lerp(0.75, 0.25, b.skill) * D.react; b.aimSettle = 1.8; }
-    b.visible = true; b.lastSeen = now; b.lastSeenPos.copy(t.pos);
-  } else { b.visible = false; if (b.target && (!b.target.alive || now - b.lastSeen > 5)) b.target = null; }
-  if (b.npc) {
-    // vault crew hold their post and fight whatever comes close
-    if (b.target && b.target.alive && (b.visible || now - b.lastSeen < 3) && b.pos.distanceTo(b.post) < 55) { b.state = 'fight'; chooseWeapon(b, b.pos.distanceTo(b.target.pos)); if (!b.visible) { b.moveTarget.copy(b.lastSeenPos); b.hasMove = true; } return; }
-    if (b.hp < 60 && now > b.healCD) { const s = pickHeal(b); if (s >= 0) { selectSlot(b, s); if (!startUse(b)) b.healCD = now + 4; } }
-    if (b.using) { b.state = 'heal'; return; }
-    b.state = 'guard';
-    if (!b.hasMove || Math.hypot(b.pos.x - b.post.x, b.pos.z - b.post.z) > 7) { b.moveTarget.set(b.post.x + mr(-4, 4), 0, b.post.z + mr(-4, 4)); b.hasMove = true; b.moveKind = 'guard'; }
-    if (b.slot < 0 || !curWeapon(b)) { const k = b.inv.findIndex((s) => s && s.kind === 'weapon'); if (k >= 0) selectSlot(b, k); }
-    return;
+// campers hold a building near the safe zone
+function pickCamp(b, circ) {
+  let best = null, bd = 1e9;
+  for (const s of WORLD.lootSpots) {
+    if (s.kind !== 'chest' && s.kind !== 'floor') continue;
+    const dz = Math.hypot(s.x - circ.x, s.z - circ.z); if (dz > circ.r * 0.7) continue;
+    if (Math.abs(s.y - groundH(s.x, s.z)) > 1.5) continue;
+    const d = Math.hypot(s.x - b.pos.x, s.z - b.pos.z) + Math.random() * 40;
+    if (d < bd) { bd = d; best = s; }
   }
-  botPickupNearby(b);
-  const S = STORM;
-  const circ = (S.state === 'shrink' || (S.state === 'wait' && S.timer < 25)) ? S.to : S.cur;
-  const dC = Math.hypot(b.pos.x - circ.x, b.pos.z - circ.z);
-  const outside = dC > Math.max(4, circ.r * 0.9), stormy = inStorm(b.pos);
-  if (!b.using && !b.visible && now - b.lastHurt > 2 && (b.hp < 70 || b.shield < 50) && now > b.healCD && !(stormy && b.hp > 30)) {
-    const s = pickHeal(b);
-    if (s >= 0) { selectSlot(b, s); if (!startUse(b)) b.healCD = now + 3; }
+  b.campSpot = best ? new V3(best.x, best.y, best.z) : null;
+}
+// ---------- movement plumbing ----------
+function setMove(b, x, z, kind) {
+  const changed = !b.hasMove || Math.hypot(b.moveTarget.x - x, b.moveTarget.z - z) > 3;
+  b.moveTarget.set(x, 0, z); b.hasMove = true; b.moveKind = kind;
+  if (changed) wantPath(b, x, z);
+}
+const PATHQ = [];
+function wantPath(b, x, z) {
+  b.pathTo = { x, z };
+  if (!b.pathQueued) { b.pathQueued = true; PATHQ.push(b); }
+}
+function processPaths(budget) {
+  while (budget-- > 0 && PATHQ.length) {
+    const b = PATHQ.shift(); b.pathQueued = false;
+    if (!b.alive || !b.pathTo || b.mode !== 'ground') continue;
+    const elevated = b.pos.y > walkH(b.pos.x, b.pos.z) + 1.4;
+    b.path = elevated || !NAV.ready ? null : NAV.find(b.pos.x, b.pos.z, b.pathTo.x, b.pathTo.z, 22000);
+    b.pathI = 0; b.pathT = GAME.time;
   }
-  if (b.using) { b.state = 'heal'; b.hasMove = false; return; }
-  if (b.target && b.target.alive && (b.visible || now - b.lastSeen < 4) && !(stormy && dC > circ.r + 30)) {
-    const d = b.pos.distanceTo(b.target.pos);
-    if (hasWeapon(b) || (d < 4 && b.lastAttacker === b.target && now - b.lastHurt < 3)) {
-      b.state = 'fight'; b.harvestC = null;
-      chooseWeapon(b, d);
-      if (!b.visible) { b.moveTarget.copy(b.lastSeenPos); b.hasMove = true; b.moveKind = 'chase'; }
-      return;
-    }
+}
+// next point to walk toward: path waypoint if we have one, else the raw move target
+function waypoint(b) {
+  const P = b.path;
+  if (P && b.pathI < P.length) {
+    let w = P[b.pathI];
+    while (Math.hypot(w[0] - b.pos.x, w[1] - b.pos.z) < 1.3 && b.pathI < P.length - 1) { b.pathI++; w = P[b.pathI]; }
+    return w;
   }
-  if (b.harvestC && b.harvestC.alive) { b.state = 'harvest'; return; }
-  b.harvestC = null;
-  if (outside || stormy) {
-    b.state = 'storm';
-    if (!b.hasMove || b.moveKind !== 'storm' || Math.hypot(b.moveTarget.x - circ.x, b.moveTarget.z - circ.z) > circ.r * 0.8) {
-      const a = Math.random() * TAU, r = Math.sqrt(Math.random()) * circ.r * 0.6;
-      b.moveTarget.set(circ.x + Math.cos(a) * r, 0, circ.z + Math.sin(a) * r); b.hasMove = true; b.moveKind = 'storm';
-    }
-    return;
-  }
-  if (needsLoot(b)) {
-    if (b.lootTarget && now - b.lootSince > 14) { b.lootBan.add(b.lootTarget); b.lootTarget = null; }
-    if (!b.lootTarget || !lootValid(b.lootTarget)) { b.lootTarget = findLoot(b); b.lootSince = now; }
-    if (b.lootTarget) { b.state = 'loot'; const p = b.lootTarget.pos; b.moveTarget.set(p.x, 0, p.z); b.hasMove = true; b.moveKind = 'loot'; return; }
-  }
-  if (b.mats.wood + b.mats.stone + b.mats.metal < 60 && Math.random() < 0.1) { const tr = findHarvest(b, 18); if (tr) { b.harvestC = tr; b.state = 'harvest'; return; } }
-  b.state = 'roam';
-  if (!b.hasMove || b.moveKind !== 'roam') pickRoam(b, circ);
+  return null;
 }
 function blockedAhead(b, dx, dz) {
   const ox = b.pos.x, oy = b.pos.y + 0.9, oz = b.pos.z;
@@ -5375,6 +5529,22 @@ function blockedAhead(b, dx, dz) {
   if (groundH(ox + dx * 2.5, oz + dz * 2.5) < -2.3) return true;
   return false;
 }
+// ---------- cover ----------
+function findCover(b, from) {
+  eyeOf(from, _e2);
+  let best = null, bs = 1e9;
+  for (let i = 0; i < 18; i++) {
+    const a = (i / 18) * TAU, r = i % 2 ? 4 : 8, x = b.pos.x + Math.cos(a) * r, z = b.pos.z + Math.sin(a) * r;
+    if (NAV.blocked(x, z)) continue;
+    const y = walkH(x, z) + 1.3;
+    const dx = _e2.x - x, dy = _e2.y - y, dz = _e2.z - z, d = Math.hypot(dx, dy, dz);
+    const h = raycastWorld(x, y, z, dx / d, dy / d, dz / d, d, true);
+    if (h.t >= d - 0.5) continue;               // the enemy can see this spot
+    const sc = r + Math.max(0, 14 - d) * 0.5;
+    if (sc < bs) { bs = sc; best = new V3(x, 0, z); }
+  }
+  return best;
+}
 function tryLoot(b) {
   const L = b.lootTarget; if (!L) return;
   const dx = L.pos.x - b.pos.x, dz = L.pos.z - b.pos.z;
@@ -5382,10 +5552,108 @@ function tryLoot(b) {
   if (L.opened === false) openChest(L, b);
   b.lootTarget = null; b.hasMove = false; b.think = 0.5;
 }
+// ---------- brain ----------
+function botThink(b) {
+  const now = GAME.time, D = DIFF[SETTINGS.diff];
+  const t = findTarget(b);
+  if (t) {
+    if (b.target !== t) { b.target = t; b.reactT = lerp(1.1, 0.4, b.skill) * D.react * (b.lastAttacker === t ? 0.6 : 1); b.aimSettle = 2.4; }
+    b.visible = true; b.lastSeen = now; b.lastSeenPos.copy(t.pos);
+  } else { b.visible = false; if (b.target && (!b.target.alive || now - b.lastSeen > 5)) b.target = null; }
+  if (!b.visible) hear(b);
+  if (b.emote) { if (now > b.emoteEnd || b.visible || now - b.lastHurt < 1) stopEmote(b); else return; }
+  if (b.npc) { npcThink(b, now); return; }
+  botPickupNearby(b);
+  const S = STORM;
+  const circ = (S.state === 'shrink' || (S.state === 'wait' && S.timer < 25)) ? S.to : S.cur;
+  const dC = Math.hypot(b.pos.x - circ.x, b.pos.z - circ.z);
+  const outside = dC > Math.max(4, circ.r * 0.9), stormy = inStorm(b.pos);
+  b.wantSprint = true;
+  // taunt after a kill when nobody is around
+  if (b.killEmoteT && now > b.killEmoteT) { b.killEmoteT = 0; if (!b.visible && Math.random() < 0.45 && b.grounded) { playEmote(b, pick(['victory', 'robot', 'hype', 'shuffle', 'wave'])); b.emoteEnd = now + mr(1.6, 2.6); b.hasMove = false; return; } }
+  // heal when safe (in cover if we have it)
+  if (!b.using && !b.visible && now - b.lastHurt > 2 && (b.hp < 70 || b.shield < 50) && now > b.healCD && !(stormy && b.hp > 30)) {
+    if (b.hp < 60 && invCount(b, 'campfire') && now > b.gadgetCD) { const k = b.inv.findIndex((s) => s && s.id === 'campfire'); if (k >= 0) { selectSlot(b, k); useGadget(b, b.inv[k], eyeOf(b, _e1), _e2.set(-Math.sin(b.yaw), 0, -Math.cos(b.yaw))); b.gadgetCD = now + 20; } }
+    const s = pickHeal(b);
+    if (s >= 0) { selectSlot(b, s); if (!startUse(b)) b.healCD = now + 3; }
+  }
+  if (b.using) { b.state = 'heal'; b.hasMove = false; setCrouch(b, true); return; }
+  if (b.crouch && b.state !== 'camp') setCrouch(b, false);
+  // fight
+  if (b.target && b.target.alive && (b.visible || now - b.lastSeen < 4) && !(stormy && dC > circ.r + 30)) {
+    const d = b.pos.distanceTo(b.target.pos);
+    // pick fights we can win: fresh landers loot unless someone is close, nobody starts fights out of their gun's range
+    const provoked = b.lastAttacker === b.target && now - b.lastHurt < 6;
+    const w = curWeapon(b), reach = w ? (WEAPONS[w.id].fit ? WEAPONS[w.id].fit[1] : 60) : 4;
+    const fresh = now - (b.landedAt || 0) < 60 && !provoked && d > 12;
+    const tooFar = !provoked && d > Math.min(reach, 70) * (b.persona === 'rusher' ? 1.1 : 0.85) && b.state !== 'fight';
+    const weak = !provoked && b.shield <= 0 && b.hp < 60 && d > 15;
+    if ((fresh || tooFar || weak) && !b.npc) { b.target = null; b.visible = false; }
+    else if (hasWeapon(b) || (d < 4 && provoked)) {
+      b.state = 'fight'; b.harvestC = null; b.wantSprint = false;
+      chooseWeapon(b, d);
+      // break line of sight to heal or reload when losing the trade
+      const losing = b.hp + b.shield < 55 && (b.target.hp + b.target.shield) > b.hp + b.shield + 20;
+      if ((losing || (b.reloadT > 0 && d < 30)) && Math.random() < b.P.cover && now > b.coverT) { b.cover = findCover(b, b.target); b.coverT = now + 4; if (b.cover) wantPath(b, b.cover.x, b.cover.z); }
+      if (b.cover && Math.hypot(b.cover.x - b.pos.x, b.cover.z - b.pos.z) < 1.2 && !b.visible) { b.cover = null; b.healCD = 0; }
+      if (!b.visible && !b.cover) setMove(b, b.lastSeenPos.x, b.lastSeenPos.z, 'chase');
+      return;
+    }
+  }
+  b.cover = null;
+  if (b.harvestC && b.harvestC.alive) { b.state = 'harvest'; return; }
+  b.harvestC = null;
+  if (outside || stormy) {
+    b.state = 'storm';
+    // long rotations: drop a launch pad and fly
+    if (dC > 220 && invCount(b, 'launchpad') && now > b.gadgetCD && b.grounded) { const k = b.inv.findIndex((s) => s && s.id === 'launchpad'); selectSlot(b, k); b.yaw = Math.atan2(-(circ.x - b.pos.x), -(circ.z - b.pos.z)); if (useGadget(b, b.inv[k], eyeOf(b, _e1), _e2)) { b.gadgetCD = now + 30; b.dropTarget.set(circ.x, 0, circ.z); setMove(b, b.pos.x - Math.sin(b.yaw) * 3, b.pos.z - Math.cos(b.yaw) * 3, 'pad'); return; } }
+    if (!b.hasMove || b.moveKind !== 'storm' || Math.hypot(b.moveTarget.x - circ.x, b.moveTarget.z - circ.z) > circ.r * 0.8) {
+      const a = Math.random() * TAU, r = Math.sqrt(Math.random()) * circ.r * 0.6;
+      setMove(b, circ.x + Math.cos(a) * r, circ.z + Math.sin(a) * r, 'storm');
+    }
+    return;
+  }
+  // investigate gunfire, depending on temperament
+  if (b.alert && now - b.alert.t < 6 && hasWeapon(b) && now > (b.huntCD || 0) && Math.hypot(b.alert.x - b.pos.x, b.alert.z - b.pos.z) < 70 && Math.random() < b.P.aggro * 0.6) {
+    b.huntCD = now + 20;
+    b.state = 'hunt'; b.huntUntil = now + 12; setMove(b, b.alert.x + mr(-6, 6), b.alert.z + mr(-6, 6), 'hunt'); b.wantSprint = Math.hypot(b.alert.x - b.pos.x, b.alert.z - b.pos.z) > 40;
+    if (b.alert.src && b.alert.src.alive) b.yaw = turnToward(b.yaw, Math.atan2(-(b.alert.x - b.pos.x), -(b.alert.z - b.pos.z)), 0.5);
+    return;
+  }
+  if (b.state === 'hunt' && now < (b.huntUntil || 0) && b.hasMove) return;
+  if (needsLoot(b)) {
+    if (b.lootTarget && now - b.lootSince > 14) { b.lootBan.add(b.lootTarget); b.lootTarget = null; }
+    if (!b.lootTarget || !lootValid(b.lootTarget)) { b.lootTarget = findLoot(b); b.lootSince = now; }
+    if (b.lootTarget) { b.state = 'loot'; const p = b.lootTarget.pos; setMove(b, p.x, p.z, 'loot'); return; }
+  }
+  if (b.mats.wood + b.mats.stone + b.mats.metal < 80 && Math.random() < 0.1) { const tr = findHarvest(b, 18); if (tr) { b.harvestC = tr; b.state = 'harvest'; return; } }
+  // campers settle in; others roam
+  if (Math.random() < b.P.camp * 0.2 && !b.campSpot) pickCamp(b, circ);
+  if (b.campSpot && Math.hypot(b.campSpot.x - circ.x, b.campSpot.z - circ.z) < circ.r * 0.8) {
+    b.state = 'camp';
+    if (Math.hypot(b.campSpot.x - b.pos.x, b.campSpot.z - b.pos.z) > 2) setMove(b, b.campSpot.x, b.campSpot.z, 'camp');
+    else { b.hasMove = false; b.wantSprint = false; if (!b.crouch) setCrouch(b, true); b.yaw += 0.6 * (Math.random() - 0.5); }
+    return;
+  }
+  b.campSpot = null;
+  b.state = 'roam';
+  if (!b.hasMove || b.moveKind !== 'roam') pickRoam(b, circ);
+}
+// vault crew hold their post and fight whatever comes close
+function npcThink(b, now) {
+  if (b.target && b.target.alive && (b.visible || now - b.lastSeen < 3) && b.pos.distanceTo(b.post) < 55) { b.state = 'fight'; chooseWeapon(b, b.pos.distanceTo(b.target.pos)); if (!b.visible) setMove(b, b.lastSeenPos.x, b.lastSeenPos.z, 'chase'); return; }
+  if (b.hp < 60 && now > b.healCD) { const s = pickHeal(b); if (s >= 0) { selectSlot(b, s); if (!startUse(b)) b.healCD = now + 4; } }
+  if (b.using) { b.state = 'heal'; return; }
+  b.state = 'guard'; b.wantSprint = false;
+  if (b.alert && now - b.alert.t < 4 && Math.hypot(b.alert.x - b.post.x, b.alert.z - b.post.z) < 45) b.yaw = turnToward(b.yaw, Math.atan2(-(b.alert.x - b.pos.x), -(b.alert.z - b.pos.z)), 0.6);
+  if (!b.hasMove || Math.hypot(b.pos.x - b.post.x, b.pos.z - b.post.z) > 7) setMove(b, b.post.x + mr(-4, 4), b.post.z + mr(-4, 4), 'guard');
+  if (b.slot < 0 || !curWeapon(b)) { const k = b.inv.findIndex((s) => s && s.kind === 'weapon'); if (k >= 0) selectSlot(b, k); }
+}
 function onBotDamaged(b, src) {
   const now = GAME.time, D = DIFF[SETTINGS.diff];
   b.lastAttacker = src;
-  if (src.alive) {
+  if (b.emote) stopEmote(b);
+  if (src.alive && !sameTeam(b, src)) {
     const dS = b.pos.distanceTo(src.pos);
     if (!b.target || b.target === src || !b.target.alive || dS < b.pos.distanceTo(b.target.pos) * 0.8) {
       if (b.target !== src) { b.target = src; b.reactT = lerp(0.5, 0.15, b.skill) * D.react; b.aimSettle = 1.6; }
@@ -5393,26 +5661,52 @@ function onBotDamaged(b, src) {
     }
   }
   if (b.using && Math.random() < 0.7) b.using = null;
-  if (b.mode !== 'ground') return;
-  const mats = b.mats.wood + b.mats.stone + b.mats.metal;
-  if (mats >= 10 && now > b.buildCD && Math.random() < (0.3 + 0.5 * b.skill) * D.build) {
-    b.buildCD = now + mr(1.0, 2.6) / D.build;
+  if (b.mode !== 'ground' || b.vehicle) return;
+  const mats = b.mats.wood + b.mats.stone + b.mats.metal, bk = b.P.build * D.build;
+  if (mats >= 10 && now > b.buildCD && Math.random() < (0.3 + 0.5 * b.skill) * bk) {
+    b.buildCD = now + mr(1.0, 2.6) / bk;
     const yaw = Math.atan2(-(src.pos.x - b.pos.x), -(src.pos.z - b.pos.z));
     if (b.hp + b.shield < 70 && Math.random() < 0.55 && mats >= 40) {
       for (const y of [-Math.PI / 2, Math.PI, Math.PI / 2, 0]) tryBuild(b, buildTarget('wall', b, y, 0, 0));
       tryBuild(b, buildTarget('cone', b, yaw, 1.0, 0));
     } else {
       tryBuild(b, buildTarget('wall', b, yaw, 0, 0));
-      if (b.skill > 0.55 && Math.random() < 0.5) { tryBuild(b, buildTarget('ramp', b, yaw, 0, 0)); }
+      // skilled builders take height: wall + ramp, and keep pushing
+      if (b.skill > 0.45 && mats >= 40 && Math.random() < 0.35 * b.P.build) { tryBuild(b, buildTarget('ramp', b, yaw, 0, 0)); b.rush = 3; b.rushT = 0; }
     }
   }
+}
+// ramp rush: wall + ramp a step ahead, climb, repeat
+function rampRush(b, dt) {
+  const tgt = b.target; if (!tgt || b.rush <= 0) return false;
+  const mats = b.mats.wood + b.mats.stone + b.mats.metal; if (mats < 20) { b.rush = 0; return false; }
+  b.rushT -= dt;
+  if (b.rushT <= 0) {
+    b.rushT = 0.45 + Math.random() * 0.2; b.rush--;
+    const yaw = Math.atan2(-(tgt.pos.x - b.pos.x), -(tgt.pos.z - b.pos.z));
+    tryBuild(b, buildTarget('ramp', b, yaw, -0.2, 0)); tryBuild(b, buildTarget('wall', b, yaw, 0.15, 0));
+  }
+  return true;
 }
 function botCombat(b, dt) {
   const tgt = b.target; if (!tgt || !tgt.alive) return;
   if (b.using) { if (b.visible && b.pos.distanceTo(tgt.pos) < 25) b.using = null; else return; }
   if (b.reactT > 0) { b.reactT -= dt; return; }
   const w = curWeapon(b);
-  if (!b.visible) { b.aiming = false; if (w && b.reloadT <= 0 && w.mag < WEAPONS[w.id].mag * 0.5) startReload(b); return; }
+  b.nadeCD -= dt;
+  if (!b.visible) {
+    b.aiming = false;
+    // flush them out of cover with a grenade
+    const dl = b.pos.distanceTo(b.lastSeenPos);
+    if (b.nadeCD <= 0 && GAME.time - b.lastSeen < 3 && dl > 7 && dl < 26 && invCount(b, 'grenade') && b.throwT <= 0) {
+      const k = b.inv.findIndex((s) => s && s.id === 'grenade'); const prev = b.slot; selectSlot(b, k);
+      eyeOf(b, _e1); _e2.set(b.lastSeenPos.x - _e1.x, b.lastSeenPos.y + 1 - _e1.y + dl * 0.18, b.lastSeenPos.z - _e1.z).normalize();
+      useGadget(b, b.inv[k], _e1, _e2); b.nadeCD = mr(5, 9); if (prev >= 0 && b.inv[prev]) selectSlot(b, prev);
+      return;
+    }
+    if (w && b.reloadT <= 0 && w.mag < WEAPONS[w.id].mag * 0.5) startReload(b);
+    return;
+  }
   const d = b.pos.distanceTo(tgt.pos);
   if (!w) {
     if (d < 2.8 && b.swingT <= 0) { eyeOf(b, _e1); _e2.set(tgt.pos.x - _e1.x, tgt.pos.y + 1.1 - _e1.y, tgt.pos.z - _e1.z).normalize(); meleeSwing(b, _e1.x, _e1.y, _e1.z, _e2, 3); }
@@ -5428,9 +5722,12 @@ function botCombat(b, dt) {
   const D = DIFF[SETTINGS.diff];
   eyeOf(b, _e1);
   const head = Math.random() < 0.15 * b.skill;
-  _e2.set(tgt.pos.x - _e1.x, tgt.pos.y + (head ? 1.74 : 1.05) - _e1.y, tgt.pos.z - _e1.z).normalize();
-  let err = lerp(0.085, 0.026, b.skill) * D.aim * b.aimSettle;
-  err *= 1 + Math.hypot(tgt.vel.x, tgt.vel.z) * 0.035; if (!tgt.grounded) err *= 1.25;
+  const H = tgt.height || 2;
+  // lead moving targets a little, more for skilled bots
+  const lead = b.skill * 0.12 * Math.min(1, d / 40);
+  _e2.set(tgt.pos.x + tgt.vel.x * lead - _e1.x, tgt.pos.y + (head ? H * 0.87 : H * 0.52) - _e1.y, tgt.pos.z + tgt.vel.z * lead - _e1.z).normalize();
+  let err = lerp(0.105, 0.032, b.skill) * D.aim * b.aimSettle * (1 + Math.max(0, d - 30) / 120);
+  err *= 1 + Math.hypot(tgt.vel.x, tgt.vel.z) * 0.035; if (!tgt.grounded) err *= 1.25; if (tgt.crouch) err *= 1.1; if (b.crouch) err *= 0.85;
   applySpread(_e2, err, _e3);
   b.aiming = d > 15 && def.id !== 'shotgun' && def.id !== 'tac';
   fireWeapon(b, w, _e1, _e3); w.mag--;
@@ -5438,7 +5735,7 @@ function botCombat(b, dt) {
   if (def.burst && !(b.burstQ > 0) && b.fireCD <= 0) { b.burstQ = def.burst - 1; b.burstT = def.burstGap; }
   b.fireCD = (1 / def.rate) * (auto ? 1.15 : 1.3) * mr(1, 1.25);
   if (auto) { b.burst++; if (b.burst >= b.burstLen) { b.burst = 0; b.burstLen = 4 + Math.floor(Math.random() * 7); b.fireCD += mr(0.3, 0.8); } }
-  b.aimSettle = Math.max(1, b.aimSettle - 0.1);
+  b.aimSettle = Math.max(1, b.aimSettle - 0.12);
   if (w.mag <= 0) b.autoReload = 0.3;
 }
 function deathAnim(c, dt) {
@@ -5457,22 +5754,36 @@ function updateBot(b, dt, camX, camZ) {
   if (!b.alive) { deathAnim(b, dt); return; }
   if (b.mode === 'bus') { if (BUS.t >= b.jumpAt) jumpOut(b); return; }
   const dCam = Math.hypot(b.pos.x - camX, b.pos.z - camZ), near = dCam < 210;
+  // AI level of detail: distant, calm bots tick less often
+  if (dCam > 290 && b.state !== 'fight' && b.mode === 'ground') { b.lodAcc += dt; if (b.lodAcc < 0.16) return; dt = b.lodAcc; }
+  b.lodAcc = 0;
   if (b.mode === 'sky' || b.mode === 'glide') {
     botSky(b, dt);
     if (b.mode === 'ground') rescueFromWater(b);
     b.rig.root.visible = near; if (near) animateRig(b, dt);
     return;
   }
+  if (b.mantle) { updateMantle(b, dt); tickEye(b, dt); b.rig.root.visible = near; if (near) animateRig(b, dt); return; }
   b.think -= dt;
-  if (b.think <= 0) { b.think = 0.12 + Math.random() * 0.07; botThink(b); }
+  if (b.think <= 0) { b.think = (dCam > 290 ? 0.35 : 0.12) + Math.random() * 0.07; botThink(b); }
   let wx = 0, wz = 0;
   const tgt = b.target;
-  if (b.state === 'fight' && tgt && b.visible) {
+  if (b.emote) { /* standing still, showing off */ }
+  else if (b.state === 'fight' && tgt && b.cover && !b.visible) {
+    const w = waypoint(b) || [b.cover.x, b.cover.z], dx = w[0] - b.pos.x, dz = w[1] - b.pos.z, d = Math.hypot(dx, dz) || 1;
+    wx = dx / d; wz = dz / d; b.yaw = turnToward(b.yaw, Math.atan2(-dx, -dz), dt * 7);
+  } else if (b.state === 'fight' && tgt && b.visible) {
     const dx = tgt.pos.x - b.pos.x, dz = tgt.pos.z - b.pos.z, d = Math.hypot(dx, dz) || 1, ux = dx / d, uz = dz / d;
-    const pref = prefDist(b), fwd = d > pref * 1.35 ? 1 : d < pref * 0.6 ? -0.7 : 0;
-    b.strafeT -= dt;
-    if (b.strafeT <= 0) { b.strafe = Math.random() < 0.15 ? 0 : (Math.random() < 0.5 ? -1 : 1); b.strafeT = mr(0.45, 1.3); }
-    wx = ux * fwd - uz * b.strafe * 0.9; wz = uz * fwd + ux * b.strafe * 0.9;
+    if (b.cover) { const cw = waypoint(b) || [b.cover.x, b.cover.z], cx = cw[0] - b.pos.x, cz = cw[1] - b.pos.z, cd = Math.hypot(cx, cz) || 1; wx = cx / cd; wz = cz / cd; }
+    else if (rampRush(b, dt)) { wx = ux; wz = uz; }
+    else {
+      const pref = prefDist(b), fwd = d > pref * 1.35 ? 1 : d < pref * 0.6 ? -0.7 : 0;
+      b.strafeT -= dt;
+      if (b.strafeT <= 0) { b.strafe = Math.random() < 0.15 ? 0 : (Math.random() < 0.5 ? -1 : 1); b.strafeT = mr(0.45, 1.3); if (b.skill > 0.6 && Math.random() < 0.25 && d < 25) setCrouch(b, !b.crouch); }
+      wx = ux * fwd - uz * b.strafe * 0.9; wz = uz * fwd + ux * b.strafe * 0.9;
+      // height disadvantage makes builders take the high ground
+      if (tgt.pos.y > b.pos.y + 2.5 && b.rush <= 0 && b.P.build > 1 && Math.random() < dt * 0.6 * b.skill) { b.rush = 3; b.rushT = 0; }
+    }
     b.yaw = turnToward(b.yaw, Math.atan2(-dx, -dz), dt * (5 + b.skill * 6));
     b.pitch = Math.atan2(tgt.pos.y - b.pos.y, d);
     if (b.grounded && Math.random() < dt * (0.25 + b.skill * 0.6)) b.wantJump = true;
@@ -5491,24 +5802,29 @@ function updateBot(b, dt, camX, camZ) {
       if (!c.alive) { b.harvestC = null; b.state = 'roam'; }
     }
   } else if (b.hasMove) {
-    const dx = b.moveTarget.x - b.pos.x, dz = b.moveTarget.z - b.pos.z, d = Math.hypot(dx, dz);
-    if (b.state === 'loot' && b.lootTarget && d < 2.3) tryLoot(b);
-    if (d < 1.3) b.hasMove = false;
-    else { wx = dx / d; wz = dz / d; b.yaw = turnToward(b.yaw, Math.atan2(-dx, -dz), dt * 6); b.pitch *= 0.9; }
+    const dx0 = b.moveTarget.x - b.pos.x, dz0 = b.moveTarget.z - b.pos.z, d0 = Math.hypot(dx0, dz0);
+    if (b.state === 'loot' && b.lootTarget && d0 < 2.3) tryLoot(b);
+    if (d0 < 1.3) b.hasMove = false;
+    else {
+      if (!b.path && !b.pathQueued && GAME.time - b.pathT > 2.5) wantPath(b, b.moveTarget.x, b.moveTarget.z);
+      const w = waypoint(b), tx = w ? w[0] : b.moveTarget.x, tz = w ? w[1] : b.moveTarget.z;
+      const dx = tx - b.pos.x, dz = tz - b.pos.z, d = Math.hypot(dx, dz) || 1;
+      wx = dx / d; wz = dz / d; b.yaw = turnToward(b.yaw, Math.atan2(-dx, -dz), dt * 6); b.pitch *= 0.9;
+    }
   }
   if ((wx || wz) && b.grounded && b.state !== 'harvest') {
     const len = Math.hypot(wx, wz); let dx = wx / len, dz = wz / len;
     if (blockedAhead(b, dx, dz)) {
       let found = false;
-      for (const a of [0.7, -0.7, 1.4, -1.4]) {
+      for (const a of [0.6, -0.6, 1.2, -1.2]) {
         const ca = Math.cos(a), sa = Math.sin(a), nx = dx * ca - dz * sa, nz = dx * sa + dz * ca;
         if (!blockedAhead(b, nx, nz)) { dx = nx; dz = nz; found = true; break; }
       }
-      if (!found) b.wantJump = true;
+      if (!found) { if (!tryMantle(b)) b.wantJump = true; }
       wx = dx * len; wz = dz * len;
     }
   }
-  const sp = (b.using ? 2.6 : b.state === 'fight' ? 6.0 : 6.5) * (b.pos.y < 0.2 ? 0.7 : 1);
+  const sp = (b.using ? 2.6 : b.crouch ? 3.6 : b.state === 'fight' ? 6.0 : b.wantSprint ? 8.0 : 6.5) * (b.pos.y < 0.2 ? 0.7 : 1);
   const k = 1 - Math.exp(-(b.grounded ? 10 : 2.5) * dt);
   b.vel.x += (wx * sp - b.vel.x) * k; b.vel.z += (wz * sp - b.vel.z) * k;
   if (b.wantJump && b.grounded) { b.vel.y = 8.2; b.grounded = false; }
@@ -5519,15 +5835,15 @@ function updateBot(b, dt, camX, camZ) {
     const moved = Math.hypot(b.pos.x - b.lastPos.x, b.pos.z - b.lastPos.z), wants = Math.abs(wx) + Math.abs(wz) > 0.2;
     if (wants && moved < 0.8) {
       b.stuckCount++;
-      if (b.stuckCount === 1) b.wantJump = true;
+      if (b.stuckCount === 1) { b.wantJump = true; b.path = null; if (b.hasMove) wantPath(b, b.moveTarget.x, b.moveTarget.z); }
       else if (b.stuckCount === 2 && destructible(b.blockC)) { b.harvestC = b.blockC; b.state = 'harvest'; }
-      else if (b.stuckCount >= 3) { if (b.lootTarget) b.lootBan.add(b.lootTarget); b.hasMove = false; b.lootTarget = null; b.stuckCount = 0; b.harvestC = null; pickRoam(b, STORM.to); }
+      else if (b.stuckCount >= 3) { if (b.lootTarget) b.lootBan.add(b.lootTarget); b.hasMove = false; b.lootTarget = null; b.stuckCount = 0; b.harvestC = null; b.cover = null; b.campSpot = null; pickRoam(b, STORM.to); }
     } else b.stuckCount = 0;
     b.lastPos.copy(b.pos); b.stuckT = 0;
   }
   if (b.state === 'fight') botCombat(b, dt); else b.aiming = false;
-  tickTimers(b, dt);
-  b.modelYaw = b.yaw;
+  tickTimers(b, dt); tickEye(b, dt);
+  if (!b.emote) b.modelYaw = b.yaw;
   b.rig.root.visible = near;
   if (near) animateRig(b, dt);
 }
@@ -5632,10 +5948,10 @@ const HUD = (() => {
     }
   }
   function drawMap(g, W, H, cx, cz, span, full) {
-    const img = WORLD.mapCanvas, k = img.width / 1000, scale = W / span;
+    const img = WORLD.mapCanvas, k = img.width / (WORLD.half * 2), scale = W / span;
     g.fillStyle = '#1b5f99'; g.fillRect(0, 0, W, H);
     g.imageSmoothingEnabled = true;
-    g.drawImage(img, (cx - span / 2 + 500) * k, (cz - span / 2 + 500) * k, span * k, span * k, 0, 0, W, H);
+    g.drawImage(img, (cx - span / 2 + WORLD.half) * k, (cz - span / 2 + WORLD.half) * k, span * k, span * k, 0, 0, W, H);
     const toX = (x) => (x - cx) * scale + W / 2, toY = (z) => (z - cz) * scale + H / 2;
     const S = STORM;
     g.save(); g.beginPath(); g.rect(0, 0, W, H); g.arc(toX(S.cur.x), toY(S.cur.z), Math.max(0, S.cur.r * scale), 0, TAU); g.fillStyle = 'rgba(138,52,222,.42)'; g.fill('evenodd'); g.restore();
@@ -5749,7 +6065,7 @@ const HUD = (() => {
       if (mmT <= 0) { mmT = 1 / 30; const fc = focusChar() || p; drawMap(mm, 368, 368, fc.mode === 'bus' ? BUS.pos.x : fc.pos.x, fc.mode === 'bus' ? BUS.pos.z : fc.pos.z, fc.mode === 'bus' ? 520 : 220, false); if (!E.bigmap.hidden) drawMap(bm, 900, 900, 0, 0, 1000, true); }
     },
     hideBanner() { bannerT = 0; E.banner.style.opacity = '0'; },
-    toggleMap(on) { E.bigmap.hidden = on === undefined ? !E.bigmap.hidden : !on; if (!E.bigmap.hidden) drawMap(bm, 900, 900, 0, 0, 1000, true); },
+    toggleMap(on) { E.bigmap.hidden = on === undefined ? !E.bigmap.hidden : !on; if (!E.bigmap.hidden) drawMap(bm, 900, 900, 0, 0, WORLD.half * 2, true); },
   };
   return api;
 })();
@@ -5898,8 +6214,9 @@ function makeBusMesh() {
 }
 function setupBus() {
   const a = Math.random() * TAU, off = mr(-130, 130), px = -Math.sin(a), pz = Math.cos(a);
-  BUS.start.set(Math.cos(a) * 560 + px * off, BUS.alt, Math.sin(a) * 560 + pz * off);
-  BUS.end.set(-Math.cos(a) * 560 + px * off, BUS.alt, -Math.sin(a) * 560 + pz * off);
+  const R = WORLD.islandR + 200;
+  BUS.start.set(Math.cos(a) * R + px * off, BUS.alt, Math.sin(a) * R + pz * off);
+  BUS.end.set(-Math.cos(a) * R + px * off, BUS.alt, -Math.sin(a) * R + pz * off);
   BUS.dir.subVectors(BUS.end, BUS.start).normalize();
   BUS.t = 0; BUS.pos.copy(BUS.start);
   BUS.mesh.visible = true; BUS.mesh.position.copy(BUS.start); BUS.mesh.lookAt(BUS.end);
@@ -6208,7 +6525,7 @@ function updateAudio(dt) {
 }
 function menuCamera(dt) {
   CAM.orbit += dt * 0.03;
-  const a = CAM.orbit, r = 360;
+  const a = CAM.orbit, r = WORLD.islandR;
   camera.position.set(Math.cos(a) * r, 120, Math.sin(a) * r);
   camera.lookAt(Math.cos(a + 1.2) * 60, 10, Math.sin(a + 1.2) * 60);
   if (Math.abs(camera.fov - 62) > 0.01) { camera.fov = 62; camera.updateProjectionMatrix(); FX.setScale(pointScale()); }
@@ -6254,9 +6571,9 @@ function spawnVaultCrew() {
   mk('Vault Guard', 'burst', 3, guard(), false); mk('Vault Guard', 'tac', 3, guard(), false);
 }
 function setupMatch() {
-  if (!GAME.menuWorldFresh) newWorld((Math.random() * 1e9) | 0);
+  if (!GAME.menuWorldFresh || WORLD.scale !== islandScaleFor(SETTINGS.bots)) newWorld((Math.random() * 1e9) | 0);
   GAME.menuWorldFresh = false;
-  characters.length = 0; bots.length = 0; usedNames.clear();
+  characters.length = 0; bots.length = 0; usedNames.clear(); NOISE.length = 0; PATHQ.length = 0; DROPS.clear();
   FX.clear(); VFX.clear(); HUD.reset(); INPUT.clearAim(); INPUT.clearCrouch();
   player = makeCharacter(true, 'You', OUTFITS[SETTINGS.outfit % OUTFITS.length]); player.emote = null;
   characters.push(player);
@@ -6429,6 +6746,7 @@ function frame(dt) {
   updateBus(dt);
   updatePlayer(dt);
   const cp = camera.position;
+  processPaths(4);
   for (const b of bots) updateBot(b, dt, cp.x, cp.z);
   if (!player.alive) deathAnim(player, dt);
   updateItems(dt, cp.x, cp.z);

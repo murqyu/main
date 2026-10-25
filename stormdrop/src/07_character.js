@@ -92,7 +92,7 @@ function charPhysics(c, dt) {
     const px = c.pos.x, pz = c.pos.z;
     c.pos.x += c.vel.x * sdt; c.pos.z += c.vel.z * sdt;
     if (c.mode === 'ground' && groundH(c.pos.x, c.pos.z) < -2.5 && groundH(px, pz) >= -2.5) { c.pos.x = px; c.pos.z = pz; c.vel.x = 0; c.vel.z = 0; c.blocked = true; }
-    const lim = 485;
+    const lim = WORLD.half - 15;
     if (c.pos.x > lim) c.pos.x = lim; if (c.pos.x < -lim) c.pos.x = -lim; if (c.pos.z > lim) c.pos.z = lim; if (c.pos.z < -lim) c.pos.z = -lim;
     const r = c.radius + 0.6;
     queryBox(c.pos.x - r, c.pos.z - r, c.pos.x + r, c.pos.z + r, _cq);
@@ -310,6 +310,9 @@ function footstep(c, sp) {
   if (camera.position.distanceToSquared(c.pos) > 2025) return;
   _tmpV.set(c.pos.x, c.pos.y + 0.1, c.pos.z);
   SFX.step(_tmpV, surfaceOf(c), c.crouch ? 0.35 : sp > 7.5 ? 1.25 : 0.85);
+}
+function stepNoise(c, sp) {
+  if (!c.crouch) makeNoise(c.pos.x, c.pos.y, c.pos.z, sp > 7.5 ? 16 : 9, c);
 }
 function tickEye(c, dt) { c.eyeH += (c.height * 0.8 - c.eyeH) * Math.min(1, dt * 14); }
 function muzzleOf(c, out) {

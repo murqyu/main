@@ -17,7 +17,7 @@ function setupBiomes(rng) {
 function biomeSpot(rng, raw, which, r) {
   const B = WORLD.biome, ang = which === 'snow' ? B.snowA : B.desertA;
   for (let t = 0; t < 400; t++) {
-    const a = ang + (rng() - 0.5) * 1.3, d = 150 + rng() * 140, x = Math.cos(a) * d, z = Math.sin(a) * d;
+    const a = ang + (rng() - 0.5) * 1.3, d = (150 + rng() * 140) * WORLD.scale, x = Math.cos(a) * d, z = Math.sin(a) * d;
     const h = raw(x, z); if (h < 2 || h > 14) continue;
     const bw = biomeAt(x, z); if ((which === 'snow' ? bw.snow : bw.desert) < 0.75) continue;
     let ok = true; for (const p of WORLD.pois) if (Math.hypot(p.x - x, p.z - z) < p.r + r + 45) { ok = false; break; }

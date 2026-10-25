@@ -92,7 +92,7 @@ function updateVehicle(v, dt, input) {
   // integrate + resolve against the world
   const px = v.pos.x, pz = v.pos.z;
   v.pos.x += v.vel.x * dt; v.pos.z += v.vel.z * dt;
-  const lim = 480; v.pos.x = clamp(v.pos.x, -lim, lim); v.pos.z = clamp(v.pos.z, -lim, lim);
+  const lim = WORLD.half - 20; v.pos.x = clamp(v.pos.x, -lim, lim); v.pos.z = clamp(v.pos.z, -lim, lim);
   const R = 1.15;
   queryBox(v.pos.x - R - 0.5, v.pos.z - R - 0.5, v.pos.x + R + 0.5, v.pos.z + R + 0.5, _vq);
   const sp = Math.hypot(v.vel.x, v.vel.z);

@@ -1,6 +1,8 @@
 // ---------- the storm ----------
 // [wait seconds, shrink seconds, end radius, damage per second]
 const STORM_PHASES = [[80, 45, 280, 1], [45, 40, 170, 1], [35, 35, 105, 2], [30, 30, 62, 5], [25, 25, 34, 8], [20, 22, 15, 10], [15, 25, 0, 12]];
+// early phases stretch with the island; the endgame circles stay the same size
+function phaseAt(i) { const P = STORM_PHASES[i], sc = WORLD.scale || 1, k = i < 3 ? 0.6 + 0.4 * sc : 1, rs = i < 3 ? sc : i === 3 ? Math.sqrt(sc) : 1; return [Math.round(P[0] * k), Math.round(P[1] * k), P[2] * rs, P[3]]; }
 const STORM = { idx: 0, state: 'wait', timer: 0, total: 1, cur: { x: 0, z: 0, r: 720 }, from: { x: 0, z: 0, r: 720 }, to: { x: 0, z: 0, r: 280 }, dmg: 1, tick: 1, warned: false, mesh: null, mat: null };
 function makeStormMesh() {
   STORM.mat = new THREE.ShaderMaterial({
@@ -27,16 +29,16 @@ function makeStormMesh() {
 }
 function nextCircle(prev, r, first) {
   for (let i = 0; i < 40; i++) {
-    const a = Math.random() * TAU, d = Math.random() * (first ? 110 : Math.max(0, prev.r - r));
+    const a = Math.random() * TAU, d = Math.random() * (first ? 110 * WORLD.scale : Math.max(0, prev.r - r));
     const x = (first ? 0 : prev.x) + Math.cos(a) * d, z = (first ? 0 : prev.z) + Math.sin(a) * d;
     if (groundH(x, z) > 1.2 || i === 39) return { x, z, r };
   }
 }
 function stormInit() {
   const S = STORM;
-  S.idx = 0; S.state = 'wait'; S.timer = STORM_PHASES[0][0]; S.total = S.timer; S.dmg = 1; S.tick = 1; S.warned = false;
-  S.cur = { x: 0, z: 0, r: 720 }; S.from = { x: 0, z: 0, r: 720 };
-  S.to = nextCircle(S.cur, STORM_PHASES[0][2], true);
+  S.idx = 0; S.state = 'wait'; S.timer = phaseAt(0)[0]; S.total = S.timer; S.dmg = 1; S.tick = 1; S.warned = false;
+  S.cur = { x: 0, z: 0, r: 720 * WORLD.scale }; S.from = { x: 0, z: 0, r: 720 * WORLD.scale };
+  S.to = nextCircle(S.cur, phaseAt(0)[2], true);
   S.mat.uniforms.t.value = 0;
 }
 function updateStorm(dt) {
@@ -45,7 +47,7 @@ function updateStorm(dt) {
   if (S.state === 'wait') {
     if (!S.warned && S.timer < 10 && GAME.time > 15) { S.warned = true; HUD.banner('Storm closing in 10 seconds', '', 2.2, 'storm'); SFX.alert(); }
     if (S.timer <= 0) {
-      const ph = STORM_PHASES[S.idx];
+      const ph = phaseAt(S.idx);
       S.state = 'shrink'; S.timer = ph[1]; S.total = ph[1]; S.from = { x: S.cur.x, z: S.cur.z, r: S.cur.r }; S.dmg = ph[3];
       HUD.banner('The storm is closing in', 'Get inside the white circle', 3, 'storm'); SFX.announce('The storm is closing');
       if (S.idx === 1 || S.idx === 3) setTimeout(() => { if (GAME.state !== 'menu') spawnSupply(); }, 4000);
@@ -56,7 +58,7 @@ function updateStorm(dt) {
     if (S.timer <= 0) {
       S.idx++;
       if (S.idx >= STORM_PHASES.length) { S.state = 'done'; S.timer = 0; S.dmg = 14; }
-      else { const ph = STORM_PHASES[S.idx]; S.state = 'wait'; S.timer = ph[0]; S.total = ph[0]; S.to = nextCircle(S.cur, ph[2]); S.warned = false; HUD.banner('New safe zone marked', 'The storm moves again in ' + ph[0] + ' seconds', 3, 'storm'); }
+      else { const ph = phaseAt(S.idx); S.state = 'wait'; S.timer = ph[0]; S.total = ph[0]; S.to = nextCircle(S.cur, ph[2]); S.warned = false; HUD.banner('New safe zone marked', 'The storm moves again in ' + ph[0] + ' seconds', 3, 'storm'); }
     }
   }
   S.tick -= dt;

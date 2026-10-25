@@ -180,8 +180,9 @@ function spawnLoot() {
     else if (rand() < 0.72) spawnFloorLoot(s.x, s.y, s.z);
   }
   let made = 0;
-  for (let i = 0; i < 400 && made < 26; i++) {
-    const a = rand() * TAU, d = Math.sqrt(rand()) * 360, x = Math.cos(a) * d, z = Math.sin(a) * d;
+  const nLoose = Math.round(26 * WORLD.scale * WORLD.scale);
+  for (let i = 0; i < 400 * WORLD.scale && made < nLoose; i++) {
+    const a = rand() * TAU, d = Math.sqrt(rand()) * WORLD.islandR, x = Math.cos(a) * d, z = Math.sin(a) * d;
     const h = groundH(x, z); if (h < 2 || overlapsFootprint(x - 1, z - 1, x + 1, z + 1, 0.5)) continue;
     if (rand() < 0.3) makeChest(x, h, z, rand() * TAU); else spawnFloorLoot(x, h, z);
     made++;
@@ -240,6 +241,7 @@ function openChest(ch, who) {
   if (ch.opened) return;
   ch.opened = true; ch.openT = 0;
   SFX.chestOpen(ch.pos);
+  makeNoise(ch.pos.x, ch.pos.y, ch.pos.z, 22, who || null);
   const fx = -Math.sin(ch.rot), fz = -Math.cos(ch.rot);
   (ch.supply ? supplyLoot() : chestLoot()).forEach((d, i) => {
     const a = (i - 1.5) * 0.45;

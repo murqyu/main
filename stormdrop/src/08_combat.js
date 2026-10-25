@@ -68,6 +68,7 @@ function fireWeapon(c, w, origin, aim) {
   spread *= c.crouch ? 0.72 : c.sliding ? 1.3 : 1;
   if (def.id === 'sniper' && c.aiming) spread = moving ? 0.01 : 0;
   SFX.shot(def.sound, c.pos, c.isPlayer);
+  makeNoise(c.pos.x, c.pos.y, c.pos.z, def.id === 'sniper' || def.id === 'heavy' ? 150 : def.id === 'shotgun' || def.id === 'tac' || def.id === 'hand' ? 95 : 80, c);
   if (c.isPlayer) GAME.combatT = GAME.time;
   muzzleOf(c, _mz);
   const big = def.id === 'shotgun' || def.id === 'sniper' || def.id === 'rocket';
@@ -105,6 +106,7 @@ function nearMiss(o, d, t, def) {
 }
 function damageMult(src, target) {
   if (src && !src.isPlayer && target && target.isPlayer) return DIFF[SETTINGS.diff].dmg;
+  if (src && !src.isPlayer && target && !target.isPlayer) return 0.6;   // bots trade slower among themselves so matches breathe
   return 1;
 }
 function applyDamage(t, amt, src, wname, head, kind) {
@@ -147,6 +149,7 @@ function eliminate(t, src, wname, kind) {
   else if (src && src !== t) msg = nm(src) + ' eliminated ' + nm(t) + (wname ? ' with the ' + wname : '');
   else msg = nm(t) + ' was eliminated';
   HUD.feed(msg);
+  if (src && src !== t && src.alive && !src.isPlayer) src.killEmoteT = GAME.time + mr(0.8, 1.6);
   if (src && src !== t && src.alive) { src.kills++; if (src.isPlayer) { HUD.elimToast(t.name, src.kills); SFX.elim(); HUD.elimMark(); src.streak = (GAME.time - (src.lastElimT || -99) < 5) ? (src.streak || 1) + 1 : 1; src.lastElimT = GAME.time; if (src.streak >= 2) SFX.announce(['', '', 'Double elimination', 'Triple elimination', 'Quad elimination', 'Unstoppable'][Math.min(5, src.streak)], true); } }
   FX.elim(t.pos);
   GAME.alive = characters.reduce((n, c) => n + (c.alive && !c.npc ? 1 : 0), 0);
@@ -262,6 +265,7 @@ function updateRockets(dt) {
 const _eq = [];
 function explode(x, y, z, R) {
   SFX.explode({ x, y, z });
+  makeNoise(x, y, z, 160, R.owner || null);
   VFX.explosion(x, y, z, R.radius);
   const rad = R.radius;
   for (const c of characters) {

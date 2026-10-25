@@ -104,7 +104,7 @@ function buildTarget(type, c, yaw, pitch, rot) {
 function canPlace(s) {
   if (!s || s.L < -2 || s.L > 55) return false;
   if (PIECES.has(keyOf(s))) return false;
-  if (Math.abs(s.ix * CELL) > 480 || Math.abs(s.iz * CELL) > 480) return false;
+  if (Math.abs(s.ix * CELL) > WORLD.half - 20 || Math.abs(s.iz * CELL) > WORLD.half - 20) return false;
   if (computeGrounded(pieceBounds(s), s.t)) return true;
   for (const e of pieceEdges(s)) { const set = EDGES.get(e); if (set && set.size) return true; }
   return false;

@@ -7,6 +7,12 @@ const GRID = { cs: 8, min: -520, n: 130, cells: null };
 let qstamp = 1, rstamp = 1;
 const VEG = {};
 
+function islandScaleFor(n) { return n <= 29 ? 1 : n <= 49 ? 1.15 : n <= 74 ? 1.3 : 1.45; }
+function setWorldScale(s) {
+  WORLD.scale = s; WORLD.islandR = 360 * s; WORLD.half = Math.round((WORLD.islandR + 140) / 50) * 50;
+  WORLD.N = Math.round(WORLD.half * 2 / WORLD.step) + 1; WORLD.seg = WORLD.N - 1;
+  GRID.min = -(WORLD.half + 20); GRID.n = Math.ceil((WORLD.half * 2 + 40) / GRID.cs);
+}
 function gridInit() {
   GRID.cells = new Array(GRID.n * GRID.n);
   for (let i = 0; i < GRID.cells.length; i++) GRID.cells[i] = [];
@@ -190,7 +196,8 @@ function genTerrain(seed) {
   const P = makePerlin(rng), P2 = makePerlin(rng);
   WORLD.perlin = P;
   WORLD.mountains = [];
-  for (let i = 0; i < 3; i++) { const a = rng() * TAU, d = 110 + rng() * 160; if (WORLD.mountains.some((M) => Math.hypot(M.x - Math.cos(a) * d, M.z - Math.sin(a) * d) < 150)) { i--; continue; } WORLD.mountains.push({ x: Math.cos(a) * d, z: Math.sin(a) * d, r: 64 + rng() * 34, h: 22 + rng() * 14 }); }
+  const sc = WORLD.scale || 1;
+  for (let i = 0; i < (sc > 1.2 ? 4 : 3); i++) { const a = rng() * TAU, d = (110 + rng() * 160) * sc; if (WORLD.mountains.some((M) => Math.hypot(M.x - Math.cos(a) * d, M.z - Math.sin(a) * d) < 150)) { i--; continue; } WORLD.mountains.push({ x: Math.cos(a) * d, z: Math.sin(a) * d, r: 64 + rng() * 34, h: 22 + rng() * 14 }); }
   setupBiomes(rng);
   const raw = (x, z) => {
     const d = Math.sqrt(x * x + z * z), ang = Math.atan2(z, x);
@@ -216,6 +223,9 @@ function finalH(x, z) {
 function pickPOIs(rng, raw) {
   pickBiomePOIs(rng, raw);
   const types = ['city', 'docks', 'lighthouse', 'vault', 'factory', 'town', 'farm', 'quarry', 'town', 'cabins', 'town'];
+  if (WORLD.scale >= 1.15) types.push('town', 'cabins');
+  if (WORLD.scale >= 1.3) types.push('farm', 'quarry', 'docks');
+  if (WORLD.scale >= 1.45) types.push('factory', 'town', 'cabins');
   const used = {};
   for (const type of types) {
     const r = type === 'city' ? 56 : type === 'docks' ? 38 : type === 'lighthouse' ? 26 : type === 'vault' ? 30 : type === 'factory' ? 46 : 44;
@@ -223,10 +233,10 @@ function pickPOIs(rng, raw) {
     for (let tries = 0; tries < 500; tries++) {
       let x, z, sea = 0;
       if (coastal) {
-        sea = rng() * TAU; let d = 470;
+        sea = rng() * TAU; let d = WORLD.islandR + 110;
         for (; d > 100; d -= 4) if (raw(Math.cos(sea) * d, Math.sin(sea) * d) > 1.8) break;
         d -= 20; x = Math.cos(sea) * d; z = Math.sin(sea) * d;
-      } else { const a = rng() * TAU, d = Math.sqrt(rng()) * 290; x = Math.cos(a) * d; z = Math.sin(a) * d; }
+      } else { const a = rng() * TAU, d = Math.sqrt(rng()) * WORLD.islandR * 0.8; x = Math.cos(a) * d; z = Math.sin(a) * d; }
       const h = raw(x, z);
       if (h < 1.9 || h > 13) continue;
       const bw = biomeAt(x, z); if ((type === 'farm' || type === 'town') && (bw.desert > 0.4 || bw.snow > 0.5)) continue;
@@ -622,8 +632,9 @@ function genStructures() {
     endAsm();
   }
   let made = 0;
-  for (let i = 0; i < 300 && made < 12; i++) {
-    const a = rand() * TAU, d = Math.sqrt(rand()) * 330, x = Math.cos(a) * d, z = Math.sin(a) * d;
+  const nHouse = Math.round(12 * WORLD.scale * WORLD.scale);
+  for (let i = 0; i < 300 * WORLD.scale && made < nHouse; i++) {
+    const a = rand() * TAU, d = Math.sqrt(rand()) * WORLD.islandR * 0.92, x = Math.cos(a) * d, z = Math.sin(a) * d;
     if (groundH(x, z) < 2.5 || nearPOI(x, z, 30)) continue;
     if (makeBuilding(x, z, ri(2, 3), 2, rand() < 0.5 ? 2 : 1, rand() < 0.7 ? 'house' : 'shack', ri(0, 3), pick(HOUSE_COLORS))) made++;
   }
@@ -645,8 +656,9 @@ function finishInst(mesh, shadow) {
 }
 function genVegetation() {
   const P = WORLD.perlin; const pines = [], rounds = [], rocks = [], bushes = [], cacti = [];
-  for (let i = 0; i < 3200 && pines.length + rounds.length < 540; i++) {
-    const a = rand() * TAU, d = Math.sqrt(rand()) * 420, x = Math.cos(a) * d, z = Math.sin(a) * d;
+  const s2 = WORLD.scale * WORLD.scale, vegR = WORLD.islandR + 60;
+  for (let i = 0; i < 3200 * s2 && pines.length + rounds.length < 540 * s2; i++) {
+    const a = rand() * TAU, d = Math.sqrt(rand()) * vegR, x = Math.cos(a) * d, z = Math.sin(a) * d;
     const h = groundH(x, z); if (h < 2.3) continue;
     if (P(x * 0.008 + 50, z * 0.008) < -0.05 && rand() > 0.12) continue;
     if (nearPOI(x, z, 2, 'cabins')) continue;
@@ -699,8 +711,8 @@ function genVegetation() {
     finishInst(cm, true);
   }
 
-  for (let i = 0; i < 2400 && rocks.length < 190; i++) {
-    const a = rand() * TAU, d = Math.sqrt(rand()) * 420, x = Math.cos(a) * d, z = Math.sin(a) * d;
+  for (let i = 0; i < 2400 * s2 && rocks.length < 190 * s2; i++) {
+    const a = rand() * TAU, d = Math.sqrt(rand()) * vegR, x = Math.cos(a) * d, z = Math.sin(a) * d;
     const h = groundH(x, z); if (h < 1.2) continue;
     let quarry = false; for (const p of WORLD.pois) if (p.type === 'quarry' && Math.hypot(x - p.x, z - p.z) < p.r + 10) quarry = true;
     if (!quarry && (nearPOI(x, z, 2) || rand() < 0.4)) continue;
@@ -722,8 +734,8 @@ function genVegetation() {
   });
   finishInst(rockM, true);
 
-  for (let i = 0; i < 1500 && bushes.length < 240; i++) {
-    const a = rand() * TAU, d = Math.sqrt(rand()) * 410, x = Math.cos(a) * d, z = Math.sin(a) * d;
+  for (let i = 0; i < 1500 * s2 && bushes.length < 240 * s2; i++) {
+    const a = rand() * TAU, d = Math.sqrt(rand()) * (vegR - 10), x = Math.cos(a) * d, z = Math.sin(a) * d;
     const h = groundH(x, z); if (h < 2 || overlapsFootprint(x - 1, z - 1, x + 1, z + 1, 0.5)) continue;
     const bw = biomeAt(x, z, h); bushes.push({ x, z, y: h, s: rr(0.6, 1.3), desert: bw.desert, snow: bw.snow });
   }
@@ -757,7 +769,7 @@ function buildMapCanvas() {
   const S = 512, c = document.createElement('canvas'); c.width = c.height = S;
   const g = c.getContext('2d'), img = g.createImageData(S, S), d = img.data;
   for (let py = 0; py < S; py++) for (let px = 0; px < S; px++) {
-    const x = (px + 0.5) / S * 1000 - 500, z = (py + 0.5) / S * 1000 - 500, h = groundH(x, z);
+    const SPAN = WORLD.half * 2, x = (px + 0.5) / S * SPAN - WORLD.half, z = (py + 0.5) / S * SPAN - WORLD.half, h = groundH(x, z);
     let r, gg, b;
     if (h < 0) { const t = clamp(-h / 7, 0, 1); r = lerp(80, 24, t); gg = lerp(178, 96, t); b = lerp(220, 166, t); }
     else {
@@ -768,7 +780,8 @@ function buildMapCanvas() {
   }
   g.putImageData(img, 0, 0);
   g.fillStyle = 'rgba(246,240,228,.95)'; g.strokeStyle = 'rgba(50,40,30,.55)'; g.lineWidth = 1;
-  for (const f of WORLD.mapRects) { const x0 = (f[0] + 500) / 1000 * S, y0 = (f[1] + 500) / 1000 * S, w = (f[2] - f[0]) / 1000 * S, h = (f[3] - f[1]) / 1000 * S; g.fillRect(x0, y0, w, h); g.strokeRect(x0 + 0.5, y0 + 0.5, w, h); }
+  const SP = WORLD.half * 2;
+  for (const f of WORLD.mapRects) { const x0 = (f[0] + WORLD.half) / SP * S, y0 = (f[1] + WORLD.half) / SP * S, w = (f[2] - f[0]) / SP * S, h = (f[3] - f[1]) / SP * S; g.fillRect(x0, y0, w, h); g.strokeRect(x0 + 0.5, y0 + 0.5, w, h); }
   WORLD.mapCanvas = c;
 }
 
@@ -781,8 +794,9 @@ function disposeWorld() {
   });
   scene.remove(worldGroup); worldGroup = null;
 }
-function newWorld(seed) {
+function newWorld(seed, scale) {
   disposeWorld();
+  setWorldScale(scale || islandScaleFor(SETTINGS.bots));
   rand = mulberry32(seed);
   worldGroup = new THREE.Group(); scene.add(worldGroup);
   gridInit(); resetBuild(); resetItems(); resetGadgets(); VEHICLES.length = 0; SHAKING.clear(); ASM.length = 0;
@@ -795,6 +809,7 @@ function newWorld(seed) {
   genVegetation();
   spawnLoot();
   spawnForage();
+  NAV.build();
   buildMapCanvas();
   buildBlockedGrid();
   rand = Math.random;

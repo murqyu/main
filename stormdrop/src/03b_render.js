@@ -277,7 +277,7 @@ function makeWater() {
     uniforms: { uTime: UTIME, uWet: UWET, uDeep: { value: LIN(0x0b3f72) }, uShallow: { value: LIN(0x2fb6c8) }, uSkyH: { value: new THREE.Color() }, uSkyZ: { value: new THREE.Color() }, uSunDir: { value: new V3() }, uSunColor: { value: new THREE.Color() },
       uFogColor: { value: new THREE.Color() }, uFogNear: { value: 100 }, uFogFar: { value: 600 }, uHeight: { value: null }, uRect: { value: new THREE.Vector4(-500, -500, 1000, 0) } },
   });
-  const geo = new THREE.PlaneGeometry(1800, 1800, 220, 220); geo.rotateX(-Math.PI / 2);
+  const geo = new THREE.PlaneGeometry(3000, 3000, 300, 300); geo.rotateX(-Math.PI / 2);
   WATER.mesh = new THREE.Mesh(geo, WATER.mat); WATER.mesh.frustumCulled = false; WATER.mesh.renderOrder = 1;
   scene.add(WATER.mesh);
 }

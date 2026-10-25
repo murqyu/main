@@ -135,8 +135,8 @@ function spawnForage() {
   for (const t of WORLD.trees) {
     if (t.s && t.kind !== 'pine' && t.kind !== 'cactus' && Math.random() < 0.18) { const a = Math.random() * TAU, r = mr(1.2, 2.2); apples.push({ type: 'apple', x: t.x + Math.cos(a) * r, z: t.z + Math.sin(a) * r }); }
   }
-  for (let i = 0; i < 500 && shrooms.length < 60; i++) {
-    const a = Math.random() * TAU, d = mr(150, 460), x = Math.cos(a) * d, z = Math.sin(a) * d, h = groundH(x, z);
+  for (let i = 0; i < 500 && shrooms.length < 60 * WORLD.scale; i++) {
+    const a = Math.random() * TAU, d = mr(0.4, 1.3) * WORLD.islandR, x = Math.cos(a) * d, z = Math.sin(a) * d, h = groundH(x, z);
     if (h > 1.7 && h < 2.6 && !overlapsFootprint(x - 0.5, z - 0.5, x + 0.5, z + 0.5, 0)) for (let k = 0; k < 3; k++) shrooms.push({ type: 'shroom', x: x + mr(-1.2, 1.2), z: z + mr(-1.2, 1.2) });
   }
   const mk = (list, geo, mat, sy) => {

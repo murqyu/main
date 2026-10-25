@@ -97,10 +97,10 @@ const HUD = (() => {
     }
   }
   function drawMap(g, W, H, cx, cz, span, full) {
-    const img = WORLD.mapCanvas, k = img.width / 1000, scale = W / span;
+    const img = WORLD.mapCanvas, k = img.width / (WORLD.half * 2), scale = W / span;
     g.fillStyle = '#1b5f99'; g.fillRect(0, 0, W, H);
     g.imageSmoothingEnabled = true;
-    g.drawImage(img, (cx - span / 2 + 500) * k, (cz - span / 2 + 500) * k, span * k, span * k, 0, 0, W, H);
+    g.drawImage(img, (cx - span / 2 + WORLD.half) * k, (cz - span / 2 + WORLD.half) * k, span * k, span * k, 0, 0, W, H);
     const toX = (x) => (x - cx) * scale + W / 2, toY = (z) => (z - cz) * scale + H / 2;
     const S = STORM;
     g.save(); g.beginPath(); g.rect(0, 0, W, H); g.arc(toX(S.cur.x), toY(S.cur.z), Math.max(0, S.cur.r * scale), 0, TAU); g.fillStyle = 'rgba(138,52,222,.42)'; g.fill('evenodd'); g.restore();
@@ -214,7 +214,7 @@ const HUD = (() => {
       if (mmT <= 0) { mmT = 1 / 30; const fc = focusChar() || p; drawMap(mm, 368, 368, fc.mode === 'bus' ? BUS.pos.x : fc.pos.x, fc.mode === 'bus' ? BUS.pos.z : fc.pos.z, fc.mode === 'bus' ? 520 : 220, false); if (!E.bigmap.hidden) drawMap(bm, 900, 900, 0, 0, 1000, true); }
     },
     hideBanner() { bannerT = 0; E.banner.style.opacity = '0'; },
-    toggleMap(on) { E.bigmap.hidden = on === undefined ? !E.bigmap.hidden : !on; if (!E.bigmap.hidden) drawMap(bm, 900, 900, 0, 0, 1000, true); },
+    toggleMap(on) { E.bigmap.hidden = on === undefined ? !E.bigmap.hidden : !on; if (!E.bigmap.hidden) drawMap(bm, 900, 900, 0, 0, WORLD.half * 2, true); },
   };
   return api;
 })();
