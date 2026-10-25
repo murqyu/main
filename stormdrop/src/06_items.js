@@ -41,8 +41,8 @@ const RW_FLOOR = [[0, 42], [1, 34], [2, 17], [3, 6], [4, 1]];
 const WEAPON_W = [['ar', 26], ['burst', 13], ['smg', 16], ['shotgun', 22], ['tac', 12], ['pistol', 12], ['sniper', 7], ['rocket', 3], ['minigun', 2], ['hand', 3], ['heavy', 2]];
 const CONS_W = [['bandage', 28], ['medkit', 11], ['shieldS', 30], ['shieldL', 13], ['slurp', 5], ['grenade', 12], ['launchpad', 3], ['portafort', 3], ['campfire', 4]];
 
-function rollWeapon(rw) { const id = weighted(WEAPON_W); const def = WEAPONS[id]; const r = Math.max(def.minR, weighted(rw)); return { kind: 'weapon', id, rarity: r, mag: def.mag }; }
-function rollCons() { const id = weighted(CONS_W); return { kind: 'consumable', id, count: CONSUMABLES[id].give }; }
+function rollWeapon(rw) { const id = weighted(mutatorLoot() || WEAPON_W); const def = WEAPONS[id]; const r = Math.max(def.minR, weighted(rw)); return { kind: 'weapon', id, rarity: r, mag: def.mag }; }
+function rollCons() { const id = weighted(mutatorCons() || CONS_W); return { kind: 'consumable', id, count: CONSUMABLES[id].give }; }
 function ammoFor(id, mult) { const a = WEAPONS[id].ammo; return { kind: 'ammo', ammo: a, count: Math.round(AMMO[a].give * (mult || 1)) }; }
 function chestLoot() {
   const w = rollWeapon(RW_CHEST), out = [w, ammoFor(w.id)];

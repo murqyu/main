@@ -286,6 +286,7 @@ function finishUse(c) {
   if (c.isPlayer) SFX.heal(!!def.shield);
 }
 function tickTimers(c, dt) {
+  if (c.knocked) tickKnocked(c, dt);
   if (c.regen > 0) { const k = Math.min(c.regen, dt * 5); c.regen -= k; if (c.hp < 100) c.hp = Math.min(100, c.hp + k); else c.shield = Math.min(100, c.shield + k); }
   if (c.burstQ > 0) c.burstT -= dt;
   if (c.spinning) c.spin = Math.min(1, (c.spin || 0) + dt / 0.65); else c.spin = Math.max(0, (c.spin || 0) - dt * 1.4);

@@ -111,6 +111,8 @@ function damageMult(src, target) {
 }
 function applyDamage(t, amt, src, wname, head, kind) {
   if (!t.alive || amt <= 0) return;
+  if (src && src !== t && sameTeam(src, t)) return;
+  if (t.dummy && kind === 'storm') return;
   if (kind === 'storm' || kind === 'fall') { /* bypass shield */ }
   else {
     amt *= damageMult(src, t);
@@ -132,7 +134,7 @@ function applyDamage(t, amt, src, wname, head, kind) {
   else if (src && src !== t) onBotDamaged(t, src);
   t.lastHurt = GAME.time;
   if (kind !== 'storm') rigHitFlash(t);
-  if (t.hp <= 0) eliminate(t, src, wname, kind);
+  if (t.hp <= 0) { if (canKnock(t, kind)) knock(t, src, wname); else eliminate(t, src, wname, kind); }
 }
 function nm(c) { return c.isPlayer ? '<b class="me">You</b>' : '<b>' + c.name + '</b>'; }
 function eliminate(t, src, wname, kind) {
@@ -142,17 +144,22 @@ function eliminate(t, src, wname, kind) {
   t.alive = false; t.hp = 0; t.deathT = 0.0001; t.using = null; t.reloadT = 0; t.emote = null;
   if (t.rig.root.visible) startDissolve(t);
   GAME.deathLog.push({ t: GAME.time, kind: kind || '', w: wname || '', bySelf: src === t, since: GAME.time - (t.landedAt || 0), y: t.pos.y });
-  dropAll(t);
+  t.knocked = false; t.reviving = null; t.height = 2;
+  if (!MODE().rumble && !t.dummy) dropAll(t);
   let msg;
   if (kind === 'storm') msg = nm(t) + ' <span class="st">got lost in the storm</span>';
   else if (kind === 'fall') msg = nm(t) + ' fell too far';
+  else if (kind === 'bleed') msg = nm(t) + ' bled out';
+  else if (kind === 'wipe') msg = nm(t) + (src && src !== t ? ' was finished off by ' + nm(src) : ' was eliminated');
   else if (src && src !== t) msg = nm(src) + ' eliminated ' + nm(t) + (wname ? ' with the ' + wname : '');
   else msg = nm(t) + ' was eliminated';
   HUD.feed(msg);
   if (src && src !== t && src.alive && !src.isPlayer) src.killEmoteT = GAME.time + mr(0.8, 1.6);
   if (src && src !== t && src.alive) { src.kills++; if (src.isPlayer) { HUD.elimToast(t.name, src.kills); SFX.elim(); HUD.elimMark(); src.streak = (GAME.time - (src.lastElimT || -99) < 5) ? (src.streak || 1) + 1 : 1; src.lastElimT = GAME.time; if (src.streak >= 2) SFX.announce(['', '', 'Double elimination', 'Triple elimination', 'Quad elimination', 'Unstoppable'][Math.min(5, src.streak)], true); } }
   FX.elim(t.pos);
-  GAME.alive = characters.reduce((n, c) => n + (c.alive && !c.npc ? 1 : 0), 0);
+  GAME.alive = characters.reduce((n, c) => n + (c.alive && !c.npc && !c.dummy ? 1 : 0), 0);
+  if (MODE().rumble) rumbleElim(t, src);
+  else checkTeamWipe(t.team, src);
   if (player && player.alive && [25, 10, 5, 3, 2].includes(GAME.alive) && GAME.state === 'play') SFX.announce(GAME.alive === 2 ? 'Final two' : GAME.alive + ' players remain');
   if (t.isPlayer) onPlayerDeath(src, kind);
   else if (GAME.spectating === t) GAME.spectating = src && src.alive ? src : null;

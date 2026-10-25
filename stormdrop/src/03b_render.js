@@ -401,7 +401,7 @@ function makeGrassMaterial() {
   return m;
 }
 function initGrass() {
-  if (GRASS.mesh) { scene.remove(GRASS.mesh); GRASS.mesh = null; }
+  if (GRASS.mesh) { scene.remove(GRASS.mesh); GRASS.mesh.dispose(); GRASS.mesh = null; }
   GRASS.map.clear(); GRASS.cx = GRASS.cz = 1e9;
   const q = Q(); if (!q.grass) return;
   const R = q.grassR, C = GRASS.chunk, side = Math.ceil(R / C) * 2 + 1;

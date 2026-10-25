@@ -125,6 +125,19 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 #flash{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 45%,rgba(255,25,40,.5));opacity:0;transition:opacity .25s}
 #hud.spec #hotbar,#hud.spec #mats,#hud.spec #ammo,#hud.spec #buildhint,#hud.spec #buildbar,#hud.spec #crosshair,#hud.spec #prompt{display:none}
 #fps{position:absolute;left:calc(14px + var(--sl));bottom:calc(84px + var(--sb));font-size:11px;opacity:.5}
+#teampanel{position:absolute;left:calc(14px + var(--sl));top:calc(120px + var(--st));display:flex;flex-direction:column;gap:5px;pointer-events:none}
+.tm{display:flex;align-items:center;gap:7px;background:rgba(8,12,30,.55);padding:4px 8px;border-radius:6px;min-width:170px}
+.tm i{width:10px;height:10px;border-radius:2px;transform:rotate(45deg);flex:none}
+.tm .n{font-weight:700;font-size:12px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px}
+.tm .bars{width:64px;height:8px;background:rgba(255,255,255,.12);border-radius:2px;position:relative;overflow:hidden;flex:none}
+.tm .bars b{position:absolute;left:0;height:4px;transition:width .2s}.tm .bars .sh{top:0;background:#4fb8ff}.tm .bars .hp{bottom:0;background:#5ee05a}
+.tm.down .bars .hp{background:#ff4a4a}.tm.down .n::after{content:' DOWN';color:#ff6a6a;font-size:10px}.tm.out{opacity:.4}.tm.out .n{text-decoration:line-through}
+#marks{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.mk{position:absolute;left:0;top:0;display:flex;flex-direction:column;align-items:center;gap:2px;will-change:transform}
+.mk .d{width:11px;height:11px;transform:rotate(45deg);border:2px solid rgba(0,0,0,.4)}.mk .n{font-size:11px;font-weight:700;text-shadow:0 1px 2px #000;white-space:nowrap}
+.mk.down .n{color:#ff8080}
+#rumblescore{position:absolute;left:50%;top:calc(46px + var(--st));transform:translateX(-50%);display:flex;align-items:center;gap:12px;background:rgba(8,12,30,.6);padding:5px 14px;border-radius:8px;font-family:var(--display);font-weight:800}
+#rumblescore .t1{color:#41b8ff;font-size:24px}#rumblescore .t2{color:#ff5d5d;font-size:24px}#rumblescore .goal{font-size:11px;opacity:.75;text-transform:uppercase;letter-spacing:.08em}
 #dmgnums{position:fixed;inset:0;pointer-events:none;z-index:6;overflow:hidden}
 .dn{position:absolute;left:0;top:0;font-family:var(--display);font-weight:900;font-style:italic;font-size:26px;color:#fff;
   text-shadow:0 2px 0 rgba(0,0,0,.55),0 0 6px rgba(0,0,0,.4);will-change:transform,opacity;white-space:nowrap}
@@ -323,6 +336,8 @@ body.is-touch #progress{top:calc(50% + 60px)}
       </ul>
     </div>
     <div class="panel">
+      <div class="opt"><label>Mode</label><div class="seg" data-opt="mode"><button data-v="solo">Solo</button><button data-v="duos">Duos</button><button data-v="squads">Squads</button><button data-v="rumble">Rumble</button><button data-v="creative">Creative</button></div></div>
+      <div class="opt"><label>Mutator</label><div class="seg" data-opt="mutator"><button data-v="none">None</button><button data-v="lowgrav">Low grav</button><button data-v="snipers">Snipers</button><button data-v="boom">Boom</button><button data-v="rich">Loaded</button></div></div>
       <div class="opt"><label>Opponents</label><div class="seg" data-opt="bots"><button data-v="14">14</button><button data-v="29">29</button><button data-v="49">49</button><button data-v="74">74</button><button data-v="99">99</button></div></div>
       <div class="opt"><label>Bot skill</label><div class="seg" data-opt="diff"><button data-v="casual">Casual</button><button data-v="normal">Normal</button><button data-v="sweaty">Sweaty</button></div></div>
       <div class="opt"><label>Graphics</label><div class="seg" data-opt="quality"><button data-v="low">Low</button><button data-v="medium">Med</button><button data-v="high">High</button><button data-v="ultra">Ultra</button></div></div>

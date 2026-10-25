@@ -44,6 +44,7 @@ function stormInit() {
 function updateStorm(dt) {
   const S = STORM;
   S.timer -= dt;
+  if (S.state === 'off') return;
   if (S.state === 'wait') {
     if (!S.warned && S.timer < 10 && GAME.time > 15) { S.warned = true; HUD.banner('Storm closing in 10 seconds', '', 2.2, 'storm'); SFX.alert(); }
     if (S.timer <= 0) {

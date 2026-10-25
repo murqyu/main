@@ -2,7 +2,7 @@
 const INPUT = (() => {
   const keys = {}, pressed = new Set();
   let dx = 0, dy = 0, wheel = 0, mouseL = false, mouseR = false, locked = false, expectUnlock = false;
-  const T = { jx: 0, jy: 0, joyId: null, jox: 0, joyY: 0, looks: new Map(), fire: 0, aim: false, crouch: false };
+  const T = { jx: 0, jy: 0, joyId: null, jox: 0, joyY: 0, looks: new Map(), fire: 0, aim: false, crouch: false, useHeld: false };
   const canvas = document.getElementById('c');
   const GAME_KEYS = new Set(['Space', 'Tab', 'F1', 'F2', 'F3', 'F4', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
   function inGame() { return GAME.state !== 'menu' && !GAME.paused; }
@@ -65,7 +65,8 @@ const INPUT = (() => {
     tap('tb-reload', () => pressed.add('KeyR'));
     tap('tb-build', () => pressed.add('KeyQ'));
     tap('tb-edit', () => pressed.add('KeyG'));
-    tap('tb-use', () => pressed.add('KeyE'));
+    tap('tb-use', () => { pressed.add('KeyE'); T.useHeld = true; });
+    $('tb-use').addEventListener('pointerup', () => { T.useHeld = false; }); $('tb-use').addEventListener('pointercancel', () => { T.useHeld = false; });
     tap('tb-map', () => pressed.add('KeyM'));
     tap('tb-pause', () => pause());
     tap('tb-aim', () => { if (player && player.buildMode) pressed.add('Mouse2'); else { T.aim = !T.aim; $('tb-aim').classList.toggle('on', T.aim); } });
@@ -100,6 +101,7 @@ const INPUT = (() => {
       A.aimPressed = pressed.has('Mouse2');
       A.reload = pressed.has('KeyR');
       A.interact = pressed.has('KeyE');
+      A.interactHeld = !!keys.KeyE || T.useHeld;
       A.pickaxe = pressed.has('KeyF');
       A.buildToggle = pressed.has('KeyQ');
       A.edit = pressed.has('KeyG');

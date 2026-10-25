@@ -275,7 +275,9 @@ function botThink(b) {
   } else { b.visible = false; if (b.target && (!b.target.alive || now - b.lastSeen > 5)) b.target = null; }
   if (!b.visible) hear(b);
   if (b.emote) { if (now > b.emoteEnd || b.visible || now - b.lastHurt < 1) stopEmote(b); else return; }
+  if (b.dummy) { b.state = 'dummy'; b.target = null; b.visible = false; if (!b.hasMove || Math.random() < 0.05) setMove(b, b.home.x + mr(-4, 4), b.home.z + mr(-4, 4), 'dummy'); b.wantSprint = false; return; }
   if (b.npc) { npcThink(b, now); return; }
+  if (teamMode() && b.team && mateThink(b, now)) return;
   botPickupNearby(b);
   const S = STORM;
   const circ = (S.state === 'shrink' || (S.state === 'wait' && S.timer < 25)) ? S.to : S.cur;
@@ -458,6 +460,7 @@ function deathAnim(c, dt) {
   rigDeath(c, dt);
 }
 function botSky(b, dt) {
+  if (b.followDrop && player && player.alive && player.mode !== 'bus') { const k = bots.indexOf(b) % 4; b.dropTarget.set(player.pos.x + Math.cos(k * 1.6) * 6, 0, player.pos.z + Math.sin(k * 1.6) * 6); }
   const dx = b.dropTarget.x - b.pos.x, dz = b.dropTarget.z - b.pos.z, d = Math.hypot(dx, dz);
   b.yaw = turnToward(b.yaw, Math.atan2(-dx, -dz), dt * 3);
   b.pitch = d > 110 ? -0.1 : -1.1;
@@ -537,10 +540,11 @@ function updateBot(b, dt, camX, camZ) {
       wx = dx * len; wz = dz * len;
     }
   }
-  const sp = (b.using ? 2.6 : b.crouch ? 3.6 : b.state === 'fight' ? 6.0 : b.wantSprint ? 8.0 : 6.5) * (b.pos.y < 0.2 ? 0.7 : 1);
+  if (b.reviving) { tickRevive(b, dt, true); wx = 0; wz = 0; }
+  const sp = (b.knocked ? 1.7 : b.reviving ? 0 : b.dummy ? 2.2 : b.using ? 2.6 : b.crouch ? 3.6 : b.state === 'fight' ? 6.0 : b.wantSprint ? 8.0 : 6.5) * (b.pos.y < 0.2 ? 0.7 : 1);
   const k = 1 - Math.exp(-(b.grounded ? 10 : 2.5) * dt);
   b.vel.x += (wx * sp - b.vel.x) * k; b.vel.z += (wz * sp - b.vel.z) * k;
-  if (b.wantJump && b.grounded) { b.vel.y = 8.2; b.grounded = false; }
+  if (b.wantJump && b.grounded && !b.knocked) { b.vel.y = 8.2; b.grounded = false; }
   b.wantJump = false;
   charPhysics(b, dt);
   b.stuckT += dt;
@@ -554,7 +558,7 @@ function updateBot(b, dt, camX, camZ) {
     } else b.stuckCount = 0;
     b.lastPos.copy(b.pos); b.stuckT = 0;
   }
-  if (b.state === 'fight') botCombat(b, dt); else b.aiming = false;
+  if (b.state === 'fight' && !b.knocked) botCombat(b, dt); else b.aiming = false;
   tickTimers(b, dt); tickEye(b, dt);
   if (!b.emote) b.modelYaw = b.yaw;
   b.rig.root.visible = near;

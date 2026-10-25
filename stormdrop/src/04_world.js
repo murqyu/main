@@ -1,5 +1,6 @@
 // ---------- world: collision grid, raycasts, terrain, map generation ----------
-const CELL = 5, LVL = 4, STEP = 0.6, GRAV = 24;
+const CELL = 5, LVL = 4, STEP = 0.6;
+let GRAV = 24;
 const WORLD = { half: 500, seg: 200, step: 5, N: 201, heights: null, pois: [], footprints: [], mapRects: [], lootSpots: [], trees: [], statics: [], mapCanvas: null, islandR: 360, mountains: [], sunDir: null };
 let scene, camera, renderer, sun, hemi, worldGroup = null, skyMesh, waterMesh, cloudGroup;
 const colliders = new Set();
@@ -789,6 +790,7 @@ function buildMapCanvas() {
 function disposeWorld() {
   if (!worldGroup) return;
   worldGroup.traverse((o) => {
+    if (o.isInstancedMesh) o.dispose();   // frees the per-instance buffers
     if (o.geometry && !o.geometry.userData.keep) o.geometry.dispose();
     if (o.material) { const ms = Array.isArray(o.material) ? o.material : [o.material]; for (const m of ms) if (!m.userData.keep) m.dispose(); }
   });

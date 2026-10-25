@@ -130,6 +130,19 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 #flash{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 45%,rgba(255,25,40,.5));opacity:0;transition:opacity .25s}
 #hud.spec #hotbar,#hud.spec #mats,#hud.spec #ammo,#hud.spec #buildhint,#hud.spec #buildbar,#hud.spec #crosshair,#hud.spec #prompt{display:none}
 #fps{position:absolute;left:calc(14px + var(--sl));bottom:calc(84px + var(--sb));font-size:11px;opacity:.5}
+#teampanel{position:absolute;left:calc(14px + var(--sl));top:calc(120px + var(--st));display:flex;flex-direction:column;gap:5px;pointer-events:none}
+.tm{display:flex;align-items:center;gap:7px;background:rgba(8,12,30,.55);padding:4px 8px;border-radius:6px;min-width:170px}
+.tm i{width:10px;height:10px;border-radius:2px;transform:rotate(45deg);flex:none}
+.tm .n{font-weight:700;font-size:12px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px}
+.tm .bars{width:64px;height:8px;background:rgba(255,255,255,.12);border-radius:2px;position:relative;overflow:hidden;flex:none}
+.tm .bars b{position:absolute;left:0;height:4px;transition:width .2s}.tm .bars .sh{top:0;background:#4fb8ff}.tm .bars .hp{bottom:0;background:#5ee05a}
+.tm.down .bars .hp{background:#ff4a4a}.tm.down .n::after{content:' DOWN';color:#ff6a6a;font-size:10px}.tm.out{opacity:.4}.tm.out .n{text-decoration:line-through}
+#marks{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.mk{position:absolute;left:0;top:0;display:flex;flex-direction:column;align-items:center;gap:2px;will-change:transform}
+.mk .d{width:11px;height:11px;transform:rotate(45deg);border:2px solid rgba(0,0,0,.4)}.mk .n{font-size:11px;font-weight:700;text-shadow:0 1px 2px #000;white-space:nowrap}
+.mk.down .n{color:#ff8080}
+#rumblescore{position:absolute;left:50%;top:calc(46px + var(--st));transform:translateX(-50%);display:flex;align-items:center;gap:12px;background:rgba(8,12,30,.6);padding:5px 14px;border-radius:8px;font-family:var(--display);font-weight:800}
+#rumblescore .t1{color:#41b8ff;font-size:24px}#rumblescore .t2{color:#ff5d5d;font-size:24px}#rumblescore .goal{font-size:11px;opacity:.75;text-transform:uppercase;letter-spacing:.08em}
 #dmgnums{position:fixed;inset:0;pointer-events:none;z-index:6;overflow:hidden}
 .dn{position:absolute;left:0;top:0;font-family:var(--display);font-weight:900;font-style:italic;font-size:26px;color:#fff;
   text-shadow:0 2px 0 rgba(0,0,0,.55),0 0 6px rgba(0,0,0,.4);will-change:transform,opacity;white-space:nowrap}
@@ -331,6 +344,8 @@ body.is-touch #progress{top:calc(50% + 60px)}
       </ul>
     </div>
     <div class="panel">
+      <div class="opt"><label>Mode</label><div class="seg" data-opt="mode"><button data-v="solo">Solo</button><button data-v="duos">Duos</button><button data-v="squads">Squads</button><button data-v="rumble">Rumble</button><button data-v="creative">Creative</button></div></div>
+      <div class="opt"><label>Mutator</label><div class="seg" data-opt="mutator"><button data-v="none">None</button><button data-v="lowgrav">Low grav</button><button data-v="snipers">Snipers</button><button data-v="boom">Boom</button><button data-v="rich">Loaded</button></div></div>
       <div class="opt"><label>Opponents</label><div class="seg" data-opt="bots"><button data-v="14">14</button><button data-v="29">29</button><button data-v="49">49</button><button data-v="74">74</button><button data-v="99">99</button></div></div>
       <div class="opt"><label>Bot skill</label><div class="seg" data-opt="diff"><button data-v="casual">Casual</button><button data-v="normal">Normal</button><button data-v="sweaty">Sweaty</button></div></div>
       <div class="opt"><label>Graphics</label><div class="seg" data-opt="quality"><button data-v="low">Low</button><button data-v="medium">Med</button><button data-v="high">High</button><button data-v="ultra">Ultra</button></div></div>
@@ -461,7 +476,7 @@ function hexCss(hex) { return '#' + hex.toString(16).padStart(6, '0'); }
 const _tmpV = new V3(), _tmpV2 = new V3(), _tmpV3 = new V3(), _tmpV4 = new V3();
 const UP = new V3(0, 1, 0);
 
-let SETTINGS = { bots: 29, diff: 'normal', quality: IS_TOUCH ? 'low' : 'high', sens: 1, vol: 0.8, outfit: 0, autoRes: true, tod: 'random', weather: 'random', autoSprint: true, music: 0.55, announcer: true };
+let SETTINGS = { bots: 29, diff: 'normal', quality: IS_TOUCH ? 'low' : 'high', sens: 1, vol: 0.8, outfit: 0, autoRes: true, tod: 'random', weather: 'random', autoSprint: true, music: 0.55, announcer: true, mode: 'solo', mutator: 'none' };
 try { const s = JSON.parse(localStorage.getItem('stormdrop.settings') || 'null'); if (s) SETTINGS = Object.assign(SETTINGS, s); } catch (e) { /* storage unavailable */ }
 if (!['low', 'medium', 'high', 'ultra'].includes(SETTINGS.quality)) SETTINGS.quality = IS_TOUCH ? 'low' : 'high';
 function saveSettings() { try { localStorage.setItem('stormdrop.settings', JSON.stringify(SETTINGS)); } catch (e) { /* ignore */ } }
@@ -1431,7 +1446,7 @@ function makeGrassMaterial() {
   return m;
 }
 function initGrass() {
-  if (GRASS.mesh) { scene.remove(GRASS.mesh); GRASS.mesh = null; }
+  if (GRASS.mesh) { scene.remove(GRASS.mesh); GRASS.mesh.dispose(); GRASS.mesh = null; }
   GRASS.map.clear(); GRASS.cx = GRASS.cz = 1e9;
   const q = Q(); if (!q.grass) return;
   const R = q.grassR, C = GRASS.chunk, side = Math.ceil(R / C) * 2 + 1;
@@ -1534,7 +1549,8 @@ function setEnvIntensity(v) {
 
 // ==== 04_world.js ====
 // ---------- world: collision grid, raycasts, terrain, map generation ----------
-const CELL = 5, LVL = 4, STEP = 0.6, GRAV = 24;
+const CELL = 5, LVL = 4, STEP = 0.6;
+let GRAV = 24;
 const WORLD = { half: 500, seg: 200, step: 5, N: 201, heights: null, pois: [], footprints: [], mapRects: [], lootSpots: [], trees: [], statics: [], mapCanvas: null, islandR: 360, mountains: [], sunDir: null };
 let scene, camera, renderer, sun, hemi, worldGroup = null, skyMesh, waterMesh, cloudGroup;
 const colliders = new Set();
@@ -2324,6 +2340,7 @@ function buildMapCanvas() {
 function disposeWorld() {
   if (!worldGroup) return;
   worldGroup.traverse((o) => {
+    if (o.isInstancedMesh) o.dispose();   // frees the per-instance buffers
     if (o.geometry && !o.geometry.userData.keep) o.geometry.dispose();
     if (o.material) { const ms = Array.isArray(o.material) ? o.material : [o.material]; for (const m of ms) if (!m.userData.keep) m.dispose(); }
   });
@@ -3078,8 +3095,8 @@ const RW_FLOOR = [[0, 42], [1, 34], [2, 17], [3, 6], [4, 1]];
 const WEAPON_W = [['ar', 26], ['burst', 13], ['smg', 16], ['shotgun', 22], ['tac', 12], ['pistol', 12], ['sniper', 7], ['rocket', 3], ['minigun', 2], ['hand', 3], ['heavy', 2]];
 const CONS_W = [['bandage', 28], ['medkit', 11], ['shieldS', 30], ['shieldL', 13], ['slurp', 5], ['grenade', 12], ['launchpad', 3], ['portafort', 3], ['campfire', 4]];
 
-function rollWeapon(rw) { const id = weighted(WEAPON_W); const def = WEAPONS[id]; const r = Math.max(def.minR, weighted(rw)); return { kind: 'weapon', id, rarity: r, mag: def.mag }; }
-function rollCons() { const id = weighted(CONS_W); return { kind: 'consumable', id, count: CONSUMABLES[id].give }; }
+function rollWeapon(rw) { const id = weighted(mutatorLoot() || WEAPON_W); const def = WEAPONS[id]; const r = Math.max(def.minR, weighted(rw)); return { kind: 'weapon', id, rarity: r, mag: def.mag }; }
+function rollCons() { const id = weighted(mutatorCons() || CONS_W); return { kind: 'consumable', id, count: CONSUMABLES[id].give }; }
 function ammoFor(id, mult) { const a = WEAPONS[id].ammo; return { kind: 'ammo', ammo: a, count: Math.round(AMMO[a].give * (mult || 1)) }; }
 function chestLoot() {
   const w = rollWeapon(RW_CHEST), out = [w, ammoFor(w.id)];
@@ -3943,6 +3960,7 @@ function finishUse(c) {
   if (c.isPlayer) SFX.heal(!!def.shield);
 }
 function tickTimers(c, dt) {
+  if (c.knocked) tickKnocked(c, dt);
   if (c.regen > 0) { const k = Math.min(c.regen, dt * 5); c.regen -= k; if (c.hp < 100) c.hp = Math.min(100, c.hp + k); else c.shield = Math.min(100, c.shield + k); }
   if (c.burstQ > 0) c.burstT -= dt;
   if (c.spinning) c.spin = Math.min(1, (c.spin || 0) + dt / 0.65); else c.spin = Math.max(0, (c.spin || 0) - dt * 1.4);
@@ -4584,6 +4602,8 @@ function damageMult(src, target) {
 }
 function applyDamage(t, amt, src, wname, head, kind) {
   if (!t.alive || amt <= 0) return;
+  if (src && src !== t && sameTeam(src, t)) return;
+  if (t.dummy && kind === 'storm') return;
   if (kind === 'storm' || kind === 'fall') { /* bypass shield */ }
   else {
     amt *= damageMult(src, t);
@@ -4605,7 +4625,7 @@ function applyDamage(t, amt, src, wname, head, kind) {
   else if (src && src !== t) onBotDamaged(t, src);
   t.lastHurt = GAME.time;
   if (kind !== 'storm') rigHitFlash(t);
-  if (t.hp <= 0) eliminate(t, src, wname, kind);
+  if (t.hp <= 0) { if (canKnock(t, kind)) knock(t, src, wname); else eliminate(t, src, wname, kind); }
 }
 function nm(c) { return c.isPlayer ? '<b class="me">You</b>' : '<b>' + c.name + '</b>'; }
 function eliminate(t, src, wname, kind) {
@@ -4615,17 +4635,22 @@ function eliminate(t, src, wname, kind) {
   t.alive = false; t.hp = 0; t.deathT = 0.0001; t.using = null; t.reloadT = 0; t.emote = null;
   if (t.rig.root.visible) startDissolve(t);
   GAME.deathLog.push({ t: GAME.time, kind: kind || '', w: wname || '', bySelf: src === t, since: GAME.time - (t.landedAt || 0), y: t.pos.y });
-  dropAll(t);
+  t.knocked = false; t.reviving = null; t.height = 2;
+  if (!MODE().rumble && !t.dummy) dropAll(t);
   let msg;
   if (kind === 'storm') msg = nm(t) + ' <span class="st">got lost in the storm</span>';
   else if (kind === 'fall') msg = nm(t) + ' fell too far';
+  else if (kind === 'bleed') msg = nm(t) + ' bled out';
+  else if (kind === 'wipe') msg = nm(t) + (src && src !== t ? ' was finished off by ' + nm(src) : ' was eliminated');
   else if (src && src !== t) msg = nm(src) + ' eliminated ' + nm(t) + (wname ? ' with the ' + wname : '');
   else msg = nm(t) + ' was eliminated';
   HUD.feed(msg);
   if (src && src !== t && src.alive && !src.isPlayer) src.killEmoteT = GAME.time + mr(0.8, 1.6);
   if (src && src !== t && src.alive) { src.kills++; if (src.isPlayer) { HUD.elimToast(t.name, src.kills); SFX.elim(); HUD.elimMark(); src.streak = (GAME.time - (src.lastElimT || -99) < 5) ? (src.streak || 1) + 1 : 1; src.lastElimT = GAME.time; if (src.streak >= 2) SFX.announce(['', '', 'Double elimination', 'Triple elimination', 'Quad elimination', 'Unstoppable'][Math.min(5, src.streak)], true); } }
   FX.elim(t.pos);
-  GAME.alive = characters.reduce((n, c) => n + (c.alive && !c.npc ? 1 : 0), 0);
+  GAME.alive = characters.reduce((n, c) => n + (c.alive && !c.npc && !c.dummy ? 1 : 0), 0);
+  if (MODE().rumble) rumbleElim(t, src);
+  else checkTeamWipe(t.team, src);
   if (player && player.alive && [25, 10, 5, 3, 2].includes(GAME.alive) && GAME.state === 'play') SFX.announce(GAME.alive === 2 ? 'Final two' : GAME.alive + ' players remain');
   if (t.isPlayer) onPlayerDeath(src, kind);
   else if (GAME.spectating === t) GAME.spectating = src && src.alive ? src : null;
@@ -5252,6 +5277,7 @@ function stormInit() {
 function updateStorm(dt) {
   const S = STORM;
   S.timer -= dt;
+  if (S.state === 'off') return;
   if (S.state === 'wait') {
     if (!S.warned && S.timer < 10 && GAME.time > 15) { S.warned = true; HUD.banner('Storm closing in 10 seconds', '', 2.2, 'storm'); SFX.alert(); }
     if (S.timer <= 0) {
@@ -5562,7 +5588,9 @@ function botThink(b) {
   } else { b.visible = false; if (b.target && (!b.target.alive || now - b.lastSeen > 5)) b.target = null; }
   if (!b.visible) hear(b);
   if (b.emote) { if (now > b.emoteEnd || b.visible || now - b.lastHurt < 1) stopEmote(b); else return; }
+  if (b.dummy) { b.state = 'dummy'; b.target = null; b.visible = false; if (!b.hasMove || Math.random() < 0.05) setMove(b, b.home.x + mr(-4, 4), b.home.z + mr(-4, 4), 'dummy'); b.wantSprint = false; return; }
   if (b.npc) { npcThink(b, now); return; }
+  if (teamMode() && b.team && mateThink(b, now)) return;
   botPickupNearby(b);
   const S = STORM;
   const circ = (S.state === 'shrink' || (S.state === 'wait' && S.timer < 25)) ? S.to : S.cur;
@@ -5745,6 +5773,7 @@ function deathAnim(c, dt) {
   rigDeath(c, dt);
 }
 function botSky(b, dt) {
+  if (b.followDrop && player && player.alive && player.mode !== 'bus') { const k = bots.indexOf(b) % 4; b.dropTarget.set(player.pos.x + Math.cos(k * 1.6) * 6, 0, player.pos.z + Math.sin(k * 1.6) * 6); }
   const dx = b.dropTarget.x - b.pos.x, dz = b.dropTarget.z - b.pos.z, d = Math.hypot(dx, dz);
   b.yaw = turnToward(b.yaw, Math.atan2(-dx, -dz), dt * 3);
   b.pitch = d > 110 ? -0.1 : -1.1;
@@ -5824,10 +5853,11 @@ function updateBot(b, dt, camX, camZ) {
       wx = dx * len; wz = dz * len;
     }
   }
-  const sp = (b.using ? 2.6 : b.crouch ? 3.6 : b.state === 'fight' ? 6.0 : b.wantSprint ? 8.0 : 6.5) * (b.pos.y < 0.2 ? 0.7 : 1);
+  if (b.reviving) { tickRevive(b, dt, true); wx = 0; wz = 0; }
+  const sp = (b.knocked ? 1.7 : b.reviving ? 0 : b.dummy ? 2.2 : b.using ? 2.6 : b.crouch ? 3.6 : b.state === 'fight' ? 6.0 : b.wantSprint ? 8.0 : 6.5) * (b.pos.y < 0.2 ? 0.7 : 1);
   const k = 1 - Math.exp(-(b.grounded ? 10 : 2.5) * dt);
   b.vel.x += (wx * sp - b.vel.x) * k; b.vel.z += (wz * sp - b.vel.z) * k;
-  if (b.wantJump && b.grounded) { b.vel.y = 8.2; b.grounded = false; }
+  if (b.wantJump && b.grounded && !b.knocked) { b.vel.y = 8.2; b.grounded = false; }
   b.wantJump = false;
   charPhysics(b, dt);
   b.stuckT += dt;
@@ -5841,7 +5871,7 @@ function updateBot(b, dt, camX, camZ) {
     } else b.stuckCount = 0;
     b.lastPos.copy(b.pos); b.stuckT = 0;
   }
-  if (b.state === 'fight') botCombat(b, dt); else b.aiming = false;
+  if (b.state === 'fight' && !b.knocked) botCombat(b, dt); else b.aiming = false;
   tickTimers(b, dt); tickEye(b, dt);
   if (!b.emote) b.modelYaw = b.yaw;
   b.rig.root.visible = near;
@@ -6036,7 +6066,7 @@ const HUD = (() => {
       const S = STORM;
       if (S.state === 'wait') { setT(E['storm-text'], (S.idx === 0 ? 'Storm forms ' : 'Storm moves ') + fmtTime(S.timer)); E.stormline.classList.remove('shrinking'); }
       else if (S.state === 'shrink') { setT(E['storm-text'], 'Storm closing ' + fmtTime(S.timer)); E.stormline.classList.add('shrinking'); }
-      else setT(E['storm-text'], 'Final storm');
+      else setT(E['storm-text'], S.state === 'rumble' ? 'Stay in the circle' : S.state === 'off' ? 'No storm' : 'Final storm');
       updateCompass(CAM.yaw);
       crosshair(p);
       E.crosshair.style.display = (p.alive && p.mode === 'ground' && !CAM.scoped && GAME.state !== 'won') ? '' : 'none';
@@ -6075,7 +6105,7 @@ const HUD = (() => {
 const INPUT = (() => {
   const keys = {}, pressed = new Set();
   let dx = 0, dy = 0, wheel = 0, mouseL = false, mouseR = false, locked = false, expectUnlock = false;
-  const T = { jx: 0, jy: 0, joyId: null, jox: 0, joyY: 0, looks: new Map(), fire: 0, aim: false, crouch: false };
+  const T = { jx: 0, jy: 0, joyId: null, jox: 0, joyY: 0, looks: new Map(), fire: 0, aim: false, crouch: false, useHeld: false };
   const canvas = document.getElementById('c');
   const GAME_KEYS = new Set(['Space', 'Tab', 'F1', 'F2', 'F3', 'F4', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
   function inGame() { return GAME.state !== 'menu' && !GAME.paused; }
@@ -6138,7 +6168,8 @@ const INPUT = (() => {
     tap('tb-reload', () => pressed.add('KeyR'));
     tap('tb-build', () => pressed.add('KeyQ'));
     tap('tb-edit', () => pressed.add('KeyG'));
-    tap('tb-use', () => pressed.add('KeyE'));
+    tap('tb-use', () => { pressed.add('KeyE'); T.useHeld = true; });
+    $('tb-use').addEventListener('pointerup', () => { T.useHeld = false; }); $('tb-use').addEventListener('pointercancel', () => { T.useHeld = false; });
     tap('tb-map', () => pressed.add('KeyM'));
     tap('tb-pause', () => pause());
     tap('tb-aim', () => { if (player && player.buildMode) pressed.add('Mouse2'); else { T.aim = !T.aim; $('tb-aim').classList.toggle('on', T.aim); } });
@@ -6173,6 +6204,7 @@ const INPUT = (() => {
       A.aimPressed = pressed.has('Mouse2');
       A.reload = pressed.has('KeyR');
       A.interact = pressed.has('KeyE');
+      A.interactHeld = !!keys.KeyE || T.useHeld;
       A.pickaxe = pressed.has('KeyF');
       A.buildToggle = pressed.has('KeyQ');
       A.edit = pressed.has('KeyG');
@@ -6184,6 +6216,258 @@ const INPUT = (() => {
     },
     endFrame() { dx = 0; dy = 0; wheel = 0; pressed.clear(); },
   };
+})();
+
+// ==== 12b_modes.js ====
+// ---------- modes: solo / duos / squads (knock + revive), team rumble (respawns), creative; mutators ----------
+const MODES = {
+  solo:     { name: 'Solo', team: 1 },
+  duos:     { name: 'Duos', team: 2 },
+  squads:   { name: 'Squads', team: 4 },
+  rumble:   { name: 'Team Rumble', rumble: true },
+  creative: { name: 'Creative', creative: true },
+};
+const MUTATORS = {
+  none:    { name: 'No mutator' },
+  lowgrav: { name: 'Low gravity', grav: 9.5 },
+  snipers: { name: 'Snipers only', loot: [['sniper', 40], ['heavy', 25], ['hand', 22], ['pistol', 13]] },
+  boom:    { name: 'Explosives', loot: [['rocket', 70], ['tac', 15], ['burst', 15]], cons: [['grenade', 60], ['shieldS', 20], ['medkit', 20]] },
+  rich:    { name: 'Loaded', rich: true },
+};
+const MODE = () => MODES[SETTINGS.mode] || MODES.solo;
+const MUT = () => MUTATORS[SETTINGS.mutator] || MUTATORS.none;
+const TEAM_COLORS = ['#41b8ff', '#ffd23f', '#ff5d8f', '#5ee05a'];
+function teamMode() { const M = MODE(); return (M.team || 1) > 1; }
+function standing(c) { return c.alive && !c.knocked; }
+function teamStanding(team) { return characters.some((c) => c.team === team && standing(c) && !c.npc); }
+function mates(c) { return characters.filter((q) => q !== c && q.team && q.team === c.team); }
+// ---------- teams ----------
+function assignTeams() {
+  const M = MODE();
+  for (const c of characters) c.team = 0;
+  if (M.rumble) {
+    const pool = characters.filter((c) => !c.npc);
+    pool.forEach((c, i) => { c.team = c === player ? 1 : (i % 2 ? 1 : 2); });
+    // keep the sides even
+    let a = pool.filter((c) => c.team === 1).length, b = pool.length - a;
+    for (const c of pool) { if (a - b > 1 && c !== player && c.team === 1) { c.team = 2; a--; b++; } }
+    return;
+  }
+  const size = M.team || 1;
+  if (size === 1) { characters.forEach((c, i) => { if (!c.npc) c.team = i + 1; }); return; }
+  const pool = characters.filter((c) => !c.npc && c !== player);
+  player.team = 1; let t = 1, n = 1;
+  for (const c of pool) { if (n >= size) { t++; n = 0; } c.team = t; n++; }
+  // squads land together: everyone copies their first member's drop
+  const lead = new Map();
+  for (const c of characters) {
+    if (c.isPlayer || c.npc || !c.team) continue;
+    if (c.team === 1) { c.mate = true; c.followDrop = true; c.jumpAt = 2; continue; }
+    const L = lead.get(c.team);
+    if (!L) lead.set(c.team, c);
+    else { c.dropTarget.set(L.dropTarget.x + mr(-12, 12), 0, L.dropTarget.z + mr(-12, 12)); c.jumpAt = L.jumpAt + mr(0.002, 0.012); }
+  }
+}
+// ---------- knocks + revives ----------
+function canKnock(t, kind) {
+  if (!teamMode() || t.knocked || t.npc || kind === 'storm') return false;
+  return characters.some((c) => c !== t && c.team === t.team && standing(c));
+}
+function knock(t, src, wname) {
+  t.knocked = true; t.hp = 100; t.shield = 0; t.using = null; t.reloadT = 0; t.buildMode = null; t.emote = null; t.aiming = false; t.sliding = false;
+  t.height = 1.05; t.knockT = GAME.time; t.reviving = null; t.knockedBy = src;
+  if (t.vehicle) exitVehicle(t); t.zip = null; t.mantle = null;
+  t.prevSlot = t.slot; t.slot = -1; updateHeld(t); t.rig.heldKey = 'knock';
+  for (const m of [t.rig.gunChest, t.rig.gunHand]) while (m.children.length) m.remove(m.children[0]);
+  HUD.feed((src && src !== t ? nm(src) + ' knocked ' : '') + nm(t) + (src && src !== t ? '' : ' is down'));
+  if (src && src.isPlayer) { HUD.banner('Knocked ' + t.name, '', 1.2); SFX.hit(true, false); }
+  if (t.isPlayer) { HUD.banner('You are down', 'Crawl to safety. A teammate can revive you.', 3); SFX.hurt(); endEdit(t, false); }
+  FX.burst(t.pos.x, t.pos.y + 1, t.pos.z, 20, 0xff4a4a, 4, 0.5, 0.25, true, -4);
+}
+function reviveDone(t, by) {
+  t.knocked = false; t.hp = 30; t.shield = 0; t.height = 2.0; t.reviving = null; t.rig.heldKey = '';
+  t.slot = t.prevSlot !== undefined ? t.prevSlot : -1; if (t.slot >= 0 && !t.inv[t.slot]) t.slot = -1; updateHeld(t);
+  HUD.feed(nm(by) + ' revived ' + nm(t));
+  FX.burst(t.pos.x, t.pos.y + 1, t.pos.z, 24, 0x5ee05a, 4, 0.6, 0.25, true, -2);
+  if (t.isPlayer || by.isPlayer) SFX.heal(false);
+}
+// called when a standing character goes down for good: knocked teammates with nobody left are wiped
+function checkTeamWipe(team, src) {
+  if (!teamMode() || !team || teamStanding(team)) return;
+  for (const c of characters) if (c.team === team && c.alive && c.knocked) eliminate(c, c.knockedBy || src, '', 'wipe');
+}
+function tickKnocked(c, dt) {
+  if (!c.knocked || !c.alive) return;
+  c.hp -= dt * 2.2;
+  if (c.hp <= 0) { c.hp = 0; eliminate(c, c.knockedBy || c.lastAttacker, '', 'bleed'); }
+}
+// revive progress for whoever is holding the interaction (player or bot)
+function tickRevive(r, dt, holding) {
+  const R = r.reviving; if (!R) return;
+  const t = R.target;
+  if (!holding || !t.alive || !t.knocked || r.knocked || !r.alive || r.pos.distanceTo(t.pos) > 2.6 || GAME.time - r.lastHurt < 0.2) { r.reviving = null; return; }
+  R.t += dt; r.vel.x = 0; r.vel.z = 0;
+  if (R.t >= 5) { r.reviving = null; reviveDone(t, r); }
+}
+function nearestKnockedMate(c, maxD) {
+  let best = null, bd = maxD;
+  for (const q of characters) { if (q === c || !q.alive || !q.knocked || q.team !== c.team) continue; const d = q.pos.distanceTo(c.pos); if (d < bd) { bd = d; best = q; } }
+  return best;
+}
+// ---------- team rumble ----------
+const RUMBLE = { target: 60, score: [0, 0, 0], respawns: [] };
+function rumbleSetup() {
+  RUMBLE.score = [0, 0, 0]; RUMBLE.respawns = [];
+  RUMBLE.target = Math.max(25, Math.round(characters.filter((c) => !c.npc).length * 1.6));
+  const S = STORM, r = 230 * (WORLD.scale || 1);
+  S.state = 'rumble'; S.cur = { x: 0, z: 0, r }; S.from = { x: 0, z: 0, r }; S.to = { x: 0, z: 0, r }; S.timer = 0; S.dmg = 2;
+}
+function rumbleElim(t, src) {
+  if (src && src !== t && src.team && src.team !== t.team) RUMBLE.score[src.team] = (RUMBLE.score[src.team] || 0) + 1;
+  RUMBLE.respawns.push({ c: t, at: GAME.time + 6 });
+  if (RUMBLE.score[1] >= RUMBLE.target || RUMBLE.score[2] >= RUMBLE.target) rumbleEnd(RUMBLE.score[1] >= RUMBLE.target ? 1 : 2);
+}
+function rumbleEnd(winner) {
+  if (GAME.state !== 'play' && GAME.state !== 'dead') return;
+  const win = winner === player.team;
+  GAME.state = win ? 'won' : 'lost'; GAME.placement = win ? 1 : 2;
+  HUD.banner(win ? 'Victory' : 'Defeat', 'Team ' + winner + ' reached ' + RUMBLE.target + ' eliminations', 3);
+  if (win) { SFX.victory(); if (player.alive) { player.slot = -1; playEmote(player, 'victory'); } } else SFX.defeat();
+  setTimeout(() => showEnd(win), 2200);
+}
+function respawn(c) {
+  const S = STORM, a = Math.random() * TAU, r = Math.sqrt(Math.random()) * S.cur.r * 0.7;
+  // drop in near living teammates when there are any
+  const buddies = characters.filter((q) => q !== c && q.alive && q.team === c.team && q.mode === 'ground');
+  const near = buddies.length ? pick(buddies).pos : null;
+  const x = near ? near.x + mr(-40, 40) : S.cur.x + Math.cos(a) * r, z = near ? near.z + mr(-40, 40) : S.cur.z + Math.sin(a) * r;
+  c.alive = true; c.hp = 100; c.shield = 0; c.knocked = false; c.height = 2; c.deathT = 0; c.using = null; c.reloadT = 0; c.regen = 0;
+  for (const k of MAT_ORDER) c.mats[k] = Math.max(c.mats[k], 60);
+  c.mode = 'sky'; c.grounded = false; c.pos.set(x, Math.max(groundH(x, z), 0) + 110, z); c.vel.set(0, -10, 0);
+  if (c.rig.dissolve) { c.rig.dissolve = null; for (const m of c.rig.meshes) m.material = CHAR_MAT; }
+  c.rig.root.visible = true; c.rig.root.scale.set(1, 1, 1);
+  if (!c.isPlayer) { c.state = 'roam'; c.target = null; c.dropTarget.set(x + mr(-20, 20), 0, z + mr(-20, 20)); }
+  else { GAME.state = 'play'; $id('spec').hidden = true; HUD.banner('Back in the fight', '', 1.5); }
+}
+function updateRumble(dt) {
+  for (let i = RUMBLE.respawns.length - 1; i >= 0; i--) { const R = RUMBLE.respawns[i]; if (GAME.time >= R.at) { RUMBLE.respawns.splice(i, 1); if (GAME.state === 'play' || (GAME.state === 'dead' && R.c.isPlayer)) respawn(R.c); } }
+}
+// ---------- creative ----------
+function creativeSetup() {
+  const S = STORM; S.state = 'off'; S.cur = { x: 0, z: 0, r: 99999 }; S.from = S.cur; S.to = S.cur; STORM.mesh.visible = false;
+  const spot = WORLD.lodge || WORLD.pois.find((p) => p.type === 'town') || WORLD.pois[0];
+  const x = spot ? spot.x + spot.r + 8 : 0, z = spot ? spot.z : 0;
+  player.mode = 'ground'; player.pos.set(x, walkH(x, z) + 0.2, z); player.rig.root.visible = true; player.grounded = false;
+  BUS.mesh.visible = false; BUS.t = 2;
+  player.inv = [null, null, null, null, null];
+  for (const [id, r] of [['ar', 4], ['shotgun', 4], ['heavy', 4], ['rocket', 4]]) giveItem(player, { kind: 'weapon', id, rarity: r, mag: WEAPONS[id].mag });
+  giveItem(player, { kind: 'consumable', id: 'portafort', count: 2 });
+  for (const k in player.ammo) player.ammo[k] = 999;
+  selectSlot(player, 0);
+  // practice dummies that pop back up
+  for (const b of bots) {
+    if (b.npc) continue;
+    const a = Math.random() * TAU, d = mr(12, 30), bx = x + Math.cos(a) * d, bz = z + Math.sin(a) * d;
+    b.dummy = true; b.mode = 'ground'; b.pos.set(bx, walkH(bx, bz), bz); b.home = new V3(bx, 0, bz); b.rig.root.visible = true; b.state = 'dummy'; b.shield = 50;
+  }
+  HUD.banner('Creative', 'Infinite materials · no storm · practice dummies respawn · try the vehicles and ziplines', 5);
+}
+function creativeTick(dt) {
+  for (const k of MAT_ORDER) player.mats[k] = 999;
+  for (const k in player.ammo) player.ammo[k] = 999;
+  for (const b of bots) {
+    if (!b.dummy || b.alive) continue;
+    b.respawnT = (b.respawnT || 0) + dt;
+    if (b.respawnT > 3) { b.respawnT = 0; b.alive = true; b.hp = 100; b.shield = 50; b.deathT = 0; b.pos.set(b.home.x, walkH(b.home.x, b.home.z), b.home.z); if (b.rig.dissolve) { b.rig.dissolve = null; for (const m of b.rig.meshes) m.material = CHAR_MAT; } b.rig.root.visible = true; GAME.alive = characters.filter((c) => c.alive).length; }
+  }
+}
+// ---------- mutators ----------
+function applyMutators() {
+  const M = MUT();
+  GRAV = M.grav || 24;
+  if (M.rich) for (const c of characters) { for (const k of MAT_ORDER) c.mats[k] = 300; c.shield = 100; }
+}
+function mutatorLoot() { return MUT().loot || null; }
+function mutatorCons() { return MUT().cons || null; }
+// ---------- teammate brains ----------
+// returns true when it took over this bot's decision
+function mateThink(b, now) {
+  // revive downed teammates when the coast is clear
+  const k = nearestKnockedMate(b, 80);
+  if (k && !b.visible) {
+    b.state = 'revive'; b.wantSprint = true;
+    if (b.pos.distanceTo(k.pos) > 1.8) { setMove(b, k.pos.x, k.pos.z, 'revive'); b.reviving = null; }
+    else { b.hasMove = false; if (!b.reviving || b.reviving.target !== k) b.reviving = { target: k, t: 0 }; }
+    return true;
+  }
+  if (b.knocked) {
+    b.state = 'crawl'; const help = characters.find((q) => q !== b && q.alive && !q.knocked && q.team === b.team);
+    if (help) setMove(b, help.pos.x, help.pos.z, 'crawl'); else b.hasMove = false;
+    return true;
+  }
+  if (!b.mate || !player) return false;
+  // share the player's fights
+  if (!b.visible && player.alive && player.aimChar && player.aimChar.alive && now - (GAME.combatT || -99) < 2 && !sameTeam(b, player.aimChar) && hasWeapon(b)) {
+    const t = player.aimChar; if (b.pos.distanceTo(t.pos) < 90) { b.target = t; b.lastSeen = now; b.lastSeenPos.copy(t.pos); }
+  }
+  // stay with the player when nothing urgent is going on
+  if (!b.target && player.alive && player.mode === 'ground' && !needsLoot(b)) {
+    const d = b.pos.distanceTo(player.pos);
+    if (d > 18) { b.state = 'follow'; b.wantSprint = d > 30; const a = (bots.indexOf(b) % 4) * 1.6; setMove(b, player.pos.x + Math.cos(a) * 5, player.pos.z + Math.sin(a) * 5, 'follow'); return true; }
+  }
+  return false;
+}
+// ---------- team HUD: roster, overhead markers, rumble score ----------
+const TEAMHUD = (() => {
+  let panel = null, marks = null, score = null, rows = new Map(), tags = new Map(), sig = '';
+  function ensure() {
+    if (panel) return;
+    const hud = document.getElementById('hud');
+    panel = document.createElement('div'); panel.id = 'teampanel'; hud.appendChild(panel);
+    marks = document.createElement('div'); marks.id = 'marks'; hud.appendChild(marks);
+    score = document.createElement('div'); score.id = 'rumblescore'; score.hidden = true; hud.appendChild(score);
+  }
+  function reset() {
+    ensure(); panel.innerHTML = ''; marks.innerHTML = ''; rows.clear(); tags.clear(); sig = '';
+    score.hidden = !MODE().rumble;
+  }
+  const _v = new V3();
+  function update() {
+    if (!panel || !player || GAME.state === 'menu') return;
+    const M = MODE();
+    if (M.rumble) score.innerHTML = '<span class="t1">' + RUMBLE.score[1] + '</span><span class="goal">first to ' + RUMBLE.target + '</span><span class="t2">' + RUMBLE.score[2] + '</span>';
+    const squad = teamMode() ? characters.filter((c) => c.team === player.team) : [];
+    const s = squad.map((c) => c.name).join('|');
+    if (s !== sig) {
+      sig = s; panel.innerHTML = ''; rows.clear();
+      squad.forEach((c, i) => {
+        const r = document.createElement('div'); r.className = 'tm';
+        r.innerHTML = '<i style="background:' + TEAM_COLORS[i % 4] + '"></i><span class="n"></span><span class="bars"><b class="sh"></b><b class="hp"></b></span>';
+        r.querySelector('.n').textContent = c.isPlayer ? 'You' : c.name;
+        panel.appendChild(r); rows.set(c, r); c.teamColor = TEAM_COLORS[i % 4];
+      });
+    }
+    for (const [c, r] of rows) {
+      r.classList.toggle('down', c.alive && !!c.knocked); r.classList.toggle('out', !c.alive);
+      r.querySelector('.hp').style.width = (c.alive ? clamp(c.hp, 0, 100) : 0) + '%';
+      r.querySelector('.sh').style.width = (c.alive && !c.knocked ? clamp(c.shield, 0, 100) : 0) + '%';
+    }
+    // markers over teammates' heads, visible through walls
+    const W = innerWidth, H = innerHeight, show = [];
+    if (teamMode() || M.rumble) for (const c of characters) if (c !== player && c.alive && c.team === player.team && c.mode !== 'bus') show.push(c);
+    for (const [c, el] of tags) if (!show.includes(c)) { el.remove(); tags.delete(c); }
+    for (const c of show) {
+      let el = tags.get(c);
+      if (!el) { el = document.createElement('div'); el.className = 'mk'; el.innerHTML = '<span class="d"></span><span class="n"></span>'; el.querySelector('.n').textContent = c.name; marks.appendChild(el); tags.set(c, el); }
+      _v.set(c.pos.x, c.pos.y + (c.knocked ? 1.3 : 2.5), c.pos.z).project(camera);
+      if (_v.z > 1) { el.style.display = 'none'; continue; }
+      const d = player.pos.distanceTo(c.pos);
+      el.style.display = ''; el.style.transform = 'translate(' + ((_v.x * 0.5 + 0.5) * W).toFixed(0) + 'px,' + ((-_v.y * 0.5 + 0.5) * H).toFixed(0) + 'px) translate(-50%,-100%)';
+      el.classList.toggle('down', !!c.knocked); el.querySelector('.d').style.background = c.knocked ? '#ff4a4a' : (c.teamColor || '#41b8ff');
+      el.querySelector('.n').textContent = (c.knocked ? '✚ ' : '') + c.name + (d > 25 ? ' · ' + Math.round(d) + 'm' : '');
+    }
+  }
+  return { reset, update };
 })();
 
 // ==== 13_game.js ====
@@ -6234,6 +6518,7 @@ function jumpOut(c) {
   c.pos.set(BUS.pos.x + mr(-2, 2), BUS.pos.y - 11, BUS.pos.z + mr(-2, 2));
   c.vel.set(BUS.dir.x * 10, -6, BUS.dir.z * 10);
   c.rig.root.visible = true;
+  if (c.isPlayer) { let k = 0; for (const b of bots) if (b.mate && b.mode === 'bus') b.jumpAt = BUS.t + 0.004 * ++k; }
   if (c.isPlayer) { SFX.jump(); HUD.banner('Skydiving', IS_TOUCH ? 'Steer with the left stick. Look down to dive faster.' : 'Steer with WASD. Look down to dive faster. Space opens the glider.', 3); }
   else c.yaw = Math.atan2(-BUS.dir.x, -BUS.dir.z);
 }
@@ -6283,6 +6568,7 @@ function updatePlayer(dt) {
   if (p.mantle) { updateMantle(p, dt); tickEye(p, dt); p.modelYaw = p.yaw; return; }
   if (p.zip) { updateZip(p, dt, A.jump); tickEye(p, dt); return; }
   if (p.vehicle) { updateVehicle(p.vehicle, dt, { mx, my, jump: A.jump }); if (A.interact) exitVehicle(p); tickEye(p, dt); return; }
+  if (p.knocked) { A.jump = false; A.crouchPressed = false; A.crouch = false; p.buildMode = null; }
   const fx = -Math.sin(p.yaw), fz = -Math.cos(p.yaw), rx = Math.cos(p.yaw), rz = -Math.sin(p.yaw);
   let wx = fx * my + rx * mx, wz = fz * my + rz * mx; const wl = Math.hypot(wx, wz); if (wl > 1) { wx /= wl; wz /= wl; }
   p.aiming = A.aim && !p.buildMode && !!curWeapon(p) && !p.emote;
@@ -6299,6 +6585,8 @@ function updatePlayer(dt) {
   if (p.using) spd = 2.8;
   if (p.pos.y < 0.2) spd *= 0.7;
   if (p.emote) spd = 0;
+  if (p.knocked) spd = 1.7;
+  if (p.reviving) spd = 0;
   if (p.sliding) slidePhysics(p, dt, wx, wz, A.crouch);
   else {
     const k = 1 - Math.exp(-(p.grounded ? 14 : 3) * dt);
@@ -6375,6 +6663,10 @@ function playerInteract(p, A) {
   const ch = nearestChest(p, 2.6);
   let target = ch, label = ch ? 'Open chest' : '', rar = 4;
   if (!ch) { const it = nearestItem(p, 2.3); if (it && it.kind !== 'ammo' && it.kind !== 'mats') { target = it; label = 'Pick up ' + itemLabel(it); rar = itemRarity(it); } }
+  const down = teamMode() ? nearestKnockedMate(p, 2.4) : null;
+  if (down) { target = down; label = (A.interactHeld ? 'Reviving ' : 'Hold E to revive ') + down.name; rar = 1; if (A.interactHeld && !p.reviving) p.reviving = { target: down, t: 0 }; }
+  tickRevive(p, GAME.dtLast || 0.016, !!A.interactHeld && !!down);
+  if (down) { HUD.prompt(label, rar); return; }
   let car = null;
   if (!target) { car = nearestVehicle(p, 3); if (car) { target = car; label = 'Drive quad'; rar = 2; } }
   let zipT = null;
@@ -6394,6 +6686,7 @@ function playerActions(dt) {
   if (!A || !p.alive || p.mode !== 'ground' || GAME.state === 'won') { if (ghostMesh) ghostMesh.visible = false; HUD.prompt(null); return; }
   if (p.zip) { HUD.prompt(IS_TOUCH ? 'Tap JUMP to let go' : 'Space to let go', 2); tickTimers(p, dt); animateRig(p, dt); return; }
   if (p.vehicle) { HUD.prompt(null); showGhost(null); tickTimers(p, dt); animateRig(p, dt); return; }
+  if (p.knocked) { showGhost(null); HUD.prompt('You are down: crawl to safety', 4); tickTimers(p, dt); tickEye(p, dt); animateRig(p, dt); return; }
   computeAim(p);
   if (p.editing) { showGhost(null); updateEdit(p, A); }
   else if (A.edit && editTarget(p)) startEdit(p, editTarget(p));
@@ -6571,16 +6864,17 @@ function spawnVaultCrew() {
   mk('Vault Guard', 'burst', 3, guard(), false); mk('Vault Guard', 'tac', 3, guard(), false);
 }
 function setupMatch() {
-  if (!GAME.menuWorldFresh || WORLD.scale !== islandScaleFor(SETTINGS.bots)) newWorld((Math.random() * 1e9) | 0);
+  if (!GAME.menuWorldFresh || WORLD.scale !== islandScaleFor(SETTINGS.bots) || GAME.worldMut !== SETTINGS.mutator) { newWorld((Math.random() * 1e9) | 0); GAME.worldMut = SETTINGS.mutator; }
   GAME.menuWorldFresh = false;
   characters.length = 0; bots.length = 0; usedNames.clear(); NOISE.length = 0; PATHQ.length = 0; DROPS.clear();
   FX.clear(); VFX.clear(); HUD.reset(); INPUT.clearAim(); INPUT.clearCrouch();
   player = makeCharacter(true, 'You', OUTFITS[SETTINGS.outfit % OUTFITS.length]); player.emote = null;
   characters.push(player);
-  for (let i = 0; i < SETTINGS.bots; i++) { const b = makeBot(); bots.push(b); characters.push(b); }
+  const nb = MODE().creative ? 6 : SETTINGS.bots;
+  for (let i = 0; i < nb; i++) { const b = makeBot(); bots.push(b); characters.push(b); }
   setupBus(); stormInit();
-  spawnVaultCrew();
-  spawnVehicles(7);
+  if (!MODE().creative) spawnVaultCrew();
+  spawnVehicles(Math.round(7 * WORLD.scale));
   // bots pick a landing spot and leave the dropship when it passes closest to it
   const pathLen = BUS.start.distanceTo(BUS.end);
   for (const b of bots) {
@@ -6588,6 +6882,7 @@ function setupMatch() {
     const t = ((b.dropTarget.x - BUS.start.x) * BUS.dir.x + (b.dropTarget.z - BUS.start.z) * BUS.dir.z) / pathLen;
     b.jumpAt = clamp(t - 0.06 + Math.random() * 0.05, 0.04, 0.95);
   }
+  assignTeams(); applyMutators();
   const [tod, wx] = pickTimeOfDay(); applyEnvironment(tod, wx);
   Object.assign(GAME, { combatT: -99, hbT: 0, deathLog: [], state: 'play', time: 0, alive: characters.filter((c) => !c.npc).length, spectating: null, placement: 0, killer: null, deathKind: '', deathTime: 0, paused: false, stats: { mats: 0, builds: 0, chests: 0 } });
   player.yaw = Math.atan2(-BUS.dir.x, -BUS.dir.z) + 0.7; player.pitch = -0.28;
@@ -6595,17 +6890,53 @@ function setupMatch() {
   HUD.show(true); HUD.toggleMap(false);
   HUD.banner('Jump when ready', TOD[tod].name + ' · ' + WEATHER[wx].name + ' — ' + (IS_TOUCH ? 'tap JUMP to leave the dropship' : 'press Space to leave the dropship'), 5);
   STORM.mesh.visible = true;
+  GAME.endShown = false;
+  if (MODE().rumble) rumbleSetup();
+  if (MODE().creative) creativeSetup();
+  if (MODE().name !== 'Solo' || MUT().name !== 'No mutator') HUD.banner(MODE().creative ? 'Creative' : 'Jump when ready', MODE().name + (MUT().name !== 'No mutator' ? ' · ' + MUT().name : '') + ' — ' + (IS_TOUCH ? 'tap JUMP to leave the dropship' : 'press Space to leave the dropship'), 5);
+  TEAMHUD.reset();
 }
 function onPlayerDeath(src, kind) {
-  GAME.placement = GAME.alive + 1;
+  const M = MODE();
+  if (M.rumble) {
+    GAME.state = 'dead'; GAME.deathTime = GAME.time; GAME.killer = src && src !== player ? src : null;
+    GAME.spectating = GAME.killer && GAME.killer.alive ? GAME.killer : null; CAM.specYaw = player.yaw;
+    showGhost(null); HUD.prompt(null); SFX.loop('wind', 0); endEdit(player, false);
+    HUD.banner('Eliminated', 'Respawning in 6 seconds', 3);
+    return;
+  }
+  if (teamMode() && teamStanding(player.team)) {
+    GAME.state = 'dead'; GAME.deathTime = GAME.time; GAME.deathKind = kind || ''; GAME.killer = src && src !== player ? src : null;
+    GAME.spectating = mates(player).find((c) => c.alive) || null; CAM.specYaw = player.yaw;
+    showGhost(null); HUD.prompt(null); SFX.loop('wind', 0); endEdit(player, false);
+    HUD.banner('Eliminated', 'Spectating your team', 2.5); $id('spec').hidden = false; updateSpecName();
+    return;
+  }
+  GAME.placement = teamMode() ? new Set(characters.filter((c) => c.alive && !c.npc).map((c) => c.team)).size + 1 : GAME.alive + 1;
   GAME.deathTime = GAME.time; GAME.state = 'dead'; GAME.deathKind = kind || '';
   GAME.killer = src && src !== player ? src : null;
   GAME.spectating = GAME.killer && GAME.killer.alive ? GAME.killer : null;
   CAM.specYaw = player.yaw;
   showGhost(null); HUD.prompt(null); SFX.loop('wind', 0); SFX.loop('slide', 0); SFX.defeat(); endEdit(player, false);
+  GAME.endShown = true;
   setTimeout(() => { if (GAME.state === 'dead') showEnd(false); }, 1700);
 }
 function checkEnd() {
+  const M = MODE();
+  if (M.rumble || M.creative || !player) return;
+  if (teamMode()) {
+    const teams = new Set(characters.filter((c) => c.alive && !c.npc).map((c) => c.team));
+    const mine = teams.has(player.team);
+    if (mine && teams.size <= 1 && (GAME.state === 'play' || GAME.state === 'dead')) {
+      const wasDead = GAME.state === 'dead';
+      GAME.state = 'won'; GAME.placement = 1; SFX.victory();
+      HUD.banner('Victory', 'Your team is the last one standing', 3);
+      for (const c of characters) if (c.alive && c.knocked) reviveDone(c, c);
+      if (player.alive) { player.slot = -1; playEmote(player, 'victory'); CAM.orbit = player.yaw; }
+      setTimeout(() => showEnd(true), wasDead ? 900 : 1600);
+    } else if (!mine && GAME.state === 'dead' && !GAME.endShown) { GAME.endShown = true; GAME.placement = teams.size + 1; setTimeout(() => showEnd(false), 1500); }
+    return;
+  }
   if (GAME.state === 'play' && player && player.alive && GAME.alive <= 1) {
     GAME.state = 'won'; GAME.placement = 1; SFX.victory();
     HUD.banner('Victory', 'Last one standing', 3);
@@ -6623,9 +6954,11 @@ function showEnd(win) {
   $id('endscreen').hidden = false; $id('spec').hidden = true;
   HUD.toggleMap(false);
   const pl = $id('end-place'); pl.textContent = '#' + GAME.placement; pl.className = 'place' + (win ? ' win' : '');
-  $id('end-sub').textContent = win ? 'Last one standing' : GAME.placement <= 5 ? 'So close' : GAME.placement <= 10 ? 'Top 10' : 'Eliminated';
+  const M = MODE();
+  $id('end-sub').textContent = M.rumble ? (win ? 'Your team won' : 'Your team lost') : win ? (teamMode() ? 'Your team is the last one standing' : 'Last one standing') : GAME.placement <= 5 ? 'So close' : GAME.placement <= 10 ? 'Top 10' : 'Eliminated';
   let detail;
-  if (win) detail = 'You outlasted ' + (characters.length - 1) + ' players.';
+  if (M.rumble) detail = 'Final score ' + RUMBLE.score[1] + ' - ' + RUMBLE.score[2] + '.';
+  else if (win) detail = 'You outlasted ' + (characters.filter((c) => !c.npc).length - 1) + ' players.';
   else if (GAME.killer) detail = 'Eliminated by ' + GAME.killer.name + '.';
   else if (GAME.deathKind === 'storm') detail = 'The storm caught you.';
   else if (GAME.deathKind === 'fall') detail = 'That fall was too far.';
@@ -6642,7 +6975,8 @@ function startSpectate() {
   if (!GAME.spectating || !GAME.spectating.alive) nextSpectate(); else updateSpecName();
 }
 function nextSpectate() {
-  const alive = bots.filter((b) => b.alive && b.mode !== 'bus');
+  const team = bots.filter((b) => b.alive && b.mode !== 'bus' && b.team === player.team && teamMode());
+  const alive = team.length ? team : bots.filter((b) => b.alive && b.mode !== 'bus');
   if (!alive.length) { backToResults(); return; }
   GAME.spectating = alive[(alive.indexOf(GAME.spectating) + 1) % alive.length];
   CAM.specYaw = GAME.spectating.yaw; updateSpecName();
@@ -6740,6 +7074,7 @@ function wireMenu() {
 // ---------- main loop ----------
 let _last = performance.now(), _fpsT = 0, _fpsN = 0;
 function frame(dt) {
+  GAME.dtLast = dt;
   if (GAME.state === 'menu') { menuCamera(dt); updateEnv(dt); updateAudio(dt); FX.update(dt); VFX.update(dt); INPUT.endFrame(); return; }
   if (GAME.paused) { INPUT.endFrame(); return; }
   GAME.time += dt;
@@ -6754,6 +7089,8 @@ function frame(dt) {
   updateRockets(dt);
   updateGadgets(dt);
   updateVehicles(dt);
+  if (MODE().rumble) updateRumble(dt);
+  if (MODE().creative) creativeTick(dt);
   updateSupply(dt);
   updateBuild(dt);
   updateShaking(dt);
@@ -6765,6 +7102,7 @@ function frame(dt) {
   updateEnv(dt);
   updateAudio(dt);
   HUD.update(dt);
+  TEAMHUD.update(dt);
   if (!$id('spec').hidden && (!GAME.spectating || !GAME.spectating.alive)) nextSpectate();
   $id('clickplay').hidden = IS_TOUCH || INPUT.locked || GAME.state !== 'play' || !player.alive;
   $id('rotate').hidden = !(IS_TOUCH && innerHeight > innerWidth * 1.1);
@@ -6801,12 +7139,12 @@ function init() {
   FX.init(); VFX.init(); HUD.init(); INPUT.init(); wireMenu();
   addEventListener('resize', onResize);
   applyEnvironment('golden', 'clear');
-  newWorld((Math.random() * 1e9) | 0); GAME.menuWorldFresh = true;
+  newWorld((Math.random() * 1e9) | 0); GAME.menuWorldFresh = true; GAME.worldMut = SETTINGS.mutator;
   stormInit(); STORM.mesh.visible = false;
   applyQuality();
   requestAnimationFrame(loop);
   if (GAME.freeze) { _last = now; return; }
-  window.STORMDROP = { grassWeight, groundH, WATER, RAIN, GRASS, sun, renderer: () => renderer, setEnv(v) { scene.environment = v ? ENVSTATE.envRT.texture : null; }, scene: () => scene, applyEnvironment, POST, ENVSTATE, renderOnce() { const t0 = performance.now(); POST.render(); return performance.now() - t0; }, frameOnce(dt) { const t0 = performance.now(); frame(dt); return performance.now() - t0; }, dbg: { traceShot, AIM, raycastWorld, rayCharacters, computeAim, eyeOf }, get info() { return renderer.info.render; }, step(n, dt) { for (let i = 0; i < n; i++) frame(dt || 0.05); }, GAME, get player() { return player; }, bots, characters, STORM, BUS, WORLD, startMatch, setupMatch, jumpOut, CAM, PIECES, ITEMS, CHESTS, SETTINGS, animateRig, updateHeld, giveItem, playEmote, makeCharacter, genOutfit, camera: () => camera, SFX, FX, VFX, placePiece, buildTarget, explode, fireWeapon, updateBuild, frame: (dt) => frame(dt), updateCamera: (dt) => updateCamera(dt), WEAPONS, CONSUMABLES, GADGETS, useGadget, AIM, ZIPS, biomeAt, VEHICLES, enterVehicle, startEdit, endEdit, editTarget, applyWallEdit, PIECES_: () => PIECES, testBox(x, y, z, w, h, d) { const c = boxCollider(x - w / 2, y, z - d / 2, x + w / 2, y + h, z + d / 2, { kind: "test", hp: Infinity }); const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), MAT.build.stone); m.position.set(x, y + h / 2, z); worldGroup.add(m); return c; } };
+  window.STORMDROP = { grassWeight, groundH, WATER, RAIN, GRASS, sun, renderer: () => renderer, setEnv(v) { scene.environment = v ? ENVSTATE.envRT.texture : null; }, scene: () => scene, applyEnvironment, POST, ENVSTATE, renderOnce() { const t0 = performance.now(); POST.render(); return performance.now() - t0; }, frameOnce(dt) { const t0 = performance.now(); frame(dt); return performance.now() - t0; }, dbg: { traceShot, AIM, raycastWorld, rayCharacters, computeAim, eyeOf }, get info() { return renderer.info.render; }, step(n, dt) { for (let i = 0; i < n; i++) frame(dt || 0.05); }, GAME, get player() { return player; }, bots, characters, STORM, BUS, WORLD, startMatch, setupMatch, jumpOut, CAM, PIECES, ITEMS, CHESTS, SETTINGS, animateRig, updateHeld, giveItem, playEmote, makeCharacter, genOutfit, camera: () => camera, SFX, FX, VFX, placePiece, buildTarget, explode, fireWeapon, updateBuild, frame: (dt) => frame(dt), updateCamera: (dt) => updateCamera(dt), WEAPONS, CONSUMABLES, GADGETS, useGadget, AIM, ZIPS, biomeAt, VEHICLES, enterVehicle, RUMBLE, MODE, startEdit, endEdit, editTarget, applyWallEdit, PIECES_: () => PIECES, testBox(x, y, z, w, h, d) { const c = boxCollider(x - w / 2, y, z - d / 2, x + w / 2, y + h, z + d / 2, { kind: "test", hp: Infinity }); const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), MAT.build.stone); m.position.set(x, y + h / 2, z); worldGroup.add(m); return c; } };
 }
 init();
 

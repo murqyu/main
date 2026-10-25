@@ -45,6 +45,7 @@ function jumpOut(c) {
   c.pos.set(BUS.pos.x + mr(-2, 2), BUS.pos.y - 11, BUS.pos.z + mr(-2, 2));
   c.vel.set(BUS.dir.x * 10, -6, BUS.dir.z * 10);
   c.rig.root.visible = true;
+  if (c.isPlayer) { let k = 0; for (const b of bots) if (b.mate && b.mode === 'bus') b.jumpAt = BUS.t + 0.004 * ++k; }
   if (c.isPlayer) { SFX.jump(); HUD.banner('Skydiving', IS_TOUCH ? 'Steer with the left stick. Look down to dive faster.' : 'Steer with WASD. Look down to dive faster. Space opens the glider.', 3); }
   else c.yaw = Math.atan2(-BUS.dir.x, -BUS.dir.z);
 }
@@ -94,6 +95,7 @@ function updatePlayer(dt) {
   if (p.mantle) { updateMantle(p, dt); tickEye(p, dt); p.modelYaw = p.yaw; return; }
   if (p.zip) { updateZip(p, dt, A.jump); tickEye(p, dt); return; }
   if (p.vehicle) { updateVehicle(p.vehicle, dt, { mx, my, jump: A.jump }); if (A.interact) exitVehicle(p); tickEye(p, dt); return; }
+  if (p.knocked) { A.jump = false; A.crouchPressed = false; A.crouch = false; p.buildMode = null; }
   const fx = -Math.sin(p.yaw), fz = -Math.cos(p.yaw), rx = Math.cos(p.yaw), rz = -Math.sin(p.yaw);
   let wx = fx * my + rx * mx, wz = fz * my + rz * mx; const wl = Math.hypot(wx, wz); if (wl > 1) { wx /= wl; wz /= wl; }
   p.aiming = A.aim && !p.buildMode && !!curWeapon(p) && !p.emote;
@@ -110,6 +112,8 @@ function updatePlayer(dt) {
   if (p.using) spd = 2.8;
   if (p.pos.y < 0.2) spd *= 0.7;
   if (p.emote) spd = 0;
+  if (p.knocked) spd = 1.7;
+  if (p.reviving) spd = 0;
   if (p.sliding) slidePhysics(p, dt, wx, wz, A.crouch);
   else {
     const k = 1 - Math.exp(-(p.grounded ? 14 : 3) * dt);
@@ -186,6 +190,10 @@ function playerInteract(p, A) {
   const ch = nearestChest(p, 2.6);
   let target = ch, label = ch ? 'Open chest' : '', rar = 4;
   if (!ch) { const it = nearestItem(p, 2.3); if (it && it.kind !== 'ammo' && it.kind !== 'mats') { target = it; label = 'Pick up ' + itemLabel(it); rar = itemRarity(it); } }
+  const down = teamMode() ? nearestKnockedMate(p, 2.4) : null;
+  if (down) { target = down; label = (A.interactHeld ? 'Reviving ' : 'Hold E to revive ') + down.name; rar = 1; if (A.interactHeld && !p.reviving) p.reviving = { target: down, t: 0 }; }
+  tickRevive(p, GAME.dtLast || 0.016, !!A.interactHeld && !!down);
+  if (down) { HUD.prompt(label, rar); return; }
   let car = null;
   if (!target) { car = nearestVehicle(p, 3); if (car) { target = car; label = 'Drive quad'; rar = 2; } }
   let zipT = null;
@@ -205,6 +213,7 @@ function playerActions(dt) {
   if (!A || !p.alive || p.mode !== 'ground' || GAME.state === 'won') { if (ghostMesh) ghostMesh.visible = false; HUD.prompt(null); return; }
   if (p.zip) { HUD.prompt(IS_TOUCH ? 'Tap JUMP to let go' : 'Space to let go', 2); tickTimers(p, dt); animateRig(p, dt); return; }
   if (p.vehicle) { HUD.prompt(null); showGhost(null); tickTimers(p, dt); animateRig(p, dt); return; }
+  if (p.knocked) { showGhost(null); HUD.prompt('You are down: crawl to safety', 4); tickTimers(p, dt); tickEye(p, dt); animateRig(p, dt); return; }
   computeAim(p);
   if (p.editing) { showGhost(null); updateEdit(p, A); }
   else if (A.edit && editTarget(p)) startEdit(p, editTarget(p));
@@ -382,16 +391,17 @@ function spawnVaultCrew() {
   mk('Vault Guard', 'burst', 3, guard(), false); mk('Vault Guard', 'tac', 3, guard(), false);
 }
 function setupMatch() {
-  if (!GAME.menuWorldFresh || WORLD.scale !== islandScaleFor(SETTINGS.bots)) newWorld((Math.random() * 1e9) | 0);
+  if (!GAME.menuWorldFresh || WORLD.scale !== islandScaleFor(SETTINGS.bots) || GAME.worldMut !== SETTINGS.mutator) { newWorld((Math.random() * 1e9) | 0); GAME.worldMut = SETTINGS.mutator; }
   GAME.menuWorldFresh = false;
   characters.length = 0; bots.length = 0; usedNames.clear(); NOISE.length = 0; PATHQ.length = 0; DROPS.clear();
   FX.clear(); VFX.clear(); HUD.reset(); INPUT.clearAim(); INPUT.clearCrouch();
   player = makeCharacter(true, 'You', OUTFITS[SETTINGS.outfit % OUTFITS.length]); player.emote = null;
   characters.push(player);
-  for (let i = 0; i < SETTINGS.bots; i++) { const b = makeBot(); bots.push(b); characters.push(b); }
+  const nb = MODE().creative ? 6 : SETTINGS.bots;
+  for (let i = 0; i < nb; i++) { const b = makeBot(); bots.push(b); characters.push(b); }
   setupBus(); stormInit();
-  spawnVaultCrew();
-  spawnVehicles(7);
+  if (!MODE().creative) spawnVaultCrew();
+  spawnVehicles(Math.round(7 * WORLD.scale));
   // bots pick a landing spot and leave the dropship when it passes closest to it
   const pathLen = BUS.start.distanceTo(BUS.end);
   for (const b of bots) {
@@ -399,6 +409,7 @@ function setupMatch() {
     const t = ((b.dropTarget.x - BUS.start.x) * BUS.dir.x + (b.dropTarget.z - BUS.start.z) * BUS.dir.z) / pathLen;
     b.jumpAt = clamp(t - 0.06 + Math.random() * 0.05, 0.04, 0.95);
   }
+  assignTeams(); applyMutators();
   const [tod, wx] = pickTimeOfDay(); applyEnvironment(tod, wx);
   Object.assign(GAME, { combatT: -99, hbT: 0, deathLog: [], state: 'play', time: 0, alive: characters.filter((c) => !c.npc).length, spectating: null, placement: 0, killer: null, deathKind: '', deathTime: 0, paused: false, stats: { mats: 0, builds: 0, chests: 0 } });
   player.yaw = Math.atan2(-BUS.dir.x, -BUS.dir.z) + 0.7; player.pitch = -0.28;
@@ -406,17 +417,53 @@ function setupMatch() {
   HUD.show(true); HUD.toggleMap(false);
   HUD.banner('Jump when ready', TOD[tod].name + ' · ' + WEATHER[wx].name + ' — ' + (IS_TOUCH ? 'tap JUMP to leave the dropship' : 'press Space to leave the dropship'), 5);
   STORM.mesh.visible = true;
+  GAME.endShown = false;
+  if (MODE().rumble) rumbleSetup();
+  if (MODE().creative) creativeSetup();
+  if (MODE().name !== 'Solo' || MUT().name !== 'No mutator') HUD.banner(MODE().creative ? 'Creative' : 'Jump when ready', MODE().name + (MUT().name !== 'No mutator' ? ' · ' + MUT().name : '') + ' — ' + (IS_TOUCH ? 'tap JUMP to leave the dropship' : 'press Space to leave the dropship'), 5);
+  TEAMHUD.reset();
 }
 function onPlayerDeath(src, kind) {
-  GAME.placement = GAME.alive + 1;
+  const M = MODE();
+  if (M.rumble) {
+    GAME.state = 'dead'; GAME.deathTime = GAME.time; GAME.killer = src && src !== player ? src : null;
+    GAME.spectating = GAME.killer && GAME.killer.alive ? GAME.killer : null; CAM.specYaw = player.yaw;
+    showGhost(null); HUD.prompt(null); SFX.loop('wind', 0); endEdit(player, false);
+    HUD.banner('Eliminated', 'Respawning in 6 seconds', 3);
+    return;
+  }
+  if (teamMode() && teamStanding(player.team)) {
+    GAME.state = 'dead'; GAME.deathTime = GAME.time; GAME.deathKind = kind || ''; GAME.killer = src && src !== player ? src : null;
+    GAME.spectating = mates(player).find((c) => c.alive) || null; CAM.specYaw = player.yaw;
+    showGhost(null); HUD.prompt(null); SFX.loop('wind', 0); endEdit(player, false);
+    HUD.banner('Eliminated', 'Spectating your team', 2.5); $id('spec').hidden = false; updateSpecName();
+    return;
+  }
+  GAME.placement = teamMode() ? new Set(characters.filter((c) => c.alive && !c.npc).map((c) => c.team)).size + 1 : GAME.alive + 1;
   GAME.deathTime = GAME.time; GAME.state = 'dead'; GAME.deathKind = kind || '';
   GAME.killer = src && src !== player ? src : null;
   GAME.spectating = GAME.killer && GAME.killer.alive ? GAME.killer : null;
   CAM.specYaw = player.yaw;
   showGhost(null); HUD.prompt(null); SFX.loop('wind', 0); SFX.loop('slide', 0); SFX.defeat(); endEdit(player, false);
+  GAME.endShown = true;
   setTimeout(() => { if (GAME.state === 'dead') showEnd(false); }, 1700);
 }
 function checkEnd() {
+  const M = MODE();
+  if (M.rumble || M.creative || !player) return;
+  if (teamMode()) {
+    const teams = new Set(characters.filter((c) => c.alive && !c.npc).map((c) => c.team));
+    const mine = teams.has(player.team);
+    if (mine && teams.size <= 1 && (GAME.state === 'play' || GAME.state === 'dead')) {
+      const wasDead = GAME.state === 'dead';
+      GAME.state = 'won'; GAME.placement = 1; SFX.victory();
+      HUD.banner('Victory', 'Your team is the last one standing', 3);
+      for (const c of characters) if (c.alive && c.knocked) reviveDone(c, c);
+      if (player.alive) { player.slot = -1; playEmote(player, 'victory'); CAM.orbit = player.yaw; }
+      setTimeout(() => showEnd(true), wasDead ? 900 : 1600);
+    } else if (!mine && GAME.state === 'dead' && !GAME.endShown) { GAME.endShown = true; GAME.placement = teams.size + 1; setTimeout(() => showEnd(false), 1500); }
+    return;
+  }
   if (GAME.state === 'play' && player && player.alive && GAME.alive <= 1) {
     GAME.state = 'won'; GAME.placement = 1; SFX.victory();
     HUD.banner('Victory', 'Last one standing', 3);
@@ -434,9 +481,11 @@ function showEnd(win) {
   $id('endscreen').hidden = false; $id('spec').hidden = true;
   HUD.toggleMap(false);
   const pl = $id('end-place'); pl.textContent = '#' + GAME.placement; pl.className = 'place' + (win ? ' win' : '');
-  $id('end-sub').textContent = win ? 'Last one standing' : GAME.placement <= 5 ? 'So close' : GAME.placement <= 10 ? 'Top 10' : 'Eliminated';
+  const M = MODE();
+  $id('end-sub').textContent = M.rumble ? (win ? 'Your team won' : 'Your team lost') : win ? (teamMode() ? 'Your team is the last one standing' : 'Last one standing') : GAME.placement <= 5 ? 'So close' : GAME.placement <= 10 ? 'Top 10' : 'Eliminated';
   let detail;
-  if (win) detail = 'You outlasted ' + (characters.length - 1) + ' players.';
+  if (M.rumble) detail = 'Final score ' + RUMBLE.score[1] + ' - ' + RUMBLE.score[2] + '.';
+  else if (win) detail = 'You outlasted ' + (characters.filter((c) => !c.npc).length - 1) + ' players.';
   else if (GAME.killer) detail = 'Eliminated by ' + GAME.killer.name + '.';
   else if (GAME.deathKind === 'storm') detail = 'The storm caught you.';
   else if (GAME.deathKind === 'fall') detail = 'That fall was too far.';
@@ -453,7 +502,8 @@ function startSpectate() {
   if (!GAME.spectating || !GAME.spectating.alive) nextSpectate(); else updateSpecName();
 }
 function nextSpectate() {
-  const alive = bots.filter((b) => b.alive && b.mode !== 'bus');
+  const team = bots.filter((b) => b.alive && b.mode !== 'bus' && b.team === player.team && teamMode());
+  const alive = team.length ? team : bots.filter((b) => b.alive && b.mode !== 'bus');
   if (!alive.length) { backToResults(); return; }
   GAME.spectating = alive[(alive.indexOf(GAME.spectating) + 1) % alive.length];
   CAM.specYaw = GAME.spectating.yaw; updateSpecName();
@@ -551,6 +601,7 @@ function wireMenu() {
 // ---------- main loop ----------
 let _last = performance.now(), _fpsT = 0, _fpsN = 0;
 function frame(dt) {
+  GAME.dtLast = dt;
   if (GAME.state === 'menu') { menuCamera(dt); updateEnv(dt); updateAudio(dt); FX.update(dt); VFX.update(dt); INPUT.endFrame(); return; }
   if (GAME.paused) { INPUT.endFrame(); return; }
   GAME.time += dt;
@@ -565,6 +616,8 @@ function frame(dt) {
   updateRockets(dt);
   updateGadgets(dt);
   updateVehicles(dt);
+  if (MODE().rumble) updateRumble(dt);
+  if (MODE().creative) creativeTick(dt);
   updateSupply(dt);
   updateBuild(dt);
   updateShaking(dt);
@@ -576,6 +629,7 @@ function frame(dt) {
   updateEnv(dt);
   updateAudio(dt);
   HUD.update(dt);
+  TEAMHUD.update(dt);
   if (!$id('spec').hidden && (!GAME.spectating || !GAME.spectating.alive)) nextSpectate();
   $id('clickplay').hidden = IS_TOUCH || INPUT.locked || GAME.state !== 'play' || !player.alive;
   $id('rotate').hidden = !(IS_TOUCH && innerHeight > innerWidth * 1.1);
@@ -612,11 +666,11 @@ function init() {
   FX.init(); VFX.init(); HUD.init(); INPUT.init(); wireMenu();
   addEventListener('resize', onResize);
   applyEnvironment('golden', 'clear');
-  newWorld((Math.random() * 1e9) | 0); GAME.menuWorldFresh = true;
+  newWorld((Math.random() * 1e9) | 0); GAME.menuWorldFresh = true; GAME.worldMut = SETTINGS.mutator;
   stormInit(); STORM.mesh.visible = false;
   applyQuality();
   requestAnimationFrame(loop);
   if (GAME.freeze) { _last = now; return; }
-  window.STORMDROP = { grassWeight, groundH, WATER, RAIN, GRASS, sun, renderer: () => renderer, setEnv(v) { scene.environment = v ? ENVSTATE.envRT.texture : null; }, scene: () => scene, applyEnvironment, POST, ENVSTATE, renderOnce() { const t0 = performance.now(); POST.render(); return performance.now() - t0; }, frameOnce(dt) { const t0 = performance.now(); frame(dt); return performance.now() - t0; }, dbg: { traceShot, AIM, raycastWorld, rayCharacters, computeAim, eyeOf }, get info() { return renderer.info.render; }, step(n, dt) { for (let i = 0; i < n; i++) frame(dt || 0.05); }, GAME, get player() { return player; }, bots, characters, STORM, BUS, WORLD, startMatch, setupMatch, jumpOut, CAM, PIECES, ITEMS, CHESTS, SETTINGS, animateRig, updateHeld, giveItem, playEmote, makeCharacter, genOutfit, camera: () => camera, SFX, FX, VFX, placePiece, buildTarget, explode, fireWeapon, updateBuild, frame: (dt) => frame(dt), updateCamera: (dt) => updateCamera(dt), WEAPONS, CONSUMABLES, GADGETS, useGadget, AIM, ZIPS, biomeAt, VEHICLES, enterVehicle, startEdit, endEdit, editTarget, applyWallEdit, PIECES_: () => PIECES, testBox(x, y, z, w, h, d) { const c = boxCollider(x - w / 2, y, z - d / 2, x + w / 2, y + h, z + d / 2, { kind: "test", hp: Infinity }); const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), MAT.build.stone); m.position.set(x, y + h / 2, z); worldGroup.add(m); return c; } };
+  window.STORMDROP = { grassWeight, groundH, WATER, RAIN, GRASS, sun, renderer: () => renderer, setEnv(v) { scene.environment = v ? ENVSTATE.envRT.texture : null; }, scene: () => scene, applyEnvironment, POST, ENVSTATE, renderOnce() { const t0 = performance.now(); POST.render(); return performance.now() - t0; }, frameOnce(dt) { const t0 = performance.now(); frame(dt); return performance.now() - t0; }, dbg: { traceShot, AIM, raycastWorld, rayCharacters, computeAim, eyeOf }, get info() { return renderer.info.render; }, step(n, dt) { for (let i = 0; i < n; i++) frame(dt || 0.05); }, GAME, get player() { return player; }, bots, characters, STORM, BUS, WORLD, startMatch, setupMatch, jumpOut, CAM, PIECES, ITEMS, CHESTS, SETTINGS, animateRig, updateHeld, giveItem, playEmote, makeCharacter, genOutfit, camera: () => camera, SFX, FX, VFX, placePiece, buildTarget, explode, fireWeapon, updateBuild, frame: (dt) => frame(dt), updateCamera: (dt) => updateCamera(dt), WEAPONS, CONSUMABLES, GADGETS, useGadget, AIM, ZIPS, biomeAt, VEHICLES, enterVehicle, RUMBLE, MODE, startEdit, endEdit, editTarget, applyWallEdit, PIECES_: () => PIECES, testBox(x, y, z, w, h, d) { const c = boxCollider(x - w / 2, y, z - d / 2, x + w / 2, y + h, z + d / 2, { kind: "test", hp: Infinity }); const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), MAT.build.stone); m.position.set(x, y + h / 2, z); worldGroup.add(m); return c; } };
 }
 init();

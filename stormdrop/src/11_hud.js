@@ -185,7 +185,7 @@ const HUD = (() => {
       const S = STORM;
       if (S.state === 'wait') { setT(E['storm-text'], (S.idx === 0 ? 'Storm forms ' : 'Storm moves ') + fmtTime(S.timer)); E.stormline.classList.remove('shrinking'); }
       else if (S.state === 'shrink') { setT(E['storm-text'], 'Storm closing ' + fmtTime(S.timer)); E.stormline.classList.add('shrinking'); }
-      else setT(E['storm-text'], 'Final storm');
+      else setT(E['storm-text'], S.state === 'rumble' ? 'Stay in the circle' : S.state === 'off' ? 'No storm' : 'Final storm');
       updateCompass(CAM.yaw);
       crosshair(p);
       E.crosshair.style.display = (p.alive && p.mode === 'ground' && !CAM.scoped && GAME.state !== 'won') ? '' : 'none';
